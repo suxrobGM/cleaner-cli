@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-05-30
+
 ### Added
 - Interactive mode now keeps the menu open after a clean run instead of exiting,
   returning to the cleaner selection until you choose to quit.
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `list`, `scan`, `clean`, `update`, and interactive menu commands.
 - Self-update command with version reporting in the interactive banner.
 
-[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/suxrobGM/cleaner-cli/releases/tag/v1.0.0
