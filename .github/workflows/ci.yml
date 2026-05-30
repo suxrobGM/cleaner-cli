@@ -14,6 +14,10 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    concurrency:
+      group: ci
+      cancel-in-progress: true
+
     steps:
       - uses: actions/checkout@v6
 
