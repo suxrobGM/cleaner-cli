@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Cleaner.Core</RootNamespace>
+    <AssemblyName>Cleaner.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.55.2" />
+  </ItemGroup>
+
+</Project>

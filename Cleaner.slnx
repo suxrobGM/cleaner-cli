@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/solution/">
+    <File Path="Directory.Build.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+    <File Path="CLAUDE.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Cleaner.Core/Cleaner.Core.csproj" />
+    <Project Path="src/Cleaner.Cli/Cleaner.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Cleaner.Core.Tests/Cleaner.Core.Tests.csproj" />
+  </Folder>
+</Solution>

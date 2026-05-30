@@ -1,0 +1,26 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Repository metadata shared by all packable projects. -->
+  <PropertyGroup>
+    <Product>Cleaner</Product>
+    <Authors>Sukhrob Ilyosbekov</Authors>
+    <Company>Cleaner</Company>
+    <Copyright>Copyright (c) Sukhrob Ilyosbekov</Copyright>
+    <PackageProjectUrl>https://github.com/suxrobgm/cleaner</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/suxrobgm/cleaner</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+</Project>

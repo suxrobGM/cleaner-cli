@@ -1,0 +1,41 @@
+## .NET / Visual Studio
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+## Test / coverage
+[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+## Rider / JetBrains
+.idea/
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Local Claude Code overrides (personal, not shared)
+.claude/settings.local.json

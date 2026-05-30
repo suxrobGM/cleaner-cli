@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1FB6A6"/>
+      <stop offset="1" stop-color="#0E7C86"/>
+    </linearGradient>
+    <linearGradient id="handle" x1="300" y1="120" x2="360" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD27A"/>
+      <stop offset="1" stop-color="#E6A33C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Broom, angled from top-right to bottom-left -->
+  <g transform="rotate(28 256 256)">
+    <!-- Handle -->
+    <rect x="244" y="96" width="24" height="220" rx="12" fill="url(#handle)"/>
+    <!-- Collar / binding -->
+    <rect x="232" y="300" width="48" height="26" rx="8" fill="#C77F2A"/>
+    <!-- Bristle head -->
+    <path d="M212 326 H300 L324 430 Q256 452 188 430 Z" fill="#FFFFFF"/>
+    <!-- Bristle lines -->
+    <g stroke="#CBD5D1" stroke-width="6" stroke-linecap="round">
+      <line x1="226" y1="338" x2="214" y2="424"/>
+      <line x1="244" y1="338" x2="240" y2="430"/>
+      <line x1="262" y1="338" x2="266" y2="432"/>
+      <line x1="280" y1="338" x2="292" y2="424"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <g fill="#FFFFFF">
+    <path d="M150 150 L160 178 L188 188 L160 198 L150 226 L140 198 L112 188 L140 178 Z"/>
+    <path d="M372 300 L379 320 L399 327 L379 334 L372 354 L365 334 L345 327 L365 320 Z" opacity="0.92"/>
+    <path d="M338 150 L343 164 L357 169 L343 174 L338 188 L333 174 L319 169 L333 164 Z" opacity="0.85"/>
+  </g>
+</svg>

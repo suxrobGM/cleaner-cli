@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Cleaner.Cli</RootNamespace>
+    <AssemblyName>cleaner</AssemblyName>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon Condition="Exists('../../assets/icon.ico')">../../assets/icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!-- Optional non-AOT global-tool packaging: dotnet pack -p:ToolBuild=true -->
+  <PropertyGroup Condition="'$(ToolBuild)' == 'true'">
+    <PublishAot>false</PublishAot>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>cleaner</ToolCommandName>
+    <PackageId>Cleaner.Tool</PackageId>
+    <PackageOutputPath>../../artifacts/nupkg</PackageOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.55.2" />
+    <PackageReference Include="System.CommandLine" Version="2.0.8" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Cleaner.Core/Cleaner.Core.csproj" />
+  </ItemGroup>
+
+</Project>
