@@ -19,7 +19,9 @@ jobs:
           - { rid: osx-x64,     os: macos-latest }
           - { rid: osx-arm64,   os: macos-latest }
           - { rid: linux-x64,   os: ubuntu-latest }
-          - { rid: linux-arm64, os: ubuntu-latest }
+          # Cross-compiled from x64: point ILC's symbol-stripping step at the cross objcopy,
+          # otherwise the host (x86_64) objcopy can't read the arm64 ELF it just linked.
+          - { rid: linux-arm64, os: ubuntu-latest, publishArgs: '-p:ObjCopyName=aarch64-linux-gnu-objcopy' }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +41,7 @@ jobs:
           fi
 
       - name: Publish (Native AOT)
-        run: dotnet publish src/Cleaner.Cli -r ${{ matrix.rid }} -c Release -o publish/${{ matrix.rid }}
+        run: dotnet publish src/Cleaner.Cli -r ${{ matrix.rid }} -c Release -o publish/${{ matrix.rid }} ${{ matrix.publishArgs }}
 
       - name: Package
         shell: bash
