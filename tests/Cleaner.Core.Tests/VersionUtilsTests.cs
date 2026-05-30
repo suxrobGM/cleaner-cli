@@ -73,7 +73,7 @@ public sealed class VersionUtilsTests
         const string json = """
         {
           "tag_name": "v1.4.2",
-          "html_url": "https://github.com/suxrobGM/cleanup-utility/releases/tag/v1.4.2",
+          "html_url": "https://github.com/suxrobGM/cleaner-cli/releases/tag/v1.4.2",
           "draft": false,
           "prerelease": false,
           "assets": [
@@ -87,7 +87,7 @@ public sealed class VersionUtilsTests
 
         Assert.NotNull(release);
         Assert.Equal("v1.4.2", release!.TagName);
-        Assert.Equal("https://github.com/suxrobGM/cleanup-utility/releases/tag/v1.4.2", release.HtmlUrl);
+        Assert.Equal("https://github.com/suxrobGM/cleaner-cli/releases/tag/v1.4.2", release.HtmlUrl);
         Assert.False(release.Draft);
         Assert.Equal(2, release.Assets.Count);
         Assert.Equal("cleaner-v1.4.2-win-x64.zip", release.Assets[0].Name);

@@ -8,7 +8,7 @@ public sealed class GitHubReleaseClient : IGitHubReleaseClient, IDisposable
 {
     // The repository whose releases drive auto-update. Must match the real remote.
     private const string Owner = "suxrobGM";
-    private const string Repo = "cleanup-utility";
+    private const string Repo = "cleaner-cli";
 
     private const string ProductName = "cleaner-updater";
 

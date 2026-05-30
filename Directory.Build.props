@@ -24,8 +24,8 @@
     <Authors>Sukhrob Ilyosbekov</Authors>
     <Company>Cleaner</Company>
     <Copyright>Copyright (c) Sukhrob Ilyosbekov</Copyright>
-    <PackageProjectUrl>https://github.com/suxrobGM/cleanup-utility</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/suxrobGM/cleanup-utility</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/suxrobGM/cleaner-cli</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/suxrobGM/cleaner-cli</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>

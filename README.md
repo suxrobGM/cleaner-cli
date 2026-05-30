@@ -6,8 +6,8 @@
 
 **Reclaim disk space from dev, OS, and app caches — one fast, safe command.**
 
-[![CI](https://github.com/suxrobGM/cleanup-utility/actions/workflows/ci.yml/badge.svg)](https://github.com/suxrobGM/cleanup-utility/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/suxrobGM/cleanup-utility?include_prereleases&sort=semver)](https://github.com/suxrobGM/cleanup-utility/releases)
+[![CI](https://github.com/suxrobGM/cleaner-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/suxrobGM/cleaner-cli/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/suxrobGM/cleaner-cli?include_prereleases&sort=semver)](https://github.com/suxrobGM/cleaner-cli/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-informational)
@@ -36,7 +36,7 @@ See the full list in **[docs/cleaners.md](docs/cleaners.md)**.
 
 ## Install
 
-**Download a binary** (recommended) from the [latest release](https://github.com/suxrobGM/cleanup-utility/releases),
+**Download a binary** (recommended) from the [latest release](https://github.com/suxrobGM/cleaner-cli/releases),
 unpack it, and put `cleaner` on your `PATH`.
 
 **Or install as a .NET tool** (requires the .NET 10 SDK):
