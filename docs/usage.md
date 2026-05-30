@@ -80,8 +80,7 @@ kept as `cleaner.exe.old` and removed automatically on the next run.
 > **Notes.** Auto-update reads the latest **published** GitHub release (the release workflow
 > publishes automatically when a `v*` tag is pushed; draft releases are ignored). If `cleaner` lives
 > in a write-protected location (e.g. `Program Files`), re-run the update from an elevated shell so it
-> can replace the binary. Builds installed via `dotnet tool install` update with
-> `dotnet tool update -g Cleaner.Tool` instead.
+> can replace the binary.
 
 ## Elevation
 

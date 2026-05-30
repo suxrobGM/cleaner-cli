@@ -36,14 +36,8 @@ See the full list in **[docs/cleaners.md](docs/cleaners.md)**.
 
 ## Install
 
-**Download a binary** (recommended) from the [latest release](https://github.com/suxrobGM/cleaner-cli/releases),
+**Download a binary** from the [latest release](https://github.com/suxrobGM/cleaner-cli/releases),
 unpack it, and put `cleaner` on your `PATH`.
-
-**Or install as a .NET tool** (requires the .NET 10 SDK):
-
-```bash
-dotnet tool install -g Cleaner.Tool
-```
 
 ## Update
 
@@ -55,8 +49,6 @@ cleaner --version          # show the installed version
 cleaner update --check     # is a newer release available?
 cleaner update             # download & install it
 ```
-
-(For the .NET tool install, use `dotnet tool update -g Cleaner.Tool` instead.)
 
 ## Quick start
 

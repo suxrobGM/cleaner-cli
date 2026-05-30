@@ -9,15 +9,6 @@
     <ApplicationIcon Condition="Exists('../../assets/icon.ico')">../../assets/icon.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <!-- Optional non-AOT global-tool packaging: dotnet pack -p:ToolBuild=true -->
-  <PropertyGroup Condition="'$(ToolBuild)' == 'true'">
-    <PublishAot>false</PublishAot>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>cleaner</ToolCommandName>
-    <PackageId>Cleaner.Tool</PackageId>
-    <PackageOutputPath>../../artifacts/nupkg</PackageOutputPath>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.55.2" />
     <PackageReference Include="System.CommandLine" Version="2.0.8" />

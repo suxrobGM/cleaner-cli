@@ -72,7 +72,5 @@ makes any regression fail CI. `dotnet publish -r <rid>` must produce zero trim/A
 
 ## Distribution
 
-Native AOT binaries and a `dotnet tool` package can't be the same artifact (AOT ships a native
-per-RID binary; a tool ships portable IL). The primary distribution is **AOT binaries per RID**
-(GitHub Releases, built by `release.yml`). A non-AOT tool package is available behind
-`dotnet pack -p:ToolBuild=true`.
+Distribution is **Native AOT binaries per RID** (GitHub Releases, built by `release.yml`). Each
+release ships a self-contained native executable that needs no installed .NET runtime.
