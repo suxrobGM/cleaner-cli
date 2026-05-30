@@ -36,7 +36,22 @@ See the full list in **[docs/cleaners.md](docs/cleaners.md)**.
 
 ## Install
 
-**Download a binary** from the [latest release](https://github.com/suxrobGM/cleaner-cli/releases),
+The install script grabs the right binary for your platform, drops it in `~/.cleaner/bin`, and adds
+that to your `PATH`.
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/suxrobGM/cleaner-cli/main/scripts/install.sh | bash
+```
+
+**Windows** (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/suxrobGM/cleaner-cli/main/scripts/install.ps1 | iex
+```
+
+Or **download a binary** manually from the [latest release](https://github.com/suxrobGM/cleaner-cli/releases),
 unpack it, and put `cleaner` on your `PATH`.
 
 ## Update

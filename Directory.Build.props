@@ -11,10 +11,8 @@
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
-  <!-- Single source of truth for the product version. Bump per release; the pushed git tag
-       (vX.Y.Z) must match. IncludeSourceRevision... strips the +<gitHash> so version is clean. -->
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
