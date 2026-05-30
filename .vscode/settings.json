@@ -22,15 +22,18 @@
   "files.trimFinalNewlines": true,
   "files.exclude": {
     "**/bin": true,
-    "**/obj": true
+    "**/obj": true,
+    ".idea": true
   },
   "files.watcherExclude": {
     "**/bin/**": true,
-    "**/obj/**": true
+    "**/obj/**": true,
+    ".idea": true
   },
   "search.exclude": {
     "**/bin": true,
     "**/obj": true,
-    "**/*.user": true
+    "**/*.user": true,
+    ".idea": true
   }
 }

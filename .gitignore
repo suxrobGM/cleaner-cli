@@ -42,3 +42,5 @@ Thumbs.db
 
 ## Local Claude Code overrides (personal, not shared)
 .claude/settings.local.json
+
+.VSCodeCounter/
