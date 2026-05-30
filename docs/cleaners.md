@@ -126,6 +126,9 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | `service-temp` | Temp dirs of the `LocalService` / `NetworkService` accounts. | Windows · needs admin |
 | `downloaded-program-files` | `Windows\Downloaded Program Files` and `Downloaded Installations`. | Windows · needs admin |
 | `memory-dumps` | Kernel crash dumps (`Windows\Minidump`, `LiveKernelReports`). | Windows · needs admin |
+| `gpu-shader-cache` | GPU shader caches (`D3DSCache`, NVIDIA/AMD/Intel). | Windows |
+| `inet-cache` | WinINet "Temporary Internet Files" (`...\Windows\INetCache`). | Windows |
+| `store-app-cache` | Microsoft Store / UWP per-package caches (`AC\INetCache`, `AC\Temp`, `TempState`). | Windows |
 | `thumbnails` | Explorer thumbnail/icon cache. | Windows |
 | `crash-dumps` | Crash dumps and Windows Error Reporting queues. | Windows |
 | `delivery-optimization` | Delivery Optimization download cache. | Windows · needs admin |
@@ -149,3 +152,4 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | Id | Removes |
 | --- | --- |
 | `steam` | Steam shader/download/web caches, logs, dumps. **Never** touches installed games or saves. |
+| `electron-app-cache` | Chromium HTTP/GPU/shader caches of Discord, Slack, and Microsoft Teams. Keeps config and local storage. |

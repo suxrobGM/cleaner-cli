@@ -191,3 +191,67 @@ public sealed class SystemMemoryDumpCleaner : WindowsCleanerBase
         }
     }
 }
+
+/// <summary>GPU driver shader caches (DirectX, NVIDIA, AMD, Intel). All re-compile on demand.</summary>
+public sealed class GpuShaderCacheCleaner : WindowsCleanerBase
+{
+    public override string Id => "gpu-shader-cache";
+
+    public override string Name => "GPU shader caches";
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var local = context.Environment.LocalAppDataDirectory;
+        yield return new CleanupPath(Path.Combine(local, "D3DSCache"), DeleteMode.ClearContents, "DirectX");
+        yield return new CleanupPath(Path.Combine(local, "NVIDIA", "DXCache"), DeleteMode.ClearContents, "NVIDIA DX");
+        yield return new CleanupPath(Path.Combine(local, "NVIDIA", "GLCache"), DeleteMode.ClearContents, "NVIDIA GL");
+        yield return new CleanupPath(Path.Combine(local, "AMD", "DxCache"), DeleteMode.ClearContents, "AMD DX");
+        yield return new CleanupPath(Path.Combine(local, "AMD", "DxcCache"), DeleteMode.ClearContents, "AMD DXC");
+        yield return new CleanupPath(Path.Combine(local, "Intel", "ShaderCache"), DeleteMode.ClearContents, "Intel");
+    }
+}
+
+/// <summary>WinINet / "Temporary Internet Files" cache used by IE, legacy Edge, and WebView hosts.</summary>
+public sealed class InetCacheCleaner : WindowsCleanerBase
+{
+    public override string Id => "inet-cache";
+
+    public override string Name => "Temporary Internet Files";
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        yield return new CleanupPath(
+            Path.Combine(context.Environment.LocalAppDataDirectory, "Microsoft", "Windows", "INetCache"),
+            DeleteMode.ClearContents);
+    }
+}
+
+/// <summary>
+/// Per-package caches and scratch state of Microsoft Store / UWP apps. Only clears the well-known
+/// cache subdirectories under each package — never <c>LocalState</c> or <c>Settings</c> (real data).
+/// </summary>
+public sealed class StoreAppCacheCleaner : WindowsCleanerBase
+{
+    private static readonly string[] CacheSubdirectories =
+    [
+        Path.Combine("AC", "INetCache"),
+        Path.Combine("AC", "Temp"),
+        "TempState",
+    ];
+
+    public override string Id => "store-app-cache";
+
+    public override string Name => "Store app caches";
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var packages = Path.Combine(context.Environment.LocalAppDataDirectory, "Packages");
+        foreach (var package in context.FileSystem.EnumerateDirectories(packages))
+        {
+            foreach (var sub in CacheSubdirectories)
+            {
+                yield return new CleanupPath(Path.Combine(package, sub), DeleteMode.ClearContents);
+            }
+        }
+    }
+}

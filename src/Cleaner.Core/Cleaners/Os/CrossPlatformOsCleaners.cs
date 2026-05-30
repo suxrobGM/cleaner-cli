@@ -64,8 +64,6 @@ public sealed class TrashCleaner : DirectoryCleanerBase
 /// <summary>Clears Chrome, Edge, and Firefox HTTP/code caches (keeps history, cookies, profiles).</summary>
 public sealed class BrowserCacheCleaner : DirectoryCleanerBase
 {
-    private static readonly string[] ChromiumProfileCaches = ["Cache", "Code Cache", "GPUCache"];
-
     public override string Id => "browser-cache";
 
     public override string Name => "Browser caches (Chrome/Edge/Firefox)";
@@ -116,9 +114,9 @@ public sealed class BrowserCacheCleaner : DirectoryCleanerBase
     {
         foreach (var profile in context.FileSystem.EnumerateDirectories(userDataRoot))
         {
-            foreach (var sub in ChromiumProfileCaches)
+            foreach (var path in ChromiumCache.Under(profile, browser))
             {
-                yield return new CleanupPath(Path.Combine(profile, sub), DeleteMode.ClearContents, browser);
+                yield return path;
             }
         }
     }

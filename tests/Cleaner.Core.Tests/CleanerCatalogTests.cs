@@ -82,6 +82,55 @@ public sealed class CleanerCatalogTests
     }
 
     [Fact]
+    public async Task GpuShaderCacheCleaner_clears_vendor_caches_without_elevation()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{local}\D3DSCache\a.bin", 1_000)
+            .AddFile($@"{local}\NVIDIA\GLCache\b.bin", 2_000);
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
+
+        var cleaner = new GpuShaderCacheCleaner();
+        var result = await cleaner.ScanAsync(TestContext.Create(fs, env));
+
+        Assert.False(cleaner.RequiresElevation);
+        Assert.Equal(3_000, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task StoreAppCacheCleaner_clears_package_caches_but_not_local_state()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var pkg = $@"{local}\Packages\Microsoft.App_8wekyb3d8bbwe";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{pkg}\AC\INetCache\x.dat", 500)
+            .AddFile($@"{pkg}\TempState\y.tmp", 300)
+            .AddFile($@"{pkg}\LocalState\save.db", 9_999); // real data — must survive
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
+
+        var result = await new StoreAppCacheCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(800, result.BytesFreed);
+        Assert.True(fs.FileExists($@"{pkg}\LocalState\save.db"));
+    }
+
+    [Fact]
+    public async Task ElectronAppCacheCleaner_clears_known_app_caches_but_not_config()
+    {
+        const string roaming = @"C:\Users\test\AppData\Roaming";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{roaming}\discord\Cache\a.bin", 1_000)
+            .AddFile($@"{roaming}\Slack\GPUCache\b.bin", 500)
+            .AddFile($@"{roaming}\discord\settings.json", 42); // config — must survive
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, AppDataDirectory = roaming };
+
+        var result = await new ElectronAppCacheCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(1_500, result.BytesFreed);
+        Assert.True(fs.FileExists($@"{roaming}\discord\settings.json"));
+    }
+
+    [Fact]
     public async Task BuildArtifactCleaner_collects_matches_without_descending()
     {
         var fs = new FakeFileSystem()

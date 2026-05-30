@@ -125,6 +125,9 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, ServiceProfileTempCleaner>();
         services.AddSingleton<ICleaner, DownloadedProgramFilesCleaner>();
         services.AddSingleton<ICleaner, SystemMemoryDumpCleaner>();
+        services.AddSingleton<ICleaner, GpuShaderCacheCleaner>();
+        services.AddSingleton<ICleaner, InetCacheCleaner>();
+        services.AddSingleton<ICleaner, StoreAppCacheCleaner>();
         services.AddSingleton<ICleaner, MacUserCachesCleaner>();
         services.AddSingleton<ICleaner, XdgCacheCleaner>();
         services.AddSingleton<ICleaner, JournalLogCleaner>();
@@ -165,5 +168,6 @@ internal static class ServiceCollectionExtensions
 
         // Applications
         services.AddSingleton<ICleaner, SteamCleaner>();
+        services.AddSingleton<ICleaner, ElectronAppCacheCleaner>();
     }
 }
