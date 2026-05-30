@@ -1,3 +1,6 @@
+using Cleaner.Cli.Application;
+using Cleaner.Cli.Commands;
+using Cleaner.Cli.Rendering;
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Applications;
 using Cleaner.Core.Cleaners.Base;
@@ -18,24 +21,19 @@ internal static class ServiceCollectionExtensions
     public static IServiceCollection AddCleaner(this IServiceCollection services)
     {
         services.AddSingleton<IAnsiConsole>(_ => AnsiConsole.Console);
-        services.AddSingleton<IEnvironmentService>(_ => new EnvironmentService());
-        services.AddSingleton<IFileSystemService>(_ => new FileSystemService());
-        services.AddSingleton<IProcessRunner>(_ => new ProcessRunner());
-        services.AddSingleton<IGitHubReleaseClient>(_ => new GitHubReleaseClient());
-        services.AddSingleton<IUpdateService>(sp => new UpdateService(
-            sp.GetRequiredService<IGitHubReleaseClient>(),
-            sp.GetRequiredService<IEnvironmentService>()));
+        services.AddSingleton<IEnvironmentService, EnvironmentService>();
+        services.AddSingleton<IFileSystemService, FileSystemService>();
+        services.AddSingleton<IProcessRunner, ProcessRunner>(_ => new ProcessRunner());
+        services.AddSingleton<IGitHubReleaseClient, GitHubReleaseClient>();
+        services.AddSingleton<IUpdateService, UpdateService>();
 
         services.AddCleaners();
 
-        services.AddSingleton<ICleanerRegistry>(sp => new CleanerRegistry(sp.GetServices<ICleaner>()));
-        services.AddSingleton<CleanerApp>(sp => new CleanerApp(
-            sp.GetRequiredService<ICleanerRegistry>(),
-            sp.GetRequiredService<IAnsiConsole>(),
-            sp.GetRequiredService<IEnvironmentService>(),
-            sp.GetRequiredService<IFileSystemService>(),
-            sp.GetRequiredService<IProcessRunner>(),
-            sp.GetRequiredService<IUpdateService>()));
+        services.AddSingleton<ICleanerRegistry, CleanerRegistry>();
+        services.AddSingleton<IConsoleRenderer, ConsoleRenderer>();
+        services.AddSingleton<CleanupContextFactory>();
+        services.AddSingleton<CleanerApp>();
+        services.AddSingleton<CommandLineBuilder>();
 
         return services;
     }
@@ -47,97 +45,100 @@ internal static class ServiceCollectionExtensions
     private static void AddCleaners(this IServiceCollection services)
     {
         // .NET
-        services.AddSingleton<ICleaner>(_ => new NuGetCleaner());
-        services.AddSingleton<ICleaner>(_ => new DotnetCleaner());
+        services.AddSingleton<ICleaner, NuGetCleaner>();
+        services.AddSingleton<ICleaner, DotnetCleaner>();
 
         // JavaScript / TypeScript
-        services.AddSingleton<ICleaner>(_ => new NpmCleaner());
-        services.AddSingleton<ICleaner>(_ => new NpxCleaner());
-        services.AddSingleton<ICleaner>(_ => new YarnCleaner());
-        services.AddSingleton<ICleaner>(_ => new PnpmCleaner());
-        services.AddSingleton<ICleaner>(_ => new BunCleaner());
-        services.AddSingleton<ICleaner>(_ => new DenoCleaner());
+        services.AddSingleton<ICleaner, NpmCleaner>();
+        services.AddSingleton<ICleaner, NpxCleaner>();
+        services.AddSingleton<ICleaner, YarnCleaner>();
+        services.AddSingleton<ICleaner, PnpmCleaner>();
+        services.AddSingleton<ICleaner, BunCleaner>();
+        services.AddSingleton<ICleaner, DenoCleaner>();
 
         // Python
-        services.AddSingleton<ICleaner>(_ => new PipCleaner());
-        services.AddSingleton<ICleaner>(_ => new PipenvCleaner());
-        services.AddSingleton<ICleaner>(_ => new PoetryCleaner());
-        services.AddSingleton<ICleaner>(_ => new CondaCleaner());
-        services.AddSingleton<ICleaner>(_ => new PdmCleaner());
-        services.AddSingleton<ICleaner>(_ => new UvCleaner());
+        services.AddSingleton<ICleaner, PipCleaner>();
+        services.AddSingleton<ICleaner, PipenvCleaner>();
+        services.AddSingleton<ICleaner, PoetryCleaner>();
+        services.AddSingleton<ICleaner, CondaCleaner>();
+        services.AddSingleton<ICleaner, PdmCleaner>();
+        services.AddSingleton<ICleaner, UvCleaner>();
 
         // Rust
-        services.AddSingleton<ICleaner>(_ => new CargoCleaner());
-        services.AddSingleton<ICleaner>(_ => new RustupCleaner());
-        services.AddSingleton<ICleaner>(_ => new SccacheCleaner());
+        services.AddSingleton<ICleaner, CargoCleaner>();
+        services.AddSingleton<ICleaner, RustupCleaner>();
+        services.AddSingleton<ICleaner, SccacheCleaner>();
 
         // Go
-        services.AddSingleton<ICleaner>(_ => new GoCleaner());
+        services.AddSingleton<ICleaner, GoCleaner>();
 
         // JVM / Android
-        services.AddSingleton<ICleaner>(_ => new GradleCleaner());
-        services.AddSingleton<ICleaner>(_ => new MavenCleaner());
-        services.AddSingleton<ICleaner>(_ => new SbtIvyCleaner());
-        services.AddSingleton<ICleaner>(_ => new AndroidSdkCleaner());
+        services.AddSingleton<ICleaner, GradleCleaner>();
+        services.AddSingleton<ICleaner, MavenCleaner>();
+        services.AddSingleton<ICleaner, SbtIvyCleaner>();
+        services.AddSingleton<ICleaner, AndroidSdkCleaner>();
 
         // Mobile (React Native / Expo)
-        services.AddSingleton<ICleaner>(_ => new ReactNativeCleaner());
-        services.AddSingleton<ICleaner>(_ => new ExpoCleaner());
+        services.AddSingleton<ICleaner, ReactNativeCleaner>();
+        services.AddSingleton<ICleaner, ExpoCleaner>();
 
         // Other languages
-        services.AddSingleton<ICleaner>(_ => new GemBundlerCleaner());
-        services.AddSingleton<ICleaner>(_ => new ComposerCleaner());
-        services.AddSingleton<ICleaner>(_ => new PubCleaner());
-        services.AddSingleton<ICleaner>(_ => new HexMixCleaner());
-        services.AddSingleton<ICleaner>(_ => new CabalStackCleaner());
+        services.AddSingleton<ICleaner, GemBundlerCleaner>();
+        services.AddSingleton<ICleaner, ComposerCleaner>();
+        services.AddSingleton<ICleaner, PubCleaner>();
+        services.AddSingleton<ICleaner, HexMixCleaner>();
+        services.AddSingleton<ICleaner, CabalStackCleaner>();
 
         // Build / monorepo caches
-        services.AddSingleton<ICleaner>(_ => new CcacheCleaner());
-        services.AddSingleton<ICleaner>(_ => new BazelCleaner());
-        services.AddSingleton<ICleaner>(_ => new TurboNxCleaner());
-        services.AddSingleton<ICleaner>(_ => new NodeModulesCacheCleaner());
+        services.AddSingleton<ICleaner, CcacheCleaner>();
+        services.AddSingleton<ICleaner, BazelCleaner>();
+        services.AddSingleton<ICleaner, TurboNxCleaner>();
+        services.AddSingleton<ICleaner, NodeModulesCacheCleaner>();
 
         // Containers / IaC
-        services.AddSingleton<ICleaner>(_ => new DockerCleaner());
-        services.AddSingleton<ICleaner>(_ => new TerraformCleaner());
+        services.AddSingleton<ICleaner, DockerCleaner>();
+        services.AddSingleton<ICleaner, TerraformCleaner>();
 
         // IDEs / editors
-        services.AddSingleton<ICleaner>(_ => new JetBrainsCleaner());
-        services.AddSingleton<ICleaner>(_ => new VsCodeCleaner());
-        services.AddSingleton<ICleaner>(_ => new VisualStudioCleaner());
-        services.AddSingleton<ICleaner>(_ => new XcodeCleaner());
+        services.AddSingleton<ICleaner, JetBrainsCleaner>();
+        services.AddSingleton<ICleaner, VsCodeCleaner>();
+        services.AddSingleton<ICleaner, VisualStudioCleaner>();
+        services.AddSingleton<ICleaner, XcodeCleaner>();
 
         // Tooling downloads
-        services.AddSingleton<ICleaner>(_ => new BrowserAutomationCleaner());
-        services.AddSingleton<ICleaner>(_ => new ElectronCacheCleaner());
+        services.AddSingleton<ICleaner, BrowserAutomationCleaner>();
+        services.AddSingleton<ICleaner, ElectronCacheCleaner>();
 
         // Project-local
-        services.AddSingleton<ICleaner>(_ => new BuildArtifactCleaner());
+        services.AddSingleton<ICleaner, BuildArtifactCleaner>();
 
         // Operating system
-        services.AddSingleton<ICleaner>(_ => new UserTempCleaner());
-        services.AddSingleton<ICleaner>(_ => new TrashCleaner());
-        services.AddSingleton<ICleaner>(_ => new BrowserCacheCleaner());
-        services.AddSingleton<ICleaner>(_ => new WindowsUpdateCacheCleaner());
-        services.AddSingleton<ICleaner>(_ => new WindowsTempCleaner());
-        services.AddSingleton<ICleaner>(_ => new ThumbnailCacheCleaner());
-        services.AddSingleton<ICleaner>(_ => new CrashDumpCleaner());
-        services.AddSingleton<ICleaner>(_ => new DeliveryOptimizationCleaner());
-        services.AddSingleton<ICleaner>(_ => new MacUserCachesCleaner());
-        services.AddSingleton<ICleaner>(_ => new XdgCacheCleaner());
-        services.AddSingleton<ICleaner>(_ => new JournalLogCleaner());
+        services.AddSingleton<ICleaner, UserTempCleaner>();
+        services.AddSingleton<ICleaner, TrashCleaner>();
+        services.AddSingleton<ICleaner, BrowserCacheCleaner>();
+        services.AddSingleton<ICleaner, WindowsUpdateCacheCleaner>();
+        services.AddSingleton<ICleaner, WindowsTempCleaner>();
+        services.AddSingleton<ICleaner, ThumbnailCacheCleaner>();
+        services.AddSingleton<ICleaner, CrashDumpCleaner>();
+        services.AddSingleton<ICleaner, DeliveryOptimizationCleaner>();
+        services.AddSingleton<ICleaner, MacUserCachesCleaner>();
+        services.AddSingleton<ICleaner, XdgCacheCleaner>();
+        services.AddSingleton<ICleaner, JournalLogCleaner>();
 
         // System package managers
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
             "apt", "APT cache", "apt-get", ["clean"], requiresElevation: true,
             env => env.IsLinux,
             _ => [new CleanupPath("/var/cache/apt/archives", DeleteMode.ClearContents)]));
+
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
             "dnf", "DNF cache", "dnf", ["clean", "all"], requiresElevation: true,
             env => env.IsLinux));
+
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
             "pacman", "Pacman cache", "pacman", ["-Sc", "--noconfirm"], requiresElevation: true,
             env => env.IsLinux));
+
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
             "brew", "Homebrew cache", "brew", ["cleanup", "-s"], requiresElevation: false,
             env => env.IsMacOs || env.IsLinux,
@@ -147,16 +148,18 @@ internal static class ServiceCollectionExtensions
                     ? Path.Combine(ctx.Environment.HomeDirectory, "Library", "Caches", "Homebrew")
                     : Path.Combine(ctx.Environment.CacheDirectory, "Homebrew"), DeleteMode.ClearContents),
             ]));
+
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
             "scoop", "Scoop cache", "scoop", ["cache", "rm", "*"], requiresElevation: false,
             env => env.IsWindows,
             ctx => [new CleanupPath(ctx.Environment.HomePath("scoop", "cache"), DeleteMode.ClearContents)]));
+
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
             "choco", "Chocolatey cache", "choco", ["cache", "remove"], requiresElevation: true,
             env => env.IsWindows,
             ctx => [new CleanupPath(Path.Combine(ctx.Environment.TempDirectory, "chocolatey"), DeleteMode.ClearContents)]));
 
         // Applications
-        services.AddSingleton<ICleaner>(_ => new SteamCleaner());
+        services.AddSingleton<ICleaner, SteamCleaner>();
     }
 }

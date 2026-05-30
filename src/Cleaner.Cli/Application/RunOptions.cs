@@ -1,4 +1,4 @@
-namespace Cleaner.Cli;
+namespace Cleaner.Cli.Application;
 
 /// <summary>Per-invocation options shared by the scan/clean/interactive flows.</summary>
 public sealed record RunOptions
