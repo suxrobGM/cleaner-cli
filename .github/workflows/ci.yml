@@ -9,9 +9,6 @@ on:
 jobs:
   build-test:
     name: Build & test (${{ matrix.os }})
-    concurrency:
-      group: ci
-      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
