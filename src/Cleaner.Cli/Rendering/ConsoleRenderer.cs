@@ -111,23 +111,26 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             .Title("Select what to [green]clean[/]:")
             .PageSize(20)
             .MoreChoicesText("[grey](move up/down to reveal more)[/]")
-            .InstructionsText("[grey](space to toggle, enter to confirm)[/]");
+            .InstructionsText("[grey](space to toggle, enter to confirm — toggle [bold]All cleaners[/] to select everything)[/]");
 
+        // Nest every category under a single "All cleaners" node. In the default Leaf selection mode,
+        // toggling a parent cascades to its descendants while only leaf cleaners are returned, so this
+        // gives the user a one-keystroke "select all" (and per-category) shortcut for free.
         var labels = new Dictionary<string, ICleaner>(StringComparer.Ordinal);
+        var all = prompt.AddChoice("All cleaners");
+
         foreach (var category in choosable.Select(c => c.Category).Distinct(StringComparer.Ordinal))
         {
-            var items = new List<string>();
+            var group = all.AddChild(category);
             foreach (var cleaner in choosable.Where(c => string.Equals(c.Category, category, StringComparison.Ordinal)))
             {
                 labels[cleaner.Name] = cleaner;
-                items.Add(cleaner.Name);
+                group.AddChild(cleaner.Name);
             }
-
-            prompt.AddChoiceGroup(category, items);
         }
 
         var picked = console.Prompt(prompt);
-        return picked.Select(p => labels[p]).ToList();
+        return picked.Where(labels.ContainsKey).Select(p => labels[p]).ToList();
     }
 
     public Task<T> StatusAsync<T>(string status, Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken) =>
@@ -149,9 +152,9 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     ctx.Status($"Scanning [green]{cleaner.Name.EscapeMarkup()}[/]…");
-                    rows.Add(new ScanRow(cleaner, await scan(cleaner).ConfigureAwait(false)));
+                    rows.Add(new ScanRow(cleaner, await scan(cleaner)));
                 }
-            }).ConfigureAwait(false);
+            });
 
         return rows;
     }
@@ -175,12 +178,12 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     task.Description = $"Cleaning [green]{cleaner.Name.EscapeMarkup()}[/]";
-                    results.Add(new CleanRow(cleaner, await clean(cleaner).ConfigureAwait(false)));
+                    results.Add(new CleanRow(cleaner, await clean(cleaner)));
                     task.Increment(1);
                 }
 
                 task.Description = "Done";
-            }).ConfigureAwait(false);
+            });
 
         return results;
     }
@@ -199,7 +202,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             {
                 var task = ctx.AddTask(description, maxValue: 1.0);
                 var progress = new Progress<double>(value => task.Value = value);
-                await work(progress, cancellationToken).ConfigureAwait(false);
+                await work(progress, cancellationToken);
                 task.Value = 1.0;
             });
 

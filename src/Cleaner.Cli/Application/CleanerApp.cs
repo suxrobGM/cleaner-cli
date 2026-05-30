@@ -69,8 +69,7 @@ public sealed class CleanerApp(
         UpdateCheckResult check;
         try
         {
-            check = await renderer.StatusAsync("Checking for updates…", updateService.CheckAsync, cancellationToken)
-                .ConfigureAwait(false);
+            check = await renderer.StatusAsync("Checking for updates…", updateService.CheckAsync, cancellationToken);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -123,7 +122,7 @@ public sealed class CleanerApp(
             await renderer.DownloadAsync(
                 "Downloading update",
                 (progress, ct) => updateService.ApplyAsync(check, progress, ct),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken);
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or IOException)
         {
@@ -145,8 +144,7 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        var rows = await renderer.ScanAsync(applicable, c => c.ScanAsync(context, cancellationToken), cancellationToken)
-            .ConfigureAwait(false);
+        var rows = await renderer.ScanAsync(applicable, c => c.ScanAsync(context, cancellationToken), cancellationToken);
         renderer.SizeTable(rows, "Reclaimable");
         return 0;
     }
@@ -173,7 +171,7 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        return await RunCleanFlowAsync(selected, options, cancellationToken).ConfigureAwait(false);
+        return await RunCleanFlowAsync(selected, options, cancellationToken);
     }
 
     private async Task<int> RunCleanFlowAsync(IReadOnlyList<ICleaner> cleaners, RunOptions options, CancellationToken cancellationToken)
@@ -189,8 +187,7 @@ public sealed class CleanerApp(
         var runnable = applicable.Where(c => !c.RequiresElevation || environment.IsElevated).ToList();
         var blocked = applicable.Where(c => c.RequiresElevation && !environment.IsElevated).ToList();
 
-        var rows = await renderer.ScanAsync(runnable, c => c.ScanAsync(context, cancellationToken), cancellationToken)
-            .ConfigureAwait(false);
+        var rows = await renderer.ScanAsync(runnable, c => c.ScanAsync(context, cancellationToken), cancellationToken);
         renderer.SizeTable(rows, options.DryRun ? "Would free" : "Reclaimable");
 
         if (blocked.Count > 0)
@@ -225,8 +222,7 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        var results = await renderer.CleanAsync(actionable, c => c.CleanAsync(context, progress: null, cancellationToken), cancellationToken)
-            .ConfigureAwait(false);
+        var results = await renderer.CleanAsync(actionable, c => c.CleanAsync(context, progress: null, cancellationToken), cancellationToken);
         renderer.CleanSummary(results);
         return results.Any(r => r.Result.HasErrors) ? 1 : 0;
     }
