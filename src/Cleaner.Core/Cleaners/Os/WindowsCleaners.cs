@@ -103,3 +103,91 @@ public sealed class DeliveryOptimizationCleaner : WindowsCleanerBase
             DeleteMode.ClearContents);
     }
 }
+
+/// <summary>Windows servicing and component logs (CBS, DISM, WindowsUpdate). Needs elevation.</summary>
+public sealed class WindowsLogCleaner : WindowsCleanerBase
+{
+    public override string Id => "windows-logs";
+
+    public override string Name => "Windows system logs";
+
+    public override bool RequiresElevation => true;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var windows = context.Environment.WindowsDirectory;
+        if (windows is not null)
+        {
+            yield return new CleanupPath(Path.Combine(windows, "Logs"), DeleteMode.ClearContents);
+        }
+    }
+}
+
+/// <summary>Temp directories of the built-in service accounts (LocalService, NetworkService). Needs elevation.</summary>
+public sealed class ServiceProfileTempCleaner : WindowsCleanerBase
+{
+    private static readonly string[] ServiceAccounts = ["LocalService", "NetworkService"];
+
+    public override string Id => "service-temp";
+
+    public override string Name => "Service account temp";
+
+    public override bool RequiresElevation => true;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var windows = context.Environment.WindowsDirectory;
+        if (windows is null)
+        {
+            yield break;
+        }
+
+        foreach (var account in ServiceAccounts)
+        {
+            yield return new CleanupPath(
+                Path.Combine(windows, "ServiceProfiles", account, "AppData", "Local", "Temp"),
+                DeleteMode.ClearContents,
+                account);
+        }
+    }
+}
+
+/// <summary>Leftover downloaded installers and ActiveX/Java applet caches. Needs elevation.</summary>
+public sealed class DownloadedProgramFilesCleaner : WindowsCleanerBase
+{
+    public override string Id => "downloaded-program-files";
+
+    public override string Name => "Downloaded program files";
+
+    public override bool RequiresElevation => true;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var windows = context.Environment.WindowsDirectory;
+        if (windows is not null)
+        {
+            yield return new CleanupPath(Path.Combine(windows, "Downloaded Program Files"), DeleteMode.ClearContents, "ActiveX/Java applets");
+            yield return new CleanupPath(Path.Combine(windows, "Downloaded Installations"), DeleteMode.ClearContents, "installers");
+        }
+    }
+}
+
+/// <summary>System crash memory dumps (kernel minidumps, live kernel reports). Needs elevation.</summary>
+public sealed class SystemMemoryDumpCleaner : WindowsCleanerBase
+{
+    public override string Id => "memory-dumps";
+
+    public override string Name => "System memory dumps";
+
+    public override bool RequiresElevation => true;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var windows = context.Environment.WindowsDirectory;
+        if (windows is not null)
+        {
+            yield return new CleanupPath(Path.Combine(windows, "Minidump"), DeleteMode.ClearContents, "minidumps");
+            yield return new CleanupPath(Path.Combine(windows, "LiveKernelReports"), DeleteMode.ClearContents, "live kernel reports");
+        }
+    }
+}

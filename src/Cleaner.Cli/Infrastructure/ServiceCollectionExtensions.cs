@@ -121,6 +121,10 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, ThumbnailCacheCleaner>();
         services.AddSingleton<ICleaner, CrashDumpCleaner>();
         services.AddSingleton<ICleaner, DeliveryOptimizationCleaner>();
+        services.AddSingleton<ICleaner, WindowsLogCleaner>();
+        services.AddSingleton<ICleaner, ServiceProfileTempCleaner>();
+        services.AddSingleton<ICleaner, DownloadedProgramFilesCleaner>();
+        services.AddSingleton<ICleaner, SystemMemoryDumpCleaner>();
         services.AddSingleton<ICleaner, MacUserCachesCleaner>();
         services.AddSingleton<ICleaner, XdgCacheCleaner>();
         services.AddSingleton<ICleaner, JournalLogCleaner>();

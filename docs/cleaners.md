@@ -122,6 +122,10 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | `browser-cache` | Chrome/Edge/Firefox HTTP and code caches. | Keeps history/cookies/profiles. |
 | `windows-update` | `SoftwareDistribution\Download`. | Windows · needs admin |
 | `windows-temp` | The machine-wide `Windows\Temp`. | Windows · needs admin |
+| `windows-logs` | `Windows\Logs` (CBS, DISM, WindowsUpdate servicing logs). | Windows · needs admin |
+| `service-temp` | Temp dirs of the `LocalService` / `NetworkService` accounts. | Windows · needs admin |
+| `downloaded-program-files` | `Windows\Downloaded Program Files` and `Downloaded Installations`. | Windows · needs admin |
+| `memory-dumps` | Kernel crash dumps (`Windows\Minidump`, `LiveKernelReports`). | Windows · needs admin |
 | `thumbnails` | Explorer thumbnail/icon cache. | Windows |
 | `crash-dumps` | Crash dumps and Windows Error Reporting queues. | Windows |
 | `delivery-optimization` | Delivery Optimization download cache. | Windows · needs admin |

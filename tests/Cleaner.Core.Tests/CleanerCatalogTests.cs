@@ -49,6 +49,39 @@ public sealed class CleanerCatalogTests
     }
 
     [Fact]
+    public async Task WindowsLogCleaner_clears_the_servicing_logs()
+    {
+        const string windows = @"C:\Windows";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{windows}\Logs\CBS\CBS.log", 4_000)
+            .AddFile($@"{windows}\Logs\DISM\dism.log", 1_000)
+            .AddFile($@"{windows}\System32\kernel32.dll", 9_999); // not a target
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, WindowsDirectory = windows };
+
+        var cleaner = new WindowsLogCleaner();
+        var result = await cleaner.CleanAsync(TestContext.Create(fs, env));
+
+        Assert.True(cleaner.RequiresElevation);
+        Assert.Equal(5_000, result.BytesFreed);
+        Assert.True(fs.FileExists($@"{windows}\System32\kernel32.dll")); // system files untouched
+        Assert.False(fs.FileExists($@"{windows}\Logs\CBS\CBS.log"));
+    }
+
+    [Fact]
+    public async Task ServiceProfileTempCleaner_clears_both_service_accounts()
+    {
+        const string windows = @"C:\Windows";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{windows}\ServiceProfiles\LocalService\AppData\Local\Temp\a.tmp", 100)
+            .AddFile($@"{windows}\ServiceProfiles\NetworkService\AppData\Local\Temp\b.tmp", 200);
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, WindowsDirectory = windows };
+
+        var result = await new ServiceProfileTempCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(300, result.TotalBytes);
+    }
+
+    [Fact]
     public async Task BuildArtifactCleaner_collects_matches_without_descending()
     {
         var fs = new FakeFileSystem()
