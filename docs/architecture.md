@@ -72,14 +72,11 @@ makes any regression fail CI. `dotnet publish -r <rid>` must produce zero trim/A
 
 ## Resilience & logging
 
-A run never lets one bad cleaner take down the whole process. `CleanerRunner` (Core) wraps every
-per-cleaner scan/clean: an unexpected exception becomes a reported error result plus a log entry, and
-the run continues; only cancellation propagates. `CleanerApp` orchestrates through these wrappers so
-the renderer stays a pure drawing component. Logging goes through the `IAppLogger` abstraction
-(Core, no logging-framework dependency), implemented in the CLI by `SerilogAppLogger` — a code-only
-(AOT-safe) Serilog config writing a rolling file to `~/.cleaner/logs/cleaner.log`. `Program.cs`
-installs last-resort `AppDomain`/`TaskScheduler` handlers and a top-level catch so even an unexpected
-crash is recorded with its log path shown to the user.
+`CleanerRunner` wraps every per-cleaner scan/clean: an unexpected exception becomes a reported error
+plus a log entry instead of aborting the run (only cancellation propagates). Logging goes through the
+`IAppLogger` abstraction (Core), implemented in the CLI by `SerilogAppLogger` — a code-only, AOT-safe
+Serilog config writing `~/.cleaner/logs/cleaner.log`. `Program.cs` adds last-resort
+`AppDomain`/`TaskScheduler` handlers so even a crash is logged.
 
 ## Distribution
 

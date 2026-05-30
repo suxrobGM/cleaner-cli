@@ -91,14 +91,10 @@ shell to include them.
 
 ## Logs
 
-Cleaner writes a rolling log to **`~/.cleaner/logs/cleaner.log`** (e.g.
-`C:\Users\<you>\.cleaner\logs\cleaner.log` on Windows). It records each run plus any errors, and
-captures the stack trace if the app ever crashes — so you can see what went wrong after the fact.
-Files roll at 5 MB and the last 5 are kept.
+Cleaner logs each run, plus any errors and crashes, to **`~/.cleaner/logs/cleaner.log`**.
 
-A run is **resilient**: if a single cleaner fails unexpectedly, it's reported in the summary (and
-the full error goes to the log) while every other cleaner still runs to completion. When any cleaner
-reports an error, Cleaner prints the log path so you know where to look.
+If one cleaner fails, the rest still run — the failure shows in the summary and the log path is
+printed so you can see the details.
 
 ## Project-local cleaners
 
