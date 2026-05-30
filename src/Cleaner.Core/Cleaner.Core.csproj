@@ -3,6 +3,7 @@
   <PropertyGroup>
     <RootNamespace>Cleaner.Core</RootNamespace>
     <AssemblyName>Cleaner.Core</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
