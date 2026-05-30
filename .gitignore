@@ -37,5 +37,8 @@ packages/
 .DS_Store
 Thumbs.db
 
+## Tooling scratch
+.playwright-mcp/
+
 ## Local Claude Code overrides (personal, not shared)
 .claude/settings.local.json
