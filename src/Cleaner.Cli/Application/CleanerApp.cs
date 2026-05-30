@@ -154,7 +154,7 @@ public sealed class CleanerApp(
 
     public async Task<int> InteractiveAsync(RunOptions options, CancellationToken cancellationToken)
     {
-        renderer.InteractiveHeader();
+        renderer.InteractiveHeader(updateService.CurrentVersion);
 
         var context = contextFactory.Create(options);
         var choosable = registry.All.Where(c => c.IsApplicable(context)).ToList();

@@ -12,8 +12,8 @@ public interface IConsoleRenderer
     /// <summary>Write a single line of Spectre markup.</summary>
     void Line(string markup);
 
-    /// <summary>The figlet banner and tagline shown when the interactive menu opens.</summary>
-    void InteractiveHeader();
+    /// <summary>The figlet banner, version, and tagline shown when the interactive menu opens.</summary>
+    void InteractiveHeader(string version);
 
     /// <summary>Render the <c>list</c> table of cleaners, grouped by category, plus the footer count.</summary>
     void CleanerList(IReadOnlyList<CleanerListEntry> entries, int categoryCount);

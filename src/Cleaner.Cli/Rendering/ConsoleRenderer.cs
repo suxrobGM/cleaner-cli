@@ -9,10 +9,10 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 {
     public void Line(string markup) => console.MarkupLine(markup);
 
-    public void InteractiveHeader()
+    public void InteractiveHeader(string version)
     {
         console.Write(new FigletText("Cleaner").Color(Color.Teal));
-        console.MarkupLine("[grey]Reclaim disk space from dev, OS, and app caches.[/]");
+        console.MarkupLine($"[grey]Reclaim disk space from dev, OS, and app caches.[/] [dim]v{version.EscapeMarkup()}[/]");
         console.WriteLine();
     }
 
