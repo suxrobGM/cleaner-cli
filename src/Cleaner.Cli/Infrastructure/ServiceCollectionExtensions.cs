@@ -1,5 +1,8 @@
 using Cleaner.Core.Abstractions;
+using Cleaner.Core.Cleaners.Applications;
+using Cleaner.Core.Cleaners.Base;
 using Cleaner.Core.Cleaners.DevTools;
+using Cleaner.Core.Cleaners.Os;
 using Cleaner.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
@@ -105,5 +108,50 @@ internal static class ServiceCollectionExtensions
 
         // Project-local
         services.AddSingleton<ICleaner>(_ => new BuildArtifactCleaner());
+
+        // Operating system
+        services.AddSingleton<ICleaner>(_ => new UserTempCleaner());
+        services.AddSingleton<ICleaner>(_ => new TrashCleaner());
+        services.AddSingleton<ICleaner>(_ => new BrowserCacheCleaner());
+        services.AddSingleton<ICleaner>(_ => new WindowsUpdateCacheCleaner());
+        services.AddSingleton<ICleaner>(_ => new WindowsTempCleaner());
+        services.AddSingleton<ICleaner>(_ => new ThumbnailCacheCleaner());
+        services.AddSingleton<ICleaner>(_ => new CrashDumpCleaner());
+        services.AddSingleton<ICleaner>(_ => new DeliveryOptimizationCleaner());
+        services.AddSingleton<ICleaner>(_ => new MacUserCachesCleaner());
+        services.AddSingleton<ICleaner>(_ => new XdgCacheCleaner());
+        services.AddSingleton<ICleaner>(_ => new JournalLogCleaner());
+
+        // System package managers
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "apt", "APT cache", "apt-get", ["clean"], requiresElevation: true,
+            env => env.IsLinux,
+            _ => [new CleanupPath("/var/cache/apt/archives", DeleteMode.ClearContents)]));
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "dnf", "DNF cache", "dnf", ["clean", "all"], requiresElevation: true,
+            env => env.IsLinux));
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "pacman", "Pacman cache", "pacman", ["-Sc", "--noconfirm"], requiresElevation: true,
+            env => env.IsLinux));
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "brew", "Homebrew cache", "brew", ["cleanup", "-s"], requiresElevation: false,
+            env => env.IsMacOs || env.IsLinux,
+            ctx =>
+            [
+                new CleanupPath(ctx.Environment.IsMacOs
+                    ? Path.Combine(ctx.Environment.HomeDirectory, "Library", "Caches", "Homebrew")
+                    : Path.Combine(ctx.Environment.CacheDirectory, "Homebrew"), DeleteMode.ClearContents),
+            ]));
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "scoop", "Scoop cache", "scoop", ["cache", "rm", "*"], requiresElevation: false,
+            env => env.IsWindows,
+            ctx => [new CleanupPath(ctx.Environment.HomePath("scoop", "cache"), DeleteMode.ClearContents)]));
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "choco", "Chocolatey cache", "choco", ["cache", "remove"], requiresElevation: true,
+            env => env.IsWindows,
+            ctx => [new CleanupPath(Path.Combine(ctx.Environment.TempDirectory, "chocolatey"), DeleteMode.ClearContents)]));
+
+        // Applications
+        services.AddSingleton<ICleaner>(_ => new SteamCleaner());
     }
 }

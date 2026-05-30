@@ -8,7 +8,7 @@ public sealed class GoCleaner : ProcessCleanerBase
 {
     public override string Id => "go";
 
-    public override string Name => "Go module &amp; build cache";
+    public override string Name => "Go module & build cache";
 
     public override string Category => Categories.Go;
 
