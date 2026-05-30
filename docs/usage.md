@@ -89,6 +89,17 @@ and some system package managers) need administrator/root privileges. When not e
 lists them as **needs admin** and skips them during a run with a clear note — re-run from an elevated
 shell to include them.
 
+## Logs
+
+Cleaner writes a rolling log to **`~/.cleaner/logs/cleaner.log`** (e.g.
+`C:\Users\<you>\.cleaner\logs\cleaner.log` on Windows). It records each run plus any errors, and
+captures the stack trace if the app ever crashes — so you can see what went wrong after the fact.
+Files roll at 5 MB and the last 5 are kept.
+
+A run is **resilient**: if a single cleaner fails unexpectedly, it's reported in the summary (and
+the full error goes to the log) while every other cleaner still runs to completion. When any cleaner
+reports an error, Cleaner prints the log path so you know where to look.
+
 ## Project-local cleaners
 
 The `build-artifacts` cleaner and a few others act on a directory rather than a global cache. Point

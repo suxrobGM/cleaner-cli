@@ -70,6 +70,17 @@ choices keep it warning-free:
 `IsAotCompatible=true` runs the trim/AOT analyzers during every build, and `TreatWarningsAsErrors`
 makes any regression fail CI. `dotnet publish -r <rid>` must produce zero trim/AOT warnings.
 
+## Resilience & logging
+
+A run never lets one bad cleaner take down the whole process. `CleanerRunner` (Core) wraps every
+per-cleaner scan/clean: an unexpected exception becomes a reported error result plus a log entry, and
+the run continues; only cancellation propagates. `CleanerApp` orchestrates through these wrappers so
+the renderer stays a pure drawing component. Logging goes through the `IAppLogger` abstraction
+(Core, no logging-framework dependency), implemented in the CLI by `SerilogAppLogger` — a code-only
+(AOT-safe) Serilog config writing a rolling file to `~/.cleaner/logs/cleaner.log`. `Program.cs`
+installs last-resort `AppDomain`/`TaskScheduler` handlers and a top-level catch so even an unexpected
+crash is recorded with its log path shown to the user.
+
 ## Distribution
 
 Distribution is **Native AOT binaries per RID** (GitHub Releases, built by `release.yml`). Each

@@ -61,6 +61,8 @@ public sealed partial class EnvironmentService : IEnvironmentService
     public string? WindowsDirectory =>
         IsWindows ? Environment.GetFolderPath(Environment.SpecialFolder.Windows, Environment.SpecialFolderOption.DoNotVerify) : null;
 
+    public string LogDirectory => HomePath(".cleaner", "logs");
+
     public string? GetEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name);
 
     public string HomePath(params string[] segments) => Path.Combine([HomeDirectory, .. segments]);

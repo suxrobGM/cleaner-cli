@@ -21,6 +21,7 @@ internal static class ServiceCollectionExtensions
     public static IServiceCollection AddCleaner(this IServiceCollection services)
     {
         services.AddSingleton<IAnsiConsole>(_ => AnsiConsole.Console);
+        services.AddSingleton<IAppLogger, SerilogAppLogger>();
         services.AddSingleton<IEnvironmentService, EnvironmentService>();
         services.AddSingleton<IFileSystemService, FileSystemService>();
         services.AddSingleton<IProcessRunner, ProcessRunner>(_ => new ProcessRunner());

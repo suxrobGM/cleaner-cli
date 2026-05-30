@@ -47,6 +47,9 @@ public interface IEnvironmentService
     /// <summary>The Windows directory (%SystemRoot%), or null on non-Windows.</summary>
     string? WindowsDirectory { get; }
 
+    /// <summary>Directory where Cleaner writes its own log files: <c>~/.cleaner/logs</c>.</summary>
+    string LogDirectory { get; }
+
     string? GetEnvironmentVariable(string name);
 
     /// <summary>Combine path segments under the user's home directory.</summary>

@@ -29,6 +29,8 @@ public sealed class FakeEnvironment : IEnvironmentService
 
     public string? WindowsDirectory { get; set; }
 
+    public string LogDirectory { get; set; } = "/home/test/.cleaner/logs";
+
     public string? GetEnvironmentVariable(string name) => _vars.GetValueOrDefault(name);
 
     public FakeEnvironment SetVariable(string name, string value)

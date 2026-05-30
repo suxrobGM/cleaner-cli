@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Cleaner.Cli.Rendering;
 using Cleaner.Core.Abstractions;
+using Cleaner.Core.Cleaners;
 using Cleaner.Core.Services;
 using Cleaner.Core.Utils;
 using Spectre.Console;
@@ -16,7 +17,8 @@ public sealed class CleanerApp(
     IConsoleRenderer renderer,
     IEnvironmentService environment,
     CleanupContextFactory contextFactory,
-    IUpdateService updateService)
+    IUpdateService updateService,
+    IAppLogger logger)
 {
     /// <summary>Resolve a selection from ids/category/all. Unknown ids are returned separately.</summary>
     public IReadOnlyList<ICleaner> Resolve(
@@ -144,7 +146,7 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        var rows = await renderer.ScanAsync(applicable, c => c.ScanAsync(context, cancellationToken), cancellationToken);
+        var rows = await renderer.ScanAsync(applicable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken);
         renderer.SizeTable(rows, "Reclaimable");
         return 0;
     }
@@ -187,7 +189,11 @@ public sealed class CleanerApp(
         var runnable = applicable.Where(c => !c.RequiresElevation || environment.IsElevated).ToList();
         var blocked = applicable.Where(c => c.RequiresElevation && !environment.IsElevated).ToList();
 
-        var rows = await renderer.ScanAsync(runnable, c => c.ScanAsync(context, cancellationToken), cancellationToken);
+        logger.Info(
+            $"Clean run starting - {runnable.Count} cleaner(s): {string.Join(", ", runnable.Select(c => c.Id))}" +
+            $" (dry-run: {options.DryRun}, force: {options.Force}).");
+
+        var rows = await renderer.ScanAsync(runnable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken);
         renderer.SizeTable(rows, options.DryRun ? "Would free" : "Reclaimable");
 
         if (blocked.Count > 0)
@@ -222,10 +228,26 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        var results = await renderer.CleanAsync(actionable, c => c.CleanAsync(context, progress: null, cancellationToken), cancellationToken);
+        var results = await renderer.CleanAsync(actionable, c => SafeCleanAsync(c, context, cancellationToken), cancellationToken);
         renderer.CleanSummary(results);
-        return results.Any(r => r.Result.HasErrors) ? 1 : 0;
+
+        var freed = results.Sum(r => r.Result.BytesFreed);
+        var failed = results.Count(r => r.Result.HasErrors);
+        logger.Info($"Clean run finished - freed {SizeFormatter.Humanize(freed)}, {failed} cleaner(s) reported errors.");
+
+        if (failed > 0)
+        {
+            renderer.Line($"[grey]Details written to the log: {logger.LogFilePath.EscapeMarkup()}[/]");
+        }
+
+        return failed > 0 ? 1 : 0;
     }
+
+    private Task<ScanResult> SafeScanAsync(ICleaner cleaner, CleanupContext context, CancellationToken cancellationToken) =>
+        CleanerRunner.SafeScanAsync(cleaner, context, logger, cancellationToken);
+
+    private Task<CleanResult> SafeCleanAsync(ICleaner cleaner, CleanupContext context, CancellationToken cancellationToken) =>
+        CleanerRunner.SafeCleanAsync(cleaner, context, logger, cancellationToken);
 
     private CleanerStatus StatusOf(ICleaner cleaner, CleanupContext context)
     {
