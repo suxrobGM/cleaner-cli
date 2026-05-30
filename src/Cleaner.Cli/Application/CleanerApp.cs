@@ -166,14 +166,32 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        var selected = renderer.PromptSelection(choosable);
-        if (selected.Count == 0)
+        // Keep the menu open after each run so finishing a clean returns to the
+        // selection instead of exiting the app. Exit only when the user asks to.
+        var exitCode = 0;
+        while (!cancellationToken.IsCancellationRequested)
         {
-            renderer.Line("[grey]Nothing selected.[/]");
-            return 0;
+            var selected = renderer.PromptSelection(choosable);
+            if (selected.Count == 0)
+            {
+                renderer.Line("[grey]Nothing selected.[/]");
+            }
+            else
+            {
+                exitCode = await RunCleanFlowAsync(selected, options, cancellationToken);
+            }
+
+            renderer.Line(string.Empty);
+            if (!renderer.Confirm("Return to the menu?", defaultValue: true))
+            {
+                renderer.Line("[grey]Goodbye.[/]");
+                break;
+            }
+
+            renderer.Line(string.Empty);
         }
 
-        return await RunCleanFlowAsync(selected, options, cancellationToken);
+        return exitCode;
     }
 
     private async Task<int> RunCleanFlowAsync(IReadOnlyList<ICleaner> cleaners, RunOptions options, CancellationToken cancellationToken)
