@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Cleaner.Core.Services;
+namespace Cleaner.Core.Utils;
 
 /// <summary>Formats byte counts as human-readable sizes (binary units). No external dependency.</summary>
 public static class SizeFormatter
