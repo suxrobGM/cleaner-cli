@@ -11,14 +11,21 @@
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
+  <!-- Single source of truth for the product version. Bump per release; the pushed git tag
+       (vX.Y.Z) must match. IncludeSourceRevision... strips the +<gitHash> so version is clean. -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
   <!-- Repository metadata shared by all packable projects. -->
   <PropertyGroup>
     <Product>Cleaner</Product>
     <Authors>Sukhrob Ilyosbekov</Authors>
     <Company>Cleaner</Company>
     <Copyright>Copyright (c) Sukhrob Ilyosbekov</Copyright>
-    <PackageProjectUrl>https://github.com/suxrobgm/cleaner</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/suxrobgm/cleaner</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/suxrobGM/cleanup-utility</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/suxrobGM/cleanup-utility</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>

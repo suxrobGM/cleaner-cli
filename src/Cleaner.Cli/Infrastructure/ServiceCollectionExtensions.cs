@@ -21,6 +21,10 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IEnvironmentService>(_ => new EnvironmentService());
         services.AddSingleton<IFileSystemService>(_ => new FileSystemService());
         services.AddSingleton<IProcessRunner>(_ => new ProcessRunner());
+        services.AddSingleton<IGitHubReleaseClient>(_ => new GitHubReleaseClient());
+        services.AddSingleton<IUpdateService>(sp => new UpdateService(
+            sp.GetRequiredService<IGitHubReleaseClient>(),
+            sp.GetRequiredService<IEnvironmentService>()));
 
         services.AddCleaners();
 
@@ -30,7 +34,8 @@ internal static class ServiceCollectionExtensions
             sp.GetRequiredService<IAnsiConsole>(),
             sp.GetRequiredService<IEnvironmentService>(),
             sp.GetRequiredService<IFileSystemService>(),
-            sp.GetRequiredService<IProcessRunner>()));
+            sp.GetRequiredService<IProcessRunner>(),
+            sp.GetRequiredService<IUpdateService>()));
 
         return services;
     }

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Services;
 using Cleaner.Core.Utils;
@@ -14,7 +15,8 @@ public sealed class CleanerApp(
     IAnsiConsole console,
     IEnvironmentService environment,
     IFileSystemService fileSystem,
-    IProcessRunner processRunner)
+    IProcessRunner processRunner,
+    IUpdateService updateService)
 {
     private sealed record ScanRow(ICleaner Cleaner, ScanResult Result);
 
@@ -87,6 +89,88 @@ public sealed class CleanerApp(
 
         console.Write(table);
         console.MarkupLine($"[grey]{registry.All.Count} cleaners across {registry.Categories.Count} categories.[/]");
+        return 0;
+    }
+
+    public async Task<int> UpdateAsync(bool checkOnly, bool assumeYes, CancellationToken cancellationToken)
+    {
+        UpdateCheckResult check;
+        try
+        {
+            check = await console.Status()
+                .Spinner(Spinner.Known.Dots)
+                .StartAsync("Checking for updates…", _ => updateService.CheckAsync(cancellationToken))
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            console.MarkupLine($"[red]Could not reach the update server:[/] {ex.Message.EscapeMarkup()}");
+            return 1;
+        }
+
+        console.MarkupLine($"Current version: [bold]{check.CurrentVersion.EscapeMarkup()}[/]");
+
+        if (!check.IsUpdateAvailable || check.LatestVersion is null)
+        {
+            var latest = check.LatestVersion ?? check.CurrentVersion;
+            console.MarkupLine($"[green]You're on the latest version ({latest.EscapeMarkup()}).[/]");
+            return 0;
+        }
+
+        console.MarkupLine($"Latest version:  [bold green]{check.LatestVersion.EscapeMarkup()}[/]");
+        if (check.ReleaseUrl is { Length: > 0 } url)
+        {
+            console.MarkupLine($"[grey]Release notes: {url.EscapeMarkup()}[/]");
+        }
+
+        if (checkOnly)
+        {
+            console.MarkupLine("[grey]Run 'cleaner update' to install it.[/]");
+            return 0;
+        }
+
+        if (check.Asset is null)
+        {
+            console.MarkupLine(
+                $"[yellow]No prebuilt binary is available for this platform ({RuntimeInformation.RuntimeIdentifier.EscapeMarkup()}).[/]");
+            if (check.ReleaseUrl is { Length: > 0 } releaseUrl)
+            {
+                console.MarkupLine($"[grey]Download it manually from {releaseUrl.EscapeMarkup()}[/]");
+            }
+
+            return 1;
+        }
+
+        if (!assumeYes &&
+            !console.Confirm($"Update from [bold]{check.CurrentVersion.EscapeMarkup()}[/] to [bold green]{check.LatestVersion.EscapeMarkup()}[/]?"))
+        {
+            console.MarkupLine("[grey]Cancelled.[/]");
+            return 0;
+        }
+
+        try
+        {
+            await console.Progress()
+                .Columns(
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn(),
+                    new PercentageColumn(),
+                    new SpinnerColumn())
+                .StartAsync(async ctx =>
+                {
+                    var task = ctx.AddTask("Downloading update", maxValue: 1.0);
+                    var progress = new Progress<double>(value => task.Value = value);
+                    await updateService.ApplyAsync(check, progress, cancellationToken).ConfigureAwait(false);
+                    task.Value = 1.0;
+                }).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or IOException)
+        {
+            console.MarkupLine($"[red]Update failed:[/] {ex.Message.EscapeMarkup()}");
+            return 1;
+        }
+
+        console.MarkupLine($"[green]Updated to {check.LatestVersion.EscapeMarkup()}.[/] Relaunching…");
         return 0;
     }
 

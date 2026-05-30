@@ -9,6 +9,9 @@ services.AddCleaner();
 using var provider = services.BuildServiceProvider();
 var app = provider.GetRequiredService<CleanerApp>();
 
+// Remove any leftover binary backup from a previous self-update (Windows renames the old exe aside).
+provider.GetRequiredService<Cleaner.Core.Services.IUpdateService>().CleanupStaleBackup();
+
 // Shared options/arguments.
 var idsArgument = new Argument<string[]>("cleaners")
 {
@@ -79,9 +82,18 @@ cleanCommand.SetAction((result, ct) =>
         ? app.CleanAsync(selected, BuildOptions(result), ct)
         : Task.FromResult(1));
 
+// update
+var checkOption = new Option<bool>("--check") { Description = "Only check for a newer release; don't download or install." };
+var updateCommand = new Command("update", "Check for a newer release and install it.")
+{
+    checkOption, yesOption,
+};
+updateCommand.SetAction((result, ct) =>
+    app.UpdateAsync(result.GetValue(checkOption), result.GetValue(yesOption), ct));
+
 var root = new RootCommand("Cleaner — reclaim disk space by clearing dev, OS, and app caches.")
 {
-    listCommand, scanCommand, cleanCommand,
+    listCommand, scanCommand, cleanCommand, updateCommand,
 };
 
 // Default (no subcommand) → interactive menu.

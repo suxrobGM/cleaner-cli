@@ -54,6 +54,35 @@ cleaner clean --category "IDEs / editors"
 
 You can find cleaner ids with `cleaner list`.
 
+## `cleaner --version`
+
+Prints the installed version and exits. No network access.
+
+```bash
+cleaner --version          # e.g. 1.0.0
+```
+
+## `cleaner update`
+
+Checks GitHub for a newer release and, on confirmation, installs it. Cleaner only contacts the
+network when you run this command — never on a normal run.
+
+```bash
+cleaner update             # check, then prompt to download & install
+cleaner update --check     # only report current vs. latest; install nothing
+cleaner update --yes       # update without the confirmation prompt
+```
+
+`update` downloads the prebuilt binary for your platform, replaces the running `cleaner` executable
+in place, and relaunches it to confirm the new version. On Windows the previous binary is briefly
+kept as `cleaner.exe.old` and removed automatically on the next run.
+
+> **Notes.** Auto-update reads the latest **published** GitHub release (the release workflow
+> publishes automatically when a `v*` tag is pushed; draft releases are ignored). If `cleaner` lives
+> in a write-protected location (e.g. `Program Files`), re-run the update from an elevated shell so it
+> can replace the binary. Builds installed via `dotnet tool install` update with
+> `dotnet tool update -g Cleaner.Tool` instead.
+
 ## Elevation
 
 Some OS cleaners (Windows Update cache, system temp, Delivery Optimization, the systemd journal,
