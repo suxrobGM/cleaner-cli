@@ -176,7 +176,11 @@ public sealed class CleanerApp(
         }
 
         var total = rows.Sum(r => r.Result.TotalBytes);
-        if (total == 0)
+
+        // Process-backed cleaners (e.g. docker, conda) can't be pre-measured but are still actionable
+        // when their tool is present. Keep them in the run set even when the measured total is 0.
+        var actionable = runnable.Where(c => c.IsAvailable(context)).ToList();
+        if (total == 0 && actionable.Count == 0)
         {
             console.MarkupLine("[green]Nothing to reclaim — already clean.[/]");
             return 0;
@@ -188,14 +192,16 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        if (!options.AssumeYes &&
-            !console.Confirm($"Delete [bold]{SizeFormatter.Humanize(total)}[/] across {rows.Count(r => r.Result.TotalBytes > 0)} cleaner(s)?", defaultValue: false))
+        var prompt = total > 0
+            ? $"Delete [bold]{SizeFormatter.Humanize(total)}[/] across {actionable.Count} cleaner(s)?"
+            : $"Run {actionable.Count} cleaner(s)? (size is reported after running)";
+        if (!options.AssumeYes && !console.Confirm(prompt, defaultValue: false))
         {
             console.MarkupLine("[grey]Cancelled.[/]");
             return 0;
         }
 
-        var results = await RunCleansAsync(runnable, context, cancellationToken).ConfigureAwait(false);
+        var results = await RunCleansAsync(actionable, context, cancellationToken).ConfigureAwait(false);
         RenderCleanSummary(results);
         return results.Any(r => r.Result.HasErrors) ? 1 : 0;
     }

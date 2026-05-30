@@ -1,0 +1,124 @@
+using Cleaner.Core.Abstractions;
+using Cleaner.Core.Cleaners.Base;
+
+namespace Cleaner.Core.Cleaners.DevTools;
+
+/// <summary>npm package cache. Prefers <c>npm cache clean --force</c>.</summary>
+public sealed class NpmCleaner : ProcessCleanerBase
+{
+    public override string Id => "npm";
+
+    public override string Name => "npm cache";
+
+    public override string Category => Categories.JavaScript;
+
+    protected override string Executable => "npm";
+
+    protected override IReadOnlyList<string> CleanArguments => ["cache", "clean", "--force"];
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return env.IsWindows
+            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "npm-cache", "_cacache"))
+            : new CleanupPath(env.HomePath(".npm", "_cacache"));
+    }
+}
+
+/// <summary>npx execution cache (npm's <c>_npx</c> directory).</summary>
+public sealed class NpxCleaner : DirectoryCleanerBase
+{
+    public override string Id => "npx";
+
+    public override string Name => "npx cache";
+
+    public override string Category => Categories.JavaScript;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return env.IsWindows
+            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "npm-cache", "_npx"))
+            : new CleanupPath(env.HomePath(".npm", "_npx"));
+    }
+}
+
+/// <summary>Yarn cache. Prefers <c>yarn cache clean</c>.</summary>
+public sealed class YarnCleaner : ProcessCleanerBase
+{
+    public override string Id => "yarn";
+
+    public override string Name => "Yarn cache";
+
+    public override string Category => Categories.JavaScript;
+
+    protected override string Executable => "yarn";
+
+    protected override IReadOnlyList<string> CleanArguments => ["cache", "clean"];
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return env.IsWindows
+            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "Yarn", "Cache"))
+            : new CleanupPath(Path.Combine(env.CacheDirectory, "yarn"));
+    }
+}
+
+/// <summary>pnpm content-addressable store. Prefers <c>pnpm store prune</c>.</summary>
+public sealed class PnpmCleaner : ProcessCleanerBase
+{
+    public override string Id => "pnpm";
+
+    public override string Name => "pnpm store";
+
+    public override string Category => Categories.JavaScript;
+
+    protected override string Executable => "pnpm";
+
+    protected override IReadOnlyList<string> CleanArguments => ["store", "prune"];
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return env.IsWindows
+            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "pnpm", "store"))
+            : new CleanupPath(Path.Combine(env.HomeDirectory, ".local", "share", "pnpm", "store"));
+    }
+}
+
+/// <summary>Bun install cache (covers bunx).</summary>
+public sealed class BunCleaner : DirectoryCleanerBase
+{
+    public override string Id => "bun";
+
+    public override string Name => "Bun cache";
+
+    public override string Category => Categories.JavaScript;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
+        [new CleanupPath(context.Environment.HomePath(".bun", "install", "cache"))];
+}
+
+/// <summary>Deno module and dependency cache.</summary>
+public sealed class DenoCleaner : DirectoryCleanerBase
+{
+    public override string Id => "deno";
+
+    public override string Name => "Deno cache";
+
+    public override string Category => Categories.JavaScript;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        var denoDir = env.GetEnvironmentVariable("DENO_DIR");
+        if (!string.IsNullOrWhiteSpace(denoDir))
+        {
+            yield return new CleanupPath(denoDir, DeleteMode.ClearContents);
+            yield break;
+        }
+
+        yield return new CleanupPath(OsPaths.AppCache(env, "deno", "deno", "deno"), DeleteMode.ClearContents);
+    }
+}
