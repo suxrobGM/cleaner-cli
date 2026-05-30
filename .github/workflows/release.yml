@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: [ 'v*' ]
+    tags: ["v*"]
 
 permissions:
   contents: write
@@ -14,21 +14,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { rid: win-x64,     os: windows-latest }
-          - { rid: win-arm64,   os: windows-latest }
-          - { rid: osx-x64,     os: macos-latest }
-          - { rid: osx-arm64,   os: macos-latest }
-          - { rid: linux-x64,   os: ubuntu-latest }
+          - { rid: win-x64, os: windows-latest }
+          - { rid: win-arm64, os: windows-latest }
+          - { rid: osx-x64, os: macos-latest }
+          - { rid: osx-arm64, os: macos-latest }
+          - { rid: linux-x64, os: ubuntu-latest }
           # Cross-compiled from x64: point ILC's symbol-stripping step at the cross objcopy,
           # otherwise the host (x86_64) objcopy can't read the arm64 ELF it just linked.
-          - { rid: linux-arm64, os: ubuntu-latest, publishArgs: '-p:ObjCopyName=aarch64-linux-gnu-objcopy' }
+          - {
+              rid: linux-arm64,
+              os: ubuntu-latest,
+              publishArgs: "-p:ObjCopyName=aarch64-linux-gnu-objcopy",
+            }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       # Native AOT on Linux needs clang/zlib; cross-compiling to arm64 needs the cross toolchain.
       - name: Install AOT prerequisites (Linux)
@@ -54,7 +58,7 @@ jobs:
             tar -czf "../../${name}.tar.gz" cleaner
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cleaner-${{ matrix.rid }}
           path: cleaner-*.*
@@ -67,13 +71,37 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
 
-      - uses: softprops/action-gh-release@v2
+      # Pull the section for this tag out of CHANGELOG.md to use as the release body.
+      # Falls back to auto-generated notes when the version has no changelog entry.
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          notes_file="${RUNNER_TEMP}/release-notes.md"
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" { capture = 1; next }
+            capture && /^## \[/ { exit }
+            capture { print }
+          ' CHANGELOG.md | sed '/./,$!d' > "$notes_file"
+          if [ -s "$notes_file" ]; then
+            echo "fallback=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No CHANGELOG entry found for $version; using auto-generated notes." >&2
+            echo "fallback=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "path=$notes_file" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v3
         with:
           draft: false
-          generate_release_notes: true
+          body_path: ${{ steps.notes.outputs.path }}
+          generate_release_notes: ${{ steps.notes.outputs.fallback }}
           files: dist/*

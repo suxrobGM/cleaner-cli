@@ -11,6 +11,10 @@ publish/
 [Dd]ebug/
 [Rr]elease/
 x64/
+# The build-output rules above also match unrelated folders named release/ —
+# keep the Claude skills tracked.
+!.claude/skills/release/
+!.claude/skills/release/**
 x86/
 [Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
