@@ -1,3 +1,4 @@
+using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Applications;
 using Cleaner.Core.Cleaners.DevTools;
 using Cleaner.Core.Cleaners.Os;
@@ -148,5 +149,254 @@ public sealed class CleanerCatalogTests
         Assert.Contains(paths, p => p.EndsWith("bin"));
         Assert.Contains(paths, p => p.EndsWith("obj"));
         Assert.Contains(paths, p => p.EndsWith("node_modules"));
+    }
+
+    [Fact]
+    public async Task BuildArtifactCleaner_sweeps_every_scan_root()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/r1/proj/node_modules/pkg/index.js", 100)
+            .AddFile("/r2/app/dist/bundle.js", 200)
+            .AddFile("/r2/app/keep.txt", 1);
+        var context = new CleanupContext
+        {
+            FileSystem = fs,
+            Environment = new FakeEnvironment(),
+            ProcessRunner = new FakeProcessRunner(),
+            ScanRoots = ["/r1", "/r2"],
+        };
+
+        var result = await new BuildArtifactCleaner().ScanAsync(context);
+
+        Assert.Equal(300, result.TotalBytes);
+        var paths = result.Targets.Select(t => t.Path).ToList();
+        Assert.Contains(paths, p => p.EndsWith("node_modules"));
+        Assert.Contains(paths, p => p.EndsWith("dist"));
+    }
+
+    [Fact]
+    public async Task MlCacheCleaner_clears_huggingface_and_torch_under_dot_cache()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/home/test/.cache/huggingface/hub/model.bin", 8_000)
+            .AddFile("/home/test/.cache/torch/hub/weights.pt", 2_000)
+            .AddFile("/home/test/.cache/keep/other.txt", 99); // unrelated cache — must survive
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new MlCacheCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(10_000, result.BytesFreed);
+        Assert.True(fs.FileExists("/home/test/.cache/keep/other.txt"));
+    }
+
+    [Fact]
+    public async Task MlCacheCleaner_honors_HF_HOME_override()
+    {
+        var fs = new FakeFileSystem().AddFile("/data/hf/hub/model.bin", 5_000);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux }
+            .SetVariable("HF_HOME", "/data/hf");
+
+        var result = await new MlCacheCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(5_000, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task VcpkgCleaner_clears_downloads_and_archives_on_windows()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{local}\vcpkg\downloads\tool.zip", 1_000)
+            .AddFile($@"{local}\vcpkg\archives\pkg.zip", 2_000)
+            .AddFile($@"{local}\vcpkg\installed\lib.a", 9_999); // built packages — must survive
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
+
+        var result = await new VcpkgCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(3_000, result.BytesFreed);
+        Assert.True(fs.FileExists($@"{local}\vcpkg\installed\lib.a"));
+    }
+
+    [Fact]
+    public async Task SpotifyCleaner_clears_caches_but_not_user_data()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{local}\Spotify\Storage\a.file", 4_000)
+            .AddFile($@"{local}\Spotify\Data\b.file", 2_000)
+            .AddFile($@"{local}\Spotify\Users\prefs", 50); // settings — must survive
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
+
+        var result = await new SpotifyCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(6_000, result.BytesFreed);
+        Assert.True(fs.FileExists($@"{local}\Spotify\Users\prefs"));
+    }
+
+    [Fact]
+    public async Task KonanCleaner_clears_cache_dependencies_and_prebuilt_distributions()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/home/test/.konan/cache/x.bin", 1_000)
+            .AddFile("/home/test/.konan/dependencies/llvm/y.bin", 2_000)
+            .AddFile("/home/test/.konan/kotlin-native-prebuilt-linux-x86_64-2.0.0/bin/konanc", 5_000);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new KonanCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(8_000, result.TotalBytes); // cache + dependencies + downloaded compiler
+    }
+
+    [Fact]
+    public async Task AzureFunctionsToolsCleaner_clears_release_feeds()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem().AddFile($@"{local}\AzureFunctionsTools\Releases\4.0\func.exe", 7_000);
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
+
+        var result = await new AzureFunctionsToolsCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(7_000, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task DotslashCleaner_clears_windows_cache()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem().AddFile($@"{local}\dotslash\bin\x", 1_500);
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
+
+        var result = await new DotslashCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(1_500, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task ElectronAppCacheCleaner_now_clears_claude()
+    {
+        const string roaming = @"C:\Users\test\AppData\Roaming";
+        var fs = new FakeFileSystem()
+            .AddFile($@"{roaming}\Claude\Cache\a.bin", 12_000)
+            .AddFile($@"{roaming}\Claude\config.json", 42); // config — must survive
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, AppDataDirectory = roaming };
+
+        var result = await new ElectronAppCacheCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(12_000, result.BytesFreed);
+        Assert.True(fs.FileExists($@"{roaming}\Claude\config.json"));
+    }
+
+    [Fact]
+    public async Task GpuShaderCacheCleaner_includes_nvidia_nv_cache()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem().AddFile($@"{local}\NVIDIA\NV_Cache\shader.bin", 3_000);
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
+
+        var result = await new GpuShaderCacheCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(3_000, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task BrowserAutomationCleaner_covers_dot_cache_puppeteer_on_windows()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem().AddFile(@"C:\Users\test\.cache\puppeteer\chrome\x", 2_500);
+        var env = new FakeEnvironment
+        {
+            Os = OsPlatform.Windows,
+            HomeDirectory = @"C:\Users\test",
+            LocalAppDataDirectory = local,
+        };
+
+        var result = await new BrowserAutomationCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(2_500, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task UnityCleaner_clears_project_artifacts_only_inside_unity_projects()
+    {
+        var fs = new FakeFileSystem()
+            // A real Unity project: has Assets + ProjectSettings.
+            .AddFile("/projects/GameA/Assets/Scene.unity", 10)
+            .AddFile("/projects/GameA/ProjectSettings/ProjectVersion.txt", 10)
+            .AddFile("/projects/GameA/Library/artifacts/a.bin", 5_000)
+            .AddFile("/projects/GameA/Temp/b.tmp", 200)
+            .AddFile("/projects/GameA/Logs/c.log", 50)
+            // Not a Unity project (no ProjectSettings) but has a Library — must survive.
+            .AddFile("/projects/NotUnity/Library/big.bin", 9_999);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+        var context = new CleanupContext
+        {
+            FileSystem = fs,
+            Environment = env,
+            ProcessRunner = new FakeProcessRunner(),
+            ScanRoots = ["/projects"],
+        };
+
+        var result = await new UnityCleaner().CleanAsync(context);
+
+        Assert.Equal(5_250, result.BytesFreed); // Library + Temp + Logs of GameA
+        Assert.True(fs.FileExists("/projects/NotUnity/Library/big.bin"));
+        Assert.True(fs.FileExists("/projects/GameA/Assets/Scene.unity")); // assets untouched
+    }
+
+    [Fact]
+    public async Task UnityCleaner_clears_global_editor_cache_on_windows()
+    {
+        const string local = @"C:\Users\test\AppData\Local";
+        var fs = new FakeFileSystem().AddFile($@"{local}\Unity\cache\GiCache\x.bin", 4_000);
+        var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local, HomeDirectory = @"C:\Users\test" };
+        var context = new CleanupContext
+        {
+            FileSystem = fs,
+            Environment = env,
+            ProcessRunner = new FakeProcessRunner(),
+            ScanRoots = [@"C:\does-not-exist"],
+        };
+
+        var result = await new UnityCleaner().ScanAsync(context);
+
+        Assert.Equal(4_000, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task DockerCleaner_safe_run_prunes_system_and_build_cache()
+    {
+        var runner = new FakeProcessRunner().WithAvailable("docker");
+        var context = new CleanupContext
+        {
+            FileSystem = new FakeFileSystem(),
+            Environment = new FakeEnvironment(),
+            ProcessRunner = runner,
+            Force = false,
+        };
+
+        await new DockerCleaner().CleanAsync(context);
+
+        Assert.Equal(2, runner.Invocations.Count);
+        Assert.Equal(["system", "prune", "--force"], runner.Invocations[0].Arguments);
+        Assert.Equal(["builder", "prune", "--all", "--force"], runner.Invocations[1].Arguments);
+    }
+
+    [Fact]
+    public async Task DockerCleaner_force_run_also_removes_images_and_volumes()
+    {
+        var runner = new FakeProcessRunner().WithAvailable("docker");
+        var context = new CleanupContext
+        {
+            FileSystem = new FakeFileSystem(),
+            Environment = new FakeEnvironment(),
+            ProcessRunner = runner,
+            Force = true,
+        };
+
+        await new DockerCleaner().CleanAsync(context);
+
+        Assert.Equal(2, runner.Invocations.Count);
+        Assert.Equal(["system", "prune", "-a", "--volumes", "--force"], runner.Invocations[0].Arguments);
+        Assert.Equal(["builder", "prune", "--all", "--force"], runner.Invocations[1].Arguments);
     }
 }
