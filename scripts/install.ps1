@@ -18,10 +18,16 @@ $Headers = @{ 'User-Agent' = 'cleaner-installer'; 'Accept' = 'application/vnd.gi
 function Write-Info($message) { Write-Host $message -ForegroundColor Cyan }
 
 # 1. Detect architecture -> runtime identifier (e.g. win-x64, win-arm64).
-$arch = switch ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture) {
-    'X64'   { 'x64' }
-    'Arm64' { 'arm64' }
-    default { throw "Unsupported architecture: $_" }
+# Read the architecture from the env vars Windows always populates rather than
+# [RuntimeInformation]::OSArchitecture: that property was added in .NET Framework 4.7.1, and on an
+# older host PowerShell returns $null for the missing member (no error, even under -ErrorAction Stop),
+# so the switch fell through to "Unsupported architecture:" with an empty value. PROCESSOR_ARCHITEW6432
+# is set when a 32-bit process runs on 64-bit Windows and reports the true OS architecture.
+$archRaw = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+$arch = switch ($archRaw) {
+    'AMD64' { 'x64' }
+    'ARM64' { 'arm64' }
+    default { throw "Unsupported architecture: '$archRaw'. Cleaner ships win-x64 and win-arm64 builds; see https://github.com/$Repo/releases" }
 }
 $rid = "win-$arch"
 Write-Info "Detected platform: $rid"
