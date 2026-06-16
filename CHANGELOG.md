@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-06-16
+
+### Fixed
+
+- `build-artifacts` (and any cleaner deleting cache directories) no longer hangs on trees that
+  contain symlinks or junctions — e.g. `node_modules` from pnpm/yarn workspaces. The read-only
+  pre-walk that blocked deletion now skips reparse points and only runs on the rare delete that
+  actually fails, so large sweeps complete quickly instead of stalling.
+- More reliable CPU architecture detection in the Windows installer (`install.ps1`).
+
 ## [1.0.3] - 2026-06-16
 
 ### Added
@@ -57,7 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `list`, `scan`, `clean`, `update`, and interactive menu commands.
 - Self-update command with version reporting in the interactive banner.
 
-[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.0...v1.0.1
