@@ -11,4 +11,7 @@ public sealed record RunOptions
     public bool AssumeYes { get; init; }
 
     public string WorkingDirectory { get; init; } = Environment.CurrentDirectory;
+
+    /// <summary>Roots (<c>--path</c>) for workspace-sweeping cleaners; empty falls back to cwd.</summary>
+    public IReadOnlyList<string> ScanRoots { get; init; } = [];
 }

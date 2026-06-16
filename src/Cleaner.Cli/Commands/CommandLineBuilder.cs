@@ -23,7 +23,12 @@ public sealed class CommandLineBuilder(CleanerApp app, IConsoleRenderer renderer
     private readonly Option<bool> dryRunOption = new("--dry-run", "-n") { Description = "Preview reclaimable space without deleting." };
     private readonly Option<bool> yesOption = new("--yes", "-y") { Description = "Skip the confirmation prompt." };
     private readonly Option<bool> forceOption = new("--force", "-f") { Description = "Include targets that are otherwise treated cautiously." };
-    private readonly Option<string?> pathOption = new("--path", "-p") { Description = "Base directory for project-local cleaners (defaults to cwd)." };
+    private readonly Option<string[]> pathOption = new("--path", "-p")
+    {
+        Description = "Directory for project-local cleaners; repeat to sweep several workspaces (defaults to cwd).",
+        AllowMultipleArgumentsPerToken = true,
+    };
+
     private readonly Option<bool> checkOption = new("--check") { Description = "Only check for a newer release; don't download or install." };
 
     public RootCommand Build()
@@ -66,13 +71,20 @@ public sealed class CommandLineBuilder(CleanerApp app, IConsoleRenderer renderer
         return root;
     }
 
-    private RunOptions BuildOptions(ParseResult result) => new()
+    private RunOptions BuildOptions(ParseResult result)
     {
-        DryRun = result.GetValue(dryRunOption),
-        Force = result.GetValue(forceOption),
-        AssumeYes = result.GetValue(yesOption),
-        WorkingDirectory = result.GetValue(pathOption) is { Length: > 0 } p ? p : Environment.CurrentDirectory,
-    };
+        // One --path flag, repeatable: the first is the primary working dir for single-directory
+        // project-local cleaners; all of them are the roots the workspace sweepers recurse into.
+        var paths = result.GetValue(pathOption) ?? [];
+        return new RunOptions
+        {
+            DryRun = result.GetValue(dryRunOption),
+            Force = result.GetValue(forceOption),
+            AssumeYes = result.GetValue(yesOption),
+            WorkingDirectory = paths is { Length: > 0 } ? paths[0] : Environment.CurrentDirectory,
+            ScanRoots = paths,
+        };
+    }
 
     private bool TryResolve(ParseResult result, out IReadOnlyList<ICleaner> selected)
     {

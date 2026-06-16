@@ -22,4 +22,16 @@ public sealed class CleanupContext
 
     /// <summary>Base directory for project-local sweeps (bin/obj, node_modules, ...). Defaults to cwd.</summary>
     public string WorkingDirectory { get; init; } = System.Environment.CurrentDirectory;
+
+    /// <summary>
+    /// Roots that workspace-sweeping cleaners (build artifacts, Unity projects) recurse into. Set via
+    /// <c>--path</c>; when none are given it falls back to <see cref="WorkingDirectory"/>.
+    /// </summary>
+    public IReadOnlyList<string> ScanRoots
+    {
+        get => _scanRoots is { Count: > 0 } ? _scanRoots : [WorkingDirectory];
+        init => _scanRoots = value;
+    }
+
+    private readonly IReadOnlyList<string>? _scanRoots;
 }

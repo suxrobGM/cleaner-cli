@@ -16,6 +16,12 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
     /// <summary>Arguments passed to <see cref="Executable"/> to perform the cleanup.</summary>
     protected abstract IReadOnlyList<string> CleanArguments { get; }
 
+    /// <summary>
+    /// The command(s) to run, in order. Defaults to a single invocation with <see cref="CleanArguments"/>;
+    /// override to issue several commands or to vary them by context (e.g. honoring <c>--force</c>).
+    /// </summary>
+    protected virtual IEnumerable<IReadOnlyList<string>> CommandSequence(CleanupContext context) => [CleanArguments];
+
     public override bool IsAvailable(CleanupContext context) =>
         context.ProcessRunner.Exists(Executable) || base.IsAvailable(context);
 
@@ -31,18 +37,21 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
         }
 
         var before = TotalSize(context);
-        var result = await context.ProcessRunner
-            .RunAsync(Executable, CleanArguments, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (!result.Success)
+        foreach (var arguments in CommandSequence(context))
         {
-            // The command failed — fall back to direct deletion so the user still gets results.
-            var fallback = await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
-            var error = string.IsNullOrWhiteSpace(result.StandardError)
-                ? $"{Executable} exited with code {result.ExitCode}"
-                : result.StandardError.Trim();
-            return fallback with { Errors = [.. fallback.Errors, $"{Executable}: {error}"] };
+            var result = await context.ProcessRunner
+                .RunAsync(Executable, arguments, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!result.Success)
+            {
+                // A command failed — fall back to direct deletion so the user still gets results.
+                var fallback = await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
+                var error = string.IsNullOrWhiteSpace(result.StandardError)
+                    ? $"{Executable} exited with code {result.ExitCode}"
+                    : result.StandardError.Trim();
+                return fallback with { Errors = [.. fallback.Errors, $"{Executable}: {error}"] };
+            }
         }
 
         var after = TotalSize(context);

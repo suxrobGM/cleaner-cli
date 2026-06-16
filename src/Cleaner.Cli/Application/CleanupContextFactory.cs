@@ -17,5 +17,6 @@ public sealed class CleanupContextFactory(
         DryRun = options.DryRun,
         Force = options.Force,
         WorkingDirectory = options.WorkingDirectory,
+        ScanRoots = options.ScanRoots,
     };
 }
