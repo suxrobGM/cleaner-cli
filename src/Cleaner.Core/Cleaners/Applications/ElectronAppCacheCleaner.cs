@@ -6,8 +6,8 @@ namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
 /// Clears the Chromium HTTP/GPU/shader caches of common Electron desktop apps (Discord, Slack,
-/// Microsoft Teams). Each app stores its data under a per-OS root; we only touch the cache
-/// subdirectories (see <see cref="ChromiumCache"/>) and never config, logs, or local storage.
+/// Microsoft Teams, Claude, and more). Each app stores its data under a per-OS root; we only touch
+/// the cache subdirectories (see <see cref="ChromiumCache"/>) and never config, logs, or local storage.
 /// </summary>
 public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
 {
@@ -17,11 +17,19 @@ public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
         ("Discord", ["discord"]),
         ("Slack", ["Slack"]),
         ("Microsoft Teams", ["Microsoft", "Teams"]),
+        ("Claude", ["Claude"]),
+        ("MongoDB Compass", ["MongoDB Compass"]),
+        ("Postman", ["Postman"]),
+        ("Notion", ["Notion"]),
+        ("Obsidian", ["obsidian"]),
+        ("Figma", ["Figma"]),
+        ("Signal", ["Signal"]),
+        ("GitHub Desktop", ["GitHub Desktop"]),
     ];
 
     public override string Id => "electron-app-cache";
 
-    public override string Name => "Electron app caches (Discord/Slack/Teams)";
+    public override string Name => "Electron app caches (Discord/Slack/Teams/Claude/…)";
 
     public override string Category => Categories.Applications;
 
