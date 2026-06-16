@@ -104,8 +104,17 @@ public sealed class FileSystemService : IFileSystemService
             return;
         }
 
-        ClearReadOnlyAttributes(path);
-        Directory.Delete(path, recursive: true);
+        try
+        {
+            Directory.Delete(path, recursive: true);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            // Read-only files (e.g. NuGet caches) block delete on Windows. Clearing them walks the
+            // whole tree, so only do it on the rare delete that fails, then retry.
+            ClearReadOnlyAttributes(path);
+            Directory.Delete(path, recursive: true);
+        }
     }
 
     public void DeleteFile(string path)
@@ -160,10 +169,14 @@ public sealed class FileSystemService : IFileSystemService
 
     private static void ClearReadOnlyAttributes(string directory)
     {
-        // Read-only files (common in package caches) block recursive delete on Windows.
         try
         {
-            var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true };
+            var options = new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                IgnoreInaccessible = true,
+                AttributesToSkip = FileAttributes.ReparsePoint, // don't follow symlinks/junctions
+            };
             foreach (var file in Directory.EnumerateFiles(directory, "*", options))
             {
                 TryClearReadOnly(file);
