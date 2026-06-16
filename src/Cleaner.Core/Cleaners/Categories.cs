@@ -9,6 +9,8 @@ public static class Categories
     public const string Rust = "Rust";
     public const string Go = "Go";
     public const string Jvm = "JVM / Android";
+    public const string MachineLearning = "Machine learning";
+    public const string GameDev = "Game development";
     public const string Mobile = "Mobile (React Native / Expo)";
     public const string Languages = "Other languages";
     public const string BuildCaches = "Build / monorepo caches";

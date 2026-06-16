@@ -73,10 +73,14 @@ internal static class ServiceCollectionExtensions
         // Go
         services.AddSingleton<ICleaner, GoCleaner>();
 
+        // Machine learning
+        services.AddSingleton<ICleaner, MlCacheCleaner>();
+
         // JVM / Android
         services.AddSingleton<ICleaner, GradleCleaner>();
         services.AddSingleton<ICleaner, MavenCleaner>();
         services.AddSingleton<ICleaner, SbtIvyCleaner>();
+        services.AddSingleton<ICleaner, KonanCleaner>();
         services.AddSingleton<ICleaner, AndroidSdkCleaner>();
 
         // Mobile (React Native / Expo)
@@ -88,6 +92,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, ComposerCleaner>();
         services.AddSingleton<ICleaner, PubCleaner>();
         services.AddSingleton<ICleaner, HexMixCleaner>();
+        services.AddSingleton<ICleaner, VcpkgCleaner>();
         services.AddSingleton<ICleaner, CabalStackCleaner>();
 
         // Build / monorepo caches
@@ -109,6 +114,8 @@ internal static class ServiceCollectionExtensions
         // Tooling downloads
         services.AddSingleton<ICleaner, BrowserAutomationCleaner>();
         services.AddSingleton<ICleaner, ElectronCacheCleaner>();
+        services.AddSingleton<ICleaner, AzureFunctionsToolsCleaner>();
+        services.AddSingleton<ICleaner, DotslashCleaner>();
 
         // Project-local
         services.AddSingleton<ICleaner, BuildArtifactCleaner>();
@@ -167,8 +174,12 @@ internal static class ServiceCollectionExtensions
             env => env.IsWindows,
             ctx => [new CleanupPath(Path.Combine(ctx.Environment.TempDirectory, "chocolatey"), DeleteMode.ClearContents)]));
 
+        // Game development
+        services.AddSingleton<ICleaner, UnityCleaner>();
+
         // Applications
         services.AddSingleton<ICleaner, SteamCleaner>();
         services.AddSingleton<ICleaner, ElectronAppCacheCleaner>();
+        services.AddSingleton<ICleaner, SpotifyCleaner>();
     }
 }
