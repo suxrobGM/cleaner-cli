@@ -1,10 +1,14 @@
 # Cleaners
 
-Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your machine. Use the
+Cleaner ships with 70+ cleaners. Run `cleaner list` to see which apply to your machine. Use the
 **id** with `cleaner clean <id>` / `cleaner scan <id>`.
 
 > Cleaners only ever remove caches, temp files, and rebuildable artifacts — never source, configs,
 > credentials, installed games, or save data.
+
+Workspace-sweeping cleaners (`build-artifacts`, `unity`) take the `--path`/`-p <dir>` option, which
+can be repeated to scan several workspaces at once, e.g.
+`cleaner clean build-artifacts unity -p ~/source -p ~/work`. It defaults to the current directory.
 
 ## Package managers (.NET)
 
@@ -49,6 +53,12 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | --- | --- |
 | `go` | Module and build caches (`go clean -cache -modcache`). |
 
+## Machine learning
+
+| Id | Removes |
+| --- | --- |
+| `ml-cache` | HuggingFace hub/datasets and Torch hub caches under `~/.cache` (honors `HF_HOME`/`TRANSFORMERS_CACHE`/`TORCH_HOME`). Leaves installed model registries like `~/.ollama/models` alone. |
+
 ## JVM / Android
 
 | Id | Removes |
@@ -56,6 +66,7 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | `gradle` | Gradle caches. |
 | `maven` | Maven local repository. |
 | `sbt` | sbt / Ivy resolution caches. |
+| `konan` | Kotlin/Native compiler caches, toolchain dependencies, and auto-downloaded compiler distributions (`~/.konan`). |
 | `android` | Android SDK and build caches (keeps installed SDKs and AVDs). |
 
 ## Mobile (React Native / Expo)
@@ -73,6 +84,7 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | `composer` | PHP Composer cache. |
 | `pub` | Dart/Flutter pub cache (hosted, git, temp). |
 | `hex` | Elixir Hex packages and Mix archives. |
+| `vcpkg` | vcpkg download and binary-archive caches (C/C++). |
 | `haskell` | cabal packages and stack pantry. |
 
 ## Build / monorepo caches
@@ -88,7 +100,7 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 
 | Id | Removes |
 | --- | --- |
-| `docker` | Dangling images, stopped containers, unused networks, build cache (`docker system prune`). |
+| `docker` | Dangling images, stopped containers, unused networks, and **all** unused build cache (`docker system prune` + `docker builder prune -a`). With `--force` also removes every unused image and **named volume** (`docker system prune -a --volumes`) — that can delete data such as database volumes. On Docker Desktop/WSL2 this frees space inside the virtual disk; compact the `.vhdx` separately to shrink the host file. |
 | `terraform` | Terraform provider plugin cache. |
 
 ## IDEs / editors
@@ -104,14 +116,16 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 
 | Id | Removes |
 | --- | --- |
-| `browser-automation` | Playwright, Puppeteer, and Cypress browser downloads. |
+| `browser-automation` | Playwright, Puppeteer, and Cypress browser downloads (incl. the `~/.cache` locations they use even on Windows/macOS). |
 | `electron` | Electron and electron-builder download caches. |
+| `azure-functions` | Azure Functions Core Tools downloaded runtime feeds. |
+| `dotslash` | DotSlash fetched-executable cache. |
 
 ## Project-local
 
 | Id | Removes |
 | --- | --- |
-| `build-artifacts` | `bin`, `obj`, `node_modules`, `target`, `dist`, `.next`, `.gradle` under `--path`. |
+| `build-artifacts` | `bin`, `obj`, `node_modules`, `target`, `dist`, `.next`, `.gradle` under each `--path` (default cwd). Repeat `-p` to sweep whole workspaces. |
 
 ## Operating system
 
@@ -126,7 +140,7 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | `service-temp` | Temp dirs of the `LocalService` / `NetworkService` accounts. | Windows · needs admin |
 | `downloaded-program-files` | `Windows\Downloaded Program Files` and `Downloaded Installations`. | Windows · needs admin |
 | `memory-dumps` | Kernel crash dumps (`Windows\Minidump`, `LiveKernelReports`). | Windows · needs admin |
-| `gpu-shader-cache` | GPU shader caches (`D3DSCache`, NVIDIA/AMD/Intel). | Windows |
+| `gpu-shader-cache` | GPU shader caches (`D3DSCache`, NVIDIA `DXCache`/`GLCache`/`NV_Cache`, AMD, Intel). | Windows |
 | `inet-cache` | WinINet "Temporary Internet Files" (`...\Windows\INetCache`). | Windows |
 | `store-app-cache` | Microsoft Store / UWP per-package caches (`AC\INetCache`, `AC\Temp`, `TempState`). | Windows |
 | `thumbnails` | Explorer thumbnail/icon cache. | Windows |
@@ -147,9 +161,16 @@ Cleaner ships with 60+ cleaners. Run `cleaner list` to see which apply to your m
 | `scoop` | Scoop download cache (`scoop cache rm *`). | Windows |
 | `choco` | Chocolatey cache (`choco cache remove`). | Windows · needs admin |
 
+## Game development
+
+| Id | Removes |
+| --- | --- |
+| `unity` | Unity global editor cache plus regenerable per-project `Library`/`Temp`/`Logs`/`obj` for Unity projects found under each `--path`. Detection-gated (needs `Assets` + `ProjectSettings`); keeps `Assets`, player builds, and the Asset Store cache. |
+
 ## Applications
 
 | Id | Removes |
 | --- | --- |
 | `steam` | Steam shader/download/web caches, logs, dumps. **Never** touches installed games or saves. |
-| `electron-app-cache` | Chromium HTTP/GPU/shader caches of Discord, Slack, and Microsoft Teams. Keeps config and local storage. |
+| `electron-app-cache` | Chromium HTTP/GPU/shader caches of common Electron apps (Discord, Slack, Teams, Claude, MongoDB Compass, Postman, Notion, Obsidian, Figma, Signal, GitHub Desktop). Keeps config and local storage. |
+| `spotify` | Spotify offline media and data caches. Keeps settings and login state. |
