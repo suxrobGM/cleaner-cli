@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
@@ -224,6 +225,141 @@ public sealed class InetCacheCleaner : WindowsCleanerBase
         yield return new CleanupPath(
             Path.Combine(context.Environment.LocalAppDataDirectory, "Microsoft", "Windows", "INetCache"),
             DeleteMode.ClearContents);
+    }
+}
+
+/// <summary>
+/// GPU driver installer leftovers: the extraction folders NVIDIA/AMD/Intel installers drop at the
+/// drive root and NVIDIA's download cache. Never touches DriverStore, Installer2 (needed for driver
+/// repair/uninstall), or any installed driver files. Shader caches are covered by gpu-shader-cache.
+/// </summary>
+public sealed class GpuInstallerLeftoverCleaner : WindowsCleanerBase
+{
+    public override string Id => "gpu-installers";
+
+    public override string Name => "GPU driver installer leftovers";
+
+    public override bool RequiresElevation => true;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        var windows = env.WindowsDirectory;
+        if (windows is null)
+        {
+            yield break;
+        }
+
+        var root = Path.GetPathRoot(windows) ?? @"C:\";
+        yield return new CleanupPath(Path.Combine(root, "NVIDIA"), Description: "NVIDIA installer extraction");
+        yield return new CleanupPath(Path.Combine(root, "AMD"), Description: "AMD installer extraction");
+        yield return new CleanupPath(Path.Combine(root, "Intel"), Description: "Intel installer extraction");
+
+        var programData = OsPaths.Env(env, "ProgramData") ?? Path.Combine(root, "ProgramData");
+        yield return new CleanupPath(
+            Path.Combine(programData, "NVIDIA Corporation", "Downloader"),
+            DeleteMode.ClearContents,
+            "NVIDIA driver downloads");
+    }
+}
+
+/// <summary>
+/// Windows component store (WinSxS) cleanup via <c>DISM /StartComponentCleanup</c> — removes
+/// superseded component versions. Deliberately no <c>/ResetBase</c>, which would prevent
+/// uninstalling updates. Slow (minutes) but the largest legitimate Windows reclaim.
+/// </summary>
+public sealed class WinSxSCleaner : ProcessCleanerBase
+{
+    public override string Id => "winsxs";
+
+    public override string Name => "Windows component store (WinSxS)";
+
+    public override string Category => Categories.OperatingSystem;
+
+    public override bool RequiresElevation => true;
+
+    public override bool SupportsSizeEstimate => false;
+
+    public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
+
+    protected override string Executable => "dism";
+
+    protected override IReadOnlyList<string> CleanArguments =>
+        ["/Online", "/Cleanup-Image", "/StartComponentCleanup"];
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
+}
+
+/// <summary>
+/// The previous Windows installation left behind by an upgrade. Scans always report its size, but
+/// deleting it removes the ability to roll back the upgrade, so cleaning requires <c>--force</c>.
+/// Files are owned by TrustedInstaller, so ownership is taken (on this directory only) before deletion.
+/// </summary>
+public sealed class WindowsOldCleaner : WindowsCleanerBase
+{
+    public override string Id => "windows-old";
+
+    public override string Name => "Windows.old (previous installation)";
+
+    public override bool RequiresElevation => true;
+
+    public override bool RequiresForce => true;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var windows = context.Environment.WindowsDirectory;
+        if (windows is not null)
+        {
+            var root = Path.GetPathRoot(windows) ?? @"C:\";
+            yield return new CleanupPath(Path.Combine(root, "Windows.old"));
+        }
+    }
+
+    public override async Task<CleanResult> CleanAsync(
+        CleanupContext context,
+        IProgress<CleanProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!context.DryRun)
+        {
+            // TrustedInstaller/SYSTEM own most of the tree; a plain recursive delete gets access
+            // denied. Take ownership and grant Administrators full control — on this path only.
+            foreach (var path in ExistingTargets(context))
+            {
+                await context.ProcessRunner
+                    .RunAsync("takeown", ["/F", path.Path, "/R", "/A", "/D", "Y"], cancellationToken)
+                    .ConfigureAwait(false);
+                await context.ProcessRunner
+                    .RunAsync("icacls", [path.Path, "/grant", "Administrators:F", "/T", "/C"], cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
+    }
+}
+
+/// <summary>
+/// winget installer downloads and diagnostic logs. The source index under LocalCache is left alone —
+/// purging it breaks winget sources until a manual refresh.
+/// </summary>
+public sealed class WingetCleaner : WindowsCleanerBase
+{
+    public override string Id => "winget";
+
+    public override string Name => "winget downloads & logs";
+
+    public override string Category => Categories.SystemPackageManagers;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return new CleanupPath(Path.Combine(env.TempDirectory, "WinGet"), DeleteMode.ClearContents, "installer downloads");
+        yield return new CleanupPath(
+            Path.Combine(env.LocalAppDataDirectory, "Packages",
+                "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", "LocalState", "DiagOutputDir"),
+            DeleteMode.ClearContents,
+            "logs");
     }
 }
 

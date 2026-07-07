@@ -120,6 +120,46 @@ public sealed class PdmCleaner : ProcessCleanerBase
         [new CleanupPath(OsPaths.AppCache(context.Environment, Path.Combine("pdm", "Cache"), "pdm", "pdm"))];
 }
 
+/// <summary>pipx caches and logs only — installed venvs under ~/.local/pipx/venvs are never touched.</summary>
+public sealed class PipxCleaner : DirectoryCleanerBase
+{
+    public override string Id => "pipx";
+
+    public override string Name => "pipx cache & logs";
+
+    public override string Category => Categories.Python;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return new CleanupPath(OsPaths.AppCache(env, Path.Combine("pipx", "Cache"), "pipx", "pipx"), Description: "cache");
+        yield return new CleanupPath(env.HomePath(".local", "pipx", ".cache"), Description: "legacy cache");
+        yield return new CleanupPath(env.HomePath(".local", "state", "pipx", "log"), Description: "logs");
+
+        if (env.IsWindows)
+        {
+            yield return new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "pipx", "Logs"), Description: "logs");
+        }
+    }
+}
+
+/// <summary>pre-commit hook environment cache (rebuilt on the next run).</summary>
+public sealed class PreCommitCleaner : DirectoryCleanerBase
+{
+    public override string Id => "pre-commit";
+
+    public override string Name => "pre-commit cache";
+
+    public override string Category => Categories.Python;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return new CleanupPath(
+            OsPaths.Env(env, "PRE_COMMIT_HOME") ?? env.HomePath(".cache", "pre-commit"));
+    }
+}
+
 /// <summary>uv (Astral) download and build cache.</summary>
 public sealed class UvCleaner : DirectoryCleanerBase
 {

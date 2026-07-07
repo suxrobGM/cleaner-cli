@@ -3,9 +3,7 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>
-/// React Native caches: Metro bundler / Haste temp directories and the CocoaPods cache (macOS).
-/// </summary>
+/// <summary>React Native caches: Metro bundler / Haste temp directories.</summary>
 public sealed class ReactNativeCleaner : DirectoryCleanerBase
 {
     private static readonly string[] TempPrefixes = ["metro-", "react-", "haste-map-"];
@@ -29,14 +27,22 @@ public sealed class ReactNativeCleaner : DirectoryCleanerBase
                 yield return new CleanupPath(dir, Description: "Metro temp cache");
             }
         }
-
-        if (env.IsMacOs)
-        {
-            yield return new CleanupPath(
-                Path.Combine(env.HomeDirectory, "Library", "Caches", "CocoaPods"),
-                Description: "CocoaPods cache");
-        }
     }
+}
+
+/// <summary>CocoaPods spec-repo and pod download cache (macOS).</summary>
+public sealed class CocoaPodsCleaner : DirectoryCleanerBase
+{
+    public override string Id => "cocoapods";
+
+    public override string Name => "CocoaPods cache";
+
+    public override string Category => Categories.Mobile;
+
+    public override bool IsApplicable(CleanupContext context) => context.Environment.IsMacOs;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
+        [new CleanupPath(Path.Combine(context.Environment.HomeDirectory, "Library", "Caches", "CocoaPods"), DeleteMode.ClearContents)];
 }
 
 /// <summary>Expo caches: the global <c>~/.expo</c> store and the project-local <c>.expo</c> folder.</summary>

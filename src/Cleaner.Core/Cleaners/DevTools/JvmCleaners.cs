@@ -16,7 +16,9 @@ public sealed class GradleCleaner : DirectoryCleanerBase
     {
         var env = context.Environment;
         var gradleHome = OsPaths.Env(env, "GRADLE_USER_HOME") ?? env.HomePath(".gradle");
-        yield return new CleanupPath(Path.Combine(gradleHome, "caches"));
+        yield return new CleanupPath(Path.Combine(gradleHome, "caches"), Description: "build caches");
+        yield return new CleanupPath(Path.Combine(gradleHome, "wrapper", "dists"), Description: "wrapper distributions");
+        yield return new CleanupPath(Path.Combine(gradleHome, "daemon"), Description: "daemon logs");
     }
 }
 
@@ -29,8 +31,12 @@ public sealed class MavenCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.Jvm;
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        [new CleanupPath(context.Environment.HomePath(".m2", "repository"))];
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return new CleanupPath(env.HomePath(".m2", "repository"), Description: "local repository");
+        yield return new CleanupPath(env.HomePath(".m2", "wrapper"), Description: "wrapper distributions");
+    }
 }
 
 /// <summary>sbt / Ivy resolution caches.</summary>

@@ -25,6 +25,8 @@ public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
         ("Figma", ["Figma"]),
         ("Signal", ["Signal"]),
         ("GitHub Desktop", ["GitHub Desktop"]),
+        ("WhatsApp", ["WhatsApp"]),
+        ("Element", ["Element"]),
     ];
 
     public override string Id => "electron-app-cache";
@@ -35,11 +37,26 @@ public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
-        var root = AppDataRoot(context.Environment);
+        var env = context.Environment;
+        var root = AppDataRoot(env);
         foreach (var (label, segments) in Apps)
         {
             var appRoot = Path.Combine([root, .. segments]);
             foreach (var path in ChromiumCache.Under(appRoot, label))
+            {
+                yield return path;
+            }
+        }
+
+        // New Microsoft Teams (the Store/WebView2 app) keeps its Chromium caches inside its
+        // package's EBWebView profile rather than under %APPDATA%; the classic Teams entry in
+        // the table above covers the old Electron client.
+        if (env.IsWindows)
+        {
+            var webView = Path.Combine(
+                env.LocalAppDataDirectory, "Packages", "MSTeams_8wekyb3d8bbwe",
+                "LocalCache", "Microsoft", "MSTeams", "EBWebView", "Default");
+            foreach (var path in ChromiumCache.Under(webView, "Microsoft Teams (new)"))
             {
                 yield return path;
             }

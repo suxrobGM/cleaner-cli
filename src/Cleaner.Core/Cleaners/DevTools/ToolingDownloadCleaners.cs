@@ -73,3 +73,42 @@ public sealed class DotslashCleaner : DirectoryCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
         [new CleanupPath(OsPaths.AppCache(context.Environment, "dotslash", "dotslash", "dotslash"), DeleteMode.ClearContents)];
 }
+
+/// <summary>Google Cloud CLI logs and surface caches; config and credentials are never touched.</summary>
+public sealed class GcloudCleaner : DirectoryCleanerBase
+{
+    public override string Id => "gcloud";
+
+    public override string Name => "gcloud logs & cache";
+
+    public override string Category => Categories.ToolingDownloads;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        var config = OsPaths.Env(env, "CLOUDSDK_CONFIG")
+            ?? (env.IsWindows
+                ? Path.Combine(env.AppDataDirectory, "gcloud")
+                : Path.Combine(env.HomeDirectory, ".config", "gcloud"));
+
+        yield return new CleanupPath(Path.Combine(config, "logs"), DeleteMode.ClearContents, "logs");
+        yield return new CleanupPath(Path.Combine(config, "surface_data"), DeleteMode.ClearContents, "surface cache");
+    }
+}
+
+/// <summary>SonarLint / sonar-scanner plugin and analyzer cache.</summary>
+public sealed class SonarCleaner : DirectoryCleanerBase
+{
+    public override string Id => "sonar";
+
+    public override string Name => "Sonar scanner cache";
+
+    public override string Category => Categories.ToolingDownloads;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        var root = OsPaths.Env(env, "SONAR_USER_HOME") ?? env.HomePath(".sonar");
+        yield return new CleanupPath(Path.Combine(root, "cache"), DeleteMode.ClearContents);
+    }
+}

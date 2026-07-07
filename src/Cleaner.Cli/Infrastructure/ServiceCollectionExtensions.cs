@@ -64,6 +64,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, CondaCleaner>();
         services.AddSingleton<ICleaner, PdmCleaner>();
         services.AddSingleton<ICleaner, UvCleaner>();
+        services.AddSingleton<ICleaner, PipxCleaner>();
+        services.AddSingleton<ICleaner, PreCommitCleaner>();
 
         // Rust
         services.AddSingleton<ICleaner, CargoCleaner>();
@@ -75,6 +77,7 @@ internal static class ServiceCollectionExtensions
 
         // Machine learning
         services.AddSingleton<ICleaner, MlCacheCleaner>();
+        services.AddSingleton<ICleaner, WandbCleaner>();
 
         // JVM / Android
         services.AddSingleton<ICleaner, GradleCleaner>();
@@ -86,6 +89,7 @@ internal static class ServiceCollectionExtensions
         // Mobile (React Native / Expo)
         services.AddSingleton<ICleaner, ReactNativeCleaner>();
         services.AddSingleton<ICleaner, ExpoCleaner>();
+        services.AddSingleton<ICleaner, CocoaPodsCleaner>();
 
         // Other languages
         services.AddSingleton<ICleaner, GemBundlerCleaner>();
@@ -94,6 +98,17 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, HexMixCleaner>();
         services.AddSingleton<ICleaner, VcpkgCleaner>();
         services.AddSingleton<ICleaner, CabalStackCleaner>();
+        services.AddSingleton<ICleaner, ConanCleaner>();
+        services.AddSingleton<ICleaner, ZigCleaner>();
+        services.AddSingleton<ICleaner, SwiftPmCleaner>();
+        services.AddSingleton<ICleaner, OpamCleaner>();
+        services.AddSingleton<ICleaner, CpanmCleaner>();
+        services.AddSingleton<ICleaner, JuliaCleaner>();
+        services.AddSingleton<ICleaner, RubyGemsCleaner>();
+        services.AddSingleton<ICleaner, RenvCleaner>();
+        services.AddSingleton<ICleaner, LuaRocksCleaner>();
+        services.AddSingleton<ICleaner, NimCleaner>();
+        services.AddSingleton<ICleaner, TexLiveCleaner>();
 
         // Build / monorepo caches
         services.AddSingleton<ICleaner, CcacheCleaner>();
@@ -104,18 +119,36 @@ internal static class ServiceCollectionExtensions
         // Containers / IaC
         services.AddSingleton<ICleaner, DockerCleaner>();
         services.AddSingleton<ICleaner, TerraformCleaner>();
+        services.AddSingleton<ICleaner, PodmanCleaner>();
+        services.AddSingleton<ICleaner, HelmCleaner>();
+        services.AddSingleton<ICleaner, MinikubeCleaner>();
+        services.AddSingleton<ICleaner, VagrantCleaner>();
+        services.AddSingleton<ICleaner, PulumiCleaner>();
+        services.AddSingleton<ICleaner, KubectlCleaner>();
+        services.AddSingleton<ICleaner, AnsibleCleaner>();
+        services.AddSingleton<ICleaner, LimaCleaner>();
 
         // IDEs / editors
         services.AddSingleton<ICleaner, JetBrainsCleaner>();
         services.AddSingleton<ICleaner, VsCodeCleaner>();
         services.AddSingleton<ICleaner, VisualStudioCleaner>();
         services.AddSingleton<ICleaner, XcodeCleaner>();
+        services.AddSingleton<ICleaner, ZedCleaner>();
+        services.AddSingleton<ICleaner, NeovimCleaner>();
 
         // Tooling downloads
         services.AddSingleton<ICleaner, BrowserAutomationCleaner>();
         services.AddSingleton<ICleaner, ElectronCacheCleaner>();
         services.AddSingleton<ICleaner, AzureFunctionsToolsCleaner>();
         services.AddSingleton<ICleaner, DotslashCleaner>();
+        services.AddSingleton<ICleaner, CorepackCleaner>();
+        services.AddSingleton<ICleaner, NvmCleaner>();
+        services.AddSingleton<ICleaner, MiseCleaner>();
+        services.AddSingleton<ICleaner, AsdfCleaner>();
+        services.AddSingleton<ICleaner, SdkmanCleaner>();
+        services.AddSingleton<ICleaner, NodeGypCleaner>();
+        services.AddSingleton<ICleaner, GcloudCleaner>();
+        services.AddSingleton<ICleaner, SonarCleaner>();
 
         // Project-local
         services.AddSingleton<ICleaner, BuildArtifactCleaner>();
@@ -139,6 +172,9 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, MacUserCachesCleaner>();
         services.AddSingleton<ICleaner, XdgCacheCleaner>();
         services.AddSingleton<ICleaner, JournalLogCleaner>();
+        services.AddSingleton<ICleaner, GpuInstallerLeftoverCleaner>();
+        services.AddSingleton<ICleaner, WinSxSCleaner>();
+        services.AddSingleton<ICleaner, WindowsOldCleaner>();
 
         // System package managers
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
@@ -174,12 +210,30 @@ internal static class ServiceCollectionExtensions
             env => env.IsWindows,
             ctx => [new CleanupPath(Path.Combine(ctx.Environment.TempDirectory, "chocolatey"), DeleteMode.ClearContents)]));
 
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "flatpak", "Flatpak unused runtimes", "flatpak", ["uninstall", "--unused", "--assumeyes"],
+            requiresElevation: false,
+            env => env.IsLinux));
+
+        // No -d: unreachable store paths only, keeping rollback generations intact.
+        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
+            "nix", "Nix store garbage", "nix-collect-garbage", [], requiresElevation: false,
+            env => env.IsLinux || env.IsMacOs));
+
+        services.AddSingleton<ICleaner, WingetCleaner>();
+
         // Game development
         services.AddSingleton<ICleaner, UnityCleaner>();
+        services.AddSingleton<ICleaner, UnrealCleaner>();
 
         // Applications
         services.AddSingleton<ICleaner, SteamCleaner>();
         services.AddSingleton<ICleaner, ElectronAppCacheCleaner>();
         services.AddSingleton<ICleaner, SpotifyCleaner>();
+        services.AddSingleton<ICleaner, TelegramCleaner>();
+        services.AddSingleton<ICleaner, GameLauncherCleaner>();
+        services.AddSingleton<ICleaner, AdobeMediaCacheCleaner>();
+        services.AddSingleton<ICleaner, OneDriveCleaner>();
+        services.AddSingleton<ICleaner, DropboxCleaner>();
     }
 }

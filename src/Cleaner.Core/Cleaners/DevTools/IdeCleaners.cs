@@ -45,30 +45,39 @@ public sealed class JetBrainsCleaner : DirectoryCleanerBase
     }
 }
 
-/// <summary>VS Code cache directories (keeps settings and installed extensions).</summary>
+/// <summary>
+/// VS Code cache directories (keeps settings and installed extensions). Also covers forks with the
+/// same layout: Cursor, VSCodium, and Windsurf.
+/// </summary>
 public sealed class VsCodeCleaner : DirectoryCleanerBase
 {
     private static readonly string[] CacheSubdirectories =
         ["Cache", "CachedData", "Code Cache", "GPUCache", "logs", "CachedExtensionVSIXs"];
 
+    /// <summary>App-data folder names of VS Code and its forks.</summary>
+    private static readonly string[] AppFolders = ["Code", "Cursor", "VSCodium", "Windsurf"];
+
     public override string Id => "vscode";
 
-    public override string Name => "VS Code caches";
+    public override string Name => "VS Code / Cursor / VSCodium caches";
 
     public override string Category => Categories.Ides;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        var userRoot = env.IsWindows
-            ? Path.Combine(env.AppDataDirectory, "Code")
-            : env.IsMacOs
-                ? Path.Combine(env.HomeDirectory, "Library", "Application Support", "Code")
-                : Path.Combine(env.HomeDirectory, ".config", "Code");
-
-        foreach (var sub in CacheSubdirectories)
+        foreach (var app in AppFolders)
         {
-            yield return new CleanupPath(Path.Combine(userRoot, sub), Description: sub);
+            var userRoot = env.IsWindows
+                ? Path.Combine(env.AppDataDirectory, app)
+                : env.IsMacOs
+                    ? Path.Combine(env.HomeDirectory, "Library", "Application Support", app)
+                    : Path.Combine(env.HomeDirectory, ".config", app);
+
+            foreach (var sub in CacheSubdirectories)
+            {
+                yield return new CleanupPath(Path.Combine(userRoot, sub), Description: $"{app} {sub}");
+            }
         }
     }
 }
@@ -97,12 +106,15 @@ public sealed class VisualStudioCleaner : DirectoryCleanerBase
     }
 }
 
-/// <summary>Xcode DerivedData build products (macOS).</summary>
+/// <summary>
+/// Xcode derived data, device-support symbol caches, and simulator caches (macOS). All are
+/// regenerated on the next build or device connect; Archives (user data) are never touched.
+/// </summary>
 public sealed class XcodeCleaner : DirectoryCleanerBase
 {
     public override string Id => "xcode";
 
-    public override string Name => "Xcode DerivedData";
+    public override string Name => "Xcode caches";
 
     public override string Category => Categories.Ides;
 
@@ -110,10 +122,51 @@ public sealed class XcodeCleaner : DirectoryCleanerBase
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
-        var env = context.Environment;
+        var developer = Path.Combine(context.Environment.HomeDirectory, "Library", "Developer");
         yield return new CleanupPath(
-            Path.Combine(env.HomeDirectory, "Library", "Developer", "Xcode", "DerivedData"),
-            DeleteMode.ClearContents,
-            "DerivedData");
+            Path.Combine(developer, "Xcode", "DerivedData"), DeleteMode.ClearContents, "DerivedData");
+        yield return new CleanupPath(
+            Path.Combine(developer, "Xcode", "iOS DeviceSupport"), DeleteMode.ClearContents, "iOS device support");
+        yield return new CleanupPath(
+            Path.Combine(developer, "Xcode", "watchOS DeviceSupport"), DeleteMode.ClearContents, "watchOS device support");
+        yield return new CleanupPath(
+            Path.Combine(developer, "CoreSimulator", "Caches"), DeleteMode.ClearContents, "simulator caches");
+    }
+}
+
+/// <summary>Zed editor cache.</summary>
+public sealed class ZedCleaner : DirectoryCleanerBase
+{
+    public override string Id => "zed";
+
+    public override string Name => "Zed cache";
+
+    public override string Category => Categories.Ides;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return env.IsMacOs
+            ? new CleanupPath(Path.Combine(env.HomeDirectory, "Library", "Caches", "dev.zed.Zed"), DeleteMode.ClearContents)
+            : new CleanupPath(OsPaths.AppCache(env, Path.Combine("Zed", "cache"), "Zed", "zed"), DeleteMode.ClearContents);
+    }
+}
+
+/// <summary>Neovim cache directory (treesitter/luac artifacts, logs); shada and sessions are kept.</summary>
+public sealed class NeovimCleaner : DirectoryCleanerBase
+{
+    public override string Id => "neovim";
+
+    public override string Name => "Neovim cache";
+
+    public override string Category => Categories.Ides;
+
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        // Neovim's stdpath("cache"): ~/.cache/nvim on POSIX (incl. macOS), %LOCALAPPDATA%\Temp\nvim on Windows.
+        yield return env.IsWindows
+            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "Temp", "nvim"), DeleteMode.ClearContents)
+            : new CleanupPath(env.HomePath(".cache", "nvim"), DeleteMode.ClearContents);
     }
 }

@@ -21,4 +21,9 @@
     <ProjectReference Include="../Cleaner.Core/Cleaner.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Lets the test project build the real composition root and audit the cleaner catalog. -->
+    <InternalsVisibleTo Include="Cleaner.Core.Tests" />
+  </ItemGroup>
+
 </Project>
