@@ -46,9 +46,10 @@ public sealed class PubCleaner : DirectoryCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        var root = env.IsWindows
-            ? Path.Combine(env.LocalAppDataDirectory, "Pub", "Cache")
-            : env.HomePath(".pub-cache");
+        var root = OsPaths.Env(env, "PUB_CACHE")
+            ?? (env.IsWindows
+                ? Path.Combine(env.LocalAppDataDirectory, "Pub", "Cache")
+                : env.HomePath(".pub-cache"));
 
         yield return new CleanupPath(Path.Combine(root, "hosted"), Description: "hosted packages");
         yield return new CleanupPath(Path.Combine(root, "git"), Description: "git packages");

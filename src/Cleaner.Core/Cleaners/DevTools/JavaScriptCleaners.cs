@@ -19,10 +19,15 @@ public sealed class NpmCleaner : ProcessCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        yield return env.IsWindows
-            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "npm-cache", "_cacache"))
-            : new CleanupPath(env.HomePath(".npm", "_cacache"));
+        yield return new CleanupPath(Path.Combine(NpmCacheRoot(env), "_cacache"));
     }
+
+    /// <summary>The npm cache root, honoring the npm_config_cache override (either casing).</summary>
+    internal static string NpmCacheRoot(Services.IEnvironmentService env) =>
+        OsPaths.Env(env, "npm_config_cache", "NPM_CONFIG_CACHE")
+        ?? (env.IsWindows
+            ? Path.Combine(env.LocalAppDataDirectory, "npm-cache")
+            : env.HomePath(".npm"));
 }
 
 /// <summary>npx execution cache (npm's <c>_npx</c> directory).</summary>
@@ -34,13 +39,8 @@ public sealed class NpxCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.JavaScript;
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
-    {
-        var env = context.Environment;
-        yield return env.IsWindows
-            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "npm-cache", "_npx"))
-            : new CleanupPath(env.HomePath(".npm", "_npx"));
-    }
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
+        [new CleanupPath(Path.Combine(NpmCleaner.NpmCacheRoot(context.Environment), "_npx"))];
 }
 
 /// <summary>Yarn cache. Prefers <c>yarn cache clean</c>.</summary>
@@ -59,6 +59,12 @@ public sealed class YarnCleaner : ProcessCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
+        if (OsPaths.Env(env, "YARN_CACHE_FOLDER") is { } configured)
+        {
+            yield return new CleanupPath(configured);
+            yield break;
+        }
+
         yield return env.IsWindows
             ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "Yarn", "Cache"))
             : new CleanupPath(Path.Combine(env.CacheDirectory, "yarn"));
@@ -96,8 +102,18 @@ public sealed class BunCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.JavaScript;
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        [new CleanupPath(context.Environment.HomePath(".bun", "install", "cache"))];
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        var cache = OsPaths.Env(env, "BUN_INSTALL_CACHE_DIR");
+        if (cache is null)
+        {
+            var install = OsPaths.Env(env, "BUN_INSTALL") ?? env.HomePath(".bun");
+            cache = Path.Combine(install, "install", "cache");
+        }
+
+        yield return new CleanupPath(cache);
+    }
 }
 
 /// <summary>Deno module and dependency cache.</summary>

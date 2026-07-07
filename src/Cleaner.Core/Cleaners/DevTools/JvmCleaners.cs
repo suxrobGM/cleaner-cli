@@ -12,8 +12,12 @@ public sealed class GradleCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.Jvm;
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        [new CleanupPath(context.Environment.HomePath(".gradle", "caches"))];
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        var gradleHome = OsPaths.Env(env, "GRADLE_USER_HOME") ?? env.HomePath(".gradle");
+        yield return new CleanupPath(Path.Combine(gradleHome, "caches"));
+    }
 }
 
 /// <summary>Maven local repository.</summary>

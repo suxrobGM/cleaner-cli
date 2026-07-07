@@ -24,4 +24,22 @@ internal static class OsPaths
             ? Path.Combine(env.HomeDirectory, "Library", "Caches", macOs)
             : Path.Combine(env.CacheDirectory, linux);
     }
+
+    /// <summary>
+    /// The value of the first set (non-blank) environment variable among <paramref name="names"/>,
+    /// or null. Used for cache-relocation overrides like <c>NUGET_PACKAGES</c> or <c>CARGO_HOME</c>.
+    /// </summary>
+    public static string? Env(IEnvironmentService env, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var value = env.GetEnvironmentVariable(name);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
 }

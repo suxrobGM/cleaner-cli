@@ -20,16 +20,17 @@ public sealed class GoCleaner : ProcessCleanerBase
     {
         var env = context.Environment;
 
-        var goPath = env.GetEnvironmentVariable("GOPATH");
-        var modCache = !string.IsNullOrWhiteSpace(goPath)
-            ? Path.Combine(goPath, "pkg", "mod")
-            : env.HomePath("go", "pkg", "mod");
+        // GOMODCACHE wins outright; otherwise the module cache lives under GOPATH (default ~/go).
+        var modCache = OsPaths.Env(env, "GOMODCACHE");
+        if (modCache is null)
+        {
+            var goPath = OsPaths.Env(env, "GOPATH");
+            modCache = goPath is not null ? Path.Combine(goPath, "pkg", "mod") : env.HomePath("go", "pkg", "mod");
+        }
+
         yield return new CleanupPath(modCache, Description: "module cache");
 
-        var goCache = env.GetEnvironmentVariable("GOCACHE");
-        var buildCache = !string.IsNullOrWhiteSpace(goCache)
-            ? goCache
-            : OsPaths.AppCache(env, "go-build", "go-build", "go-build");
+        var buildCache = OsPaths.Env(env, "GOCACHE") ?? OsPaths.AppCache(env, "go-build", "go-build", "go-build");
         yield return new CleanupPath(buildCache, Description: "build cache");
     }
 }

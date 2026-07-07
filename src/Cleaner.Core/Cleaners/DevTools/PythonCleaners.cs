@@ -16,8 +16,12 @@ public sealed class PipCleaner : ProcessCleanerBase
 
     protected override IReadOnlyList<string> CleanArguments => ["cache", "purge"];
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        [new CleanupPath(OsPaths.AppCache(context.Environment, Path.Combine("pip", "Cache"), "pip", "pip"))];
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return new CleanupPath(
+            OsPaths.Env(env, "PIP_CACHE_DIR") ?? OsPaths.AppCache(env, Path.Combine("pip", "Cache"), "pip", "pip"));
+    }
 }
 
 /// <summary>pipenv virtualenv/cache directory.</summary>
@@ -42,8 +46,13 @@ public sealed class PoetryCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.Python;
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        [new CleanupPath(OsPaths.AppCache(context.Environment, Path.Combine("pypoetry", "Cache"), "pypoetry", "pypoetry"))];
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return new CleanupPath(
+            OsPaths.Env(env, "POETRY_CACHE_DIR")
+            ?? OsPaths.AppCache(env, Path.Combine("pypoetry", "Cache"), "pypoetry", "pypoetry"));
+    }
 }
 
 /// <summary>Conda package cache. Uses <c>conda clean --all --yes</c>.</summary>
@@ -89,6 +98,10 @@ public sealed class UvCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.Python;
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        [new CleanupPath(OsPaths.AppCache(context.Environment, Path.Combine("uv", "cache"), "uv", "uv"))];
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        var env = context.Environment;
+        yield return new CleanupPath(
+            OsPaths.Env(env, "UV_CACHE_DIR") ?? OsPaths.AppCache(env, Path.Combine("uv", "cache"), "uv", "uv"));
+    }
 }

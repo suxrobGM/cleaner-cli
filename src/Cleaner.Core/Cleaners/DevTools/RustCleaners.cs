@@ -15,9 +15,10 @@ public sealed class CargoCleaner : DirectoryCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        yield return new CleanupPath(env.HomePath(".cargo", "registry", "cache"), Description: "registry cache");
-        yield return new CleanupPath(env.HomePath(".cargo", "registry", "src"), Description: "extracted sources");
-        yield return new CleanupPath(env.HomePath(".cargo", "git"), Description: "git sources");
+        var cargoHome = OsPaths.Env(env, "CARGO_HOME") ?? env.HomePath(".cargo");
+        yield return new CleanupPath(Path.Combine(cargoHome, "registry", "cache"), Description: "registry cache");
+        yield return new CleanupPath(Path.Combine(cargoHome, "registry", "src"), Description: "extracted sources");
+        yield return new CleanupPath(Path.Combine(cargoHome, "git"), Description: "git sources");
     }
 }
 
@@ -33,8 +34,9 @@ public sealed class RustupCleaner : DirectoryCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        yield return new CleanupPath(env.HomePath(".rustup", "downloads"));
-        yield return new CleanupPath(env.HomePath(".rustup", "tmp"));
+        var rustupHome = OsPaths.Env(env, "RUSTUP_HOME") ?? env.HomePath(".rustup");
+        yield return new CleanupPath(Path.Combine(rustupHome, "downloads"));
+        yield return new CleanupPath(Path.Combine(rustupHome, "tmp"));
     }
 }
 

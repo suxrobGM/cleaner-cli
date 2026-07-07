@@ -23,8 +23,10 @@ public sealed class NuGetCleaner : ProcessCleanerBase
     {
         var env = context.Environment;
 
-        // global-packages — the big one, same location on every OS.
-        yield return new CleanupPath(env.HomePath(".nuget", "packages"), Description: "global-packages");
+        // global-packages — the big one, same location on every OS unless NUGET_PACKAGES moves it.
+        yield return new CleanupPath(
+            OsPaths.Env(env, "NUGET_PACKAGES") ?? env.HomePath(".nuget", "packages"),
+            Description: "global-packages");
 
         if (env.IsWindows)
         {

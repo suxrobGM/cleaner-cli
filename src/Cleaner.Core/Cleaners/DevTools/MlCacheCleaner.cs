@@ -22,20 +22,15 @@ public sealed class MlCacheCleaner : DirectoryCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        string? Configured(string name)
-        {
-            var value = env.GetEnvironmentVariable(name);
-            return string.IsNullOrWhiteSpace(value) ? null : value;
-        }
 
         // HuggingFace: HF_HOME relocates the whole cache tree (hub + datasets); default ~/.cache/huggingface.
         yield return new CleanupPath(
-            Configured("HF_HOME") ?? env.HomePath(".cache", "huggingface"), DeleteMode.ClearContents, "HuggingFace");
+            OsPaths.Env(env, "HF_HOME") ?? env.HomePath(".cache", "huggingface"), DeleteMode.ClearContents, "HuggingFace");
 
         // Cover explicit per-cache relocations too; ExistingTargets de-dupes against the default above.
         foreach (var name in HuggingFaceCacheVars)
         {
-            if (Configured(name) is { } dir)
+            if (OsPaths.Env(env, name) is { } dir)
             {
                 yield return new CleanupPath(dir, DeleteMode.ClearContents, "HuggingFace");
             }
@@ -43,6 +38,6 @@ public sealed class MlCacheCleaner : DirectoryCleanerBase
 
         // Torch hub pretrained weights.
         yield return new CleanupPath(
-            Configured("TORCH_HOME") ?? env.HomePath(".cache", "torch"), DeleteMode.ClearContents, "Torch hub");
+            OsPaths.Env(env, "TORCH_HOME") ?? env.HomePath(".cache", "torch"), DeleteMode.ClearContents, "Torch hub");
     }
 }
