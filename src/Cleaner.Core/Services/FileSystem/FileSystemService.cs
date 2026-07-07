@@ -27,16 +27,9 @@ public sealed class FileSystemService : IFileSystemService
         }
 
         long total = 0;
-        var enumeration = new EnumerationOptions
-        {
-            RecurseSubdirectories = true,
-            IgnoreInaccessible = true,
-            AttributesToSkip = FileAttributes.ReparsePoint, // don't follow symlinks/junctions
-        };
-
         try
         {
-            foreach (var file in Directory.EnumerateFiles(path, "*", enumeration))
+            foreach (var file in Directory.EnumerateFiles(path, "*", RecursiveScan(recurse: true)))
             {
                 try
                 {
@@ -80,16 +73,9 @@ public sealed class FileSystemService : IFileSystemService
             return [];
         }
 
-        var options = new EnumerationOptions
-        {
-            RecurseSubdirectories = recursive,
-            IgnoreInaccessible = true,
-            AttributesToSkip = FileAttributes.ReparsePoint,
-        };
-
         try
         {
-            return Directory.EnumerateFiles(path, searchPattern, options);
+            return Directory.EnumerateFiles(path, searchPattern, RecursiveScan(recursive));
         }
         catch
         {
@@ -171,13 +157,7 @@ public sealed class FileSystemService : IFileSystemService
     {
         try
         {
-            var options = new EnumerationOptions
-            {
-                RecurseSubdirectories = true,
-                IgnoreInaccessible = true,
-                AttributesToSkip = FileAttributes.ReparsePoint, // don't follow symlinks/junctions
-            };
-            foreach (var file in Directory.EnumerateFiles(directory, "*", options))
+            foreach (var file in Directory.EnumerateFiles(directory, "*", RecursiveScan(recurse: true)))
             {
                 TryClearReadOnly(file);
             }
@@ -187,6 +167,17 @@ public sealed class FileSystemService : IFileSystemService
             // Best-effort.
         }
     }
+
+    /// <summary>
+    /// Shared enumeration options: skip inaccessible entries and never follow reparse points
+    /// (symlinks/junctions), so a scan can't wander outside the target or loop.
+    /// </summary>
+    private static EnumerationOptions RecursiveScan(bool recurse) => new()
+    {
+        RecurseSubdirectories = recurse,
+        IgnoreInaccessible = true,
+        AttributesToSkip = FileAttributes.ReparsePoint,
+    };
 
     private static void TryClearReadOnly(string file)
     {

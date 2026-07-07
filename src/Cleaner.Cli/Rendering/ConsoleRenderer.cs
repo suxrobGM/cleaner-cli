@@ -76,16 +76,9 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
                 : "[grey]n/a (runs command)[/]";
             table.AddRow(row.Cleaner.Name.EscapeMarkup(), size);
 
-            if (!verbose)
+            if (verbose)
             {
-                continue;
-            }
-
-            foreach (var target in row.Result.Targets.Where(t => t.Bytes > 0).OrderByDescending(t => t.Bytes))
-            {
-                table.AddRow(
-                    $"  [grey]{target.Path.EscapeMarkup()}[/]",
-                    $"[grey]{SizeFormatter.Humanize(target.Bytes)}[/]");
+                AppendVerboseTargets(table, row);
             }
         }
 
@@ -219,12 +212,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             return results;
         }
 
-        await console.Progress()
-            .Columns(
-                new TaskDescriptionColumn(),
-                new ProgressBarColumn(),
-                new PercentageColumn(),
-                new SpinnerColumn())
+        await BarProgress()
             .StartAsync(async ctx =>
             {
                 var task = ctx.AddTask("Cleaning", maxValue: cleaners.Count);
@@ -246,12 +234,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         string description,
         Func<IProgress<double>, CancellationToken, Task> work,
         CancellationToken cancellationToken) =>
-        console.Progress()
-            .Columns(
-                new TaskDescriptionColumn(),
-                new ProgressBarColumn(),
-                new PercentageColumn(),
-                new SpinnerColumn())
+        BarProgress()
             .StartAsync(async ctx =>
             {
                 var task = ctx.AddTask(description, maxValue: 1.0);
@@ -259,6 +242,26 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
                 await work(progress, cancellationToken);
                 task.Value = 1.0;
             });
+
+    /// <summary>A progress display with the standard description / bar / percentage / spinner columns.</summary>
+    private Progress BarProgress() =>
+        console.Progress()
+            .Columns(
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new SpinnerColumn());
+
+    /// <summary>Indented per-target rows under a cleaner, largest first, shown in verbose mode.</summary>
+    private static void AppendVerboseTargets(Table table, ScanRow row)
+    {
+        foreach (var target in row.Result.Targets.Where(t => t.Bytes > 0).OrderByDescending(t => t.Bytes))
+        {
+            table.AddRow(
+                $"  [grey]{target.Path.EscapeMarkup()}[/]",
+                $"[grey]{SizeFormatter.Humanize(target.Bytes)}[/]");
+        }
+    }
 
     private static string StatusMarkup(CleanerStatus status) => status switch
     {
