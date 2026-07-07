@@ -21,9 +21,8 @@ public sealed class DeliveryOptimizationCleaner : WindowsCleanerBase
             yield break;
         }
 
-        var root = Path.GetPathRoot(windows) ?? "C:\\";
         yield return new CleanupPath(
-            Path.Combine(root, "Windows", "ServiceProfiles", "NetworkService", "AppData", "Local",
+            Path.Combine(windows, "ServiceProfiles", "NetworkService", "AppData", "Local",
                 "Microsoft", "Windows", "DeliveryOptimization", "Cache"),
             DeleteMode.ClearContents);
     }

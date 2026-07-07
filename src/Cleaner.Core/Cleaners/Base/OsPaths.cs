@@ -26,6 +26,19 @@ internal static class OsPaths
     }
 
     /// <summary>
+    /// Combine <paramref name="segments"/> onto the drive root of a Windows path (e.g.
+    /// <c>C:\Windows</c> → <c>C:\NVIDIA</c>). Deliberately avoids <see cref="Path.GetPathRoot"/> and
+    /// <see cref="Path.Combine"/> for the root: both only recognise <c>C:\</c> as rooted on Windows
+    /// hosts, so on Linux/macOS (CI, cross-platform builds) they mangle these paths. Joins with an
+    /// explicit backslash so the result is a valid Windows path regardless of the host OS.
+    /// </summary>
+    public static string FromWindowsDriveRoot(string windowsPath, params string[] segments)
+    {
+        var drive = windowsPath.Length >= 2 && windowsPath[1] == ':' ? windowsPath[..2] : "C:";
+        return string.Join('\\', segments.Prepend(drive));
+    }
+
+    /// <summary>
     /// The value of the first set (non-blank) environment variable among <paramref name="names"/>,
     /// or null. Used for cache-relocation overrides like <c>NUGET_PACKAGES</c> or <c>CARGO_HOME</c>.
     /// </summary>

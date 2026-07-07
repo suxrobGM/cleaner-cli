@@ -26,12 +26,14 @@ public sealed class GpuInstallerLeftoverCleaner : WindowsCleanerBase
             yield break;
         }
 
-        var root = Path.GetPathRoot(windows) ?? @"C:\";
-        yield return new CleanupPath(Path.Combine(root, "NVIDIA"), Description: "NVIDIA installer extraction");
-        yield return new CleanupPath(Path.Combine(root, "AMD"), Description: "AMD installer extraction");
-        yield return new CleanupPath(Path.Combine(root, "Intel"), Description: "Intel installer extraction");
+        yield return new CleanupPath(
+            OsPaths.FromWindowsDriveRoot(windows, "NVIDIA"), Description: "NVIDIA installer extraction");
+        yield return new CleanupPath(
+            OsPaths.FromWindowsDriveRoot(windows, "AMD"), Description: "AMD installer extraction");
+        yield return new CleanupPath(
+            OsPaths.FromWindowsDriveRoot(windows, "Intel"), Description: "Intel installer extraction");
 
-        var programData = OsPaths.Env(env, "ProgramData") ?? Path.Combine(root, "ProgramData");
+        var programData = OsPaths.Env(env, "ProgramData") ?? OsPaths.FromWindowsDriveRoot(windows, "ProgramData");
         yield return new CleanupPath(
             Path.Combine(programData, "NVIDIA Corporation", "Downloader"),
             DeleteMode.ClearContents,

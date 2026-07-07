@@ -24,8 +24,7 @@ public sealed class WindowsOldCleaner : WindowsCleanerBase
         var windows = context.Environment.WindowsDirectory;
         if (windows is not null)
         {
-            var root = Path.GetPathRoot(windows) ?? @"C:\";
-            yield return new CleanupPath(Path.Combine(root, "Windows.old"));
+            yield return new CleanupPath(OsPaths.FromWindowsDriveRoot(windows, "Windows.old"));
         }
     }
 
