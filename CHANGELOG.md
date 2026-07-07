@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-07-07
+
+### Changed
+
+- Internal code reorganization only — no behavior change and no change to the cleaner catalog
+  (still 120 cleaners). The multi-class cleaner "bundle" files were split into one file per
+  cleaner and grouped into per-tool folders, the DI composition root was split into
+  per-category registration methods, and several CLI helpers (`FileSystemService`,
+  `ConsoleRenderer`, `CleanerApp`) were simplified. The full test suite still passes.
+
 ## [1.1.0] - 2026-07-07
 
 ### Added
@@ -126,7 +136,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `list`, `scan`, `clean`, `update`, and interactive menu commands.
 - Self-update command with version reporting in the interactive banner.
 
-[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.4...v1.1.0
 [1.0.4]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.2...v1.0.3
