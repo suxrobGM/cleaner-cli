@@ -20,17 +20,22 @@ Cleaner finds the caches that quietly eat your disk — package managers, build 
 browsers, system junk, even Steam — shows you exactly how much you'd get back, and clears them
 only after you say yes.
 
-- **60+ built-in cleaners** across dev tools, the operating system, and applications.
+- **120 built-in cleaners** across dev tools, the operating system, and applications.
 - **Safe by default** — every run scans and previews first; nothing is deleted without confirmation.
 - **Cross-platform** — a single native binary for Windows, macOS, and Linux (no runtime required).
-- **Two ways to use it** — a friendly interactive menu, or direct commands for scripts and CI.
+- **Two ways to use it** — a friendly interactive menu, or direct commands (with `scan --json`) for
+  scripts and CI.
 
 ## What it cleans
 
 Package managers & languages (NuGet, npm/yarn/pnpm/bun, pip/poetry/uv, Cargo, Go, Gradle/Maven,
-Composer, pub, and more), build & monorepo caches (ccache, Bazel, Turbo/Nx), containers (Docker),
-IDEs (JetBrains, VS Code, Visual Studio, Xcode), browsers, OS junk (temp, recycle bin, Windows
-Update cache, system logs), system package managers (apt/dnf/pacman/brew/scoop/choco), and Steam.
+Conan, Composer, pub, Julia, Zig, and more), build & monorepo caches (ccache, Bazel, Turbo/Nx),
+containers & IaC (Docker, Podman, Helm, minikube, Pulumi), IDEs (JetBrains, VS Code/Cursor, Visual
+Studio, Xcode, Unreal/Unity derived data), version managers (mise, asdf, nvm, SDKMAN!), browsers,
+messaging apps (Discord, Telegram, WhatsApp, Teams), game launchers (Steam, Epic, Battle.net, GOG,
+EA, Riot), OS junk (temp, recycle bin, Windows Update cache, WinSxS, GPU driver installer
+leftovers, `Windows.old`), and system package managers (apt/dnf/pacman/brew/scoop/choco/winget/
+flatpak/nix).
 
 See the full list in **[docs/cleaners.md](docs/cleaners.md)**.
 

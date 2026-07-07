@@ -29,7 +29,14 @@ Measures reclaimable space without deleting anything. Accepts the same selection
 cleaner scan nuget npm
 cleaner scan --category "Python"
 cleaner scan --all
+cleaner scan --all --json        # machine-readable report for scripts/CI
+cleaner scan --all --verbose     # per-directory breakdown behind each size
 ```
+
+With `--json`, stdout is a single JSON document (`totalBytes` plus per-cleaner `id`, `name`,
+`category`, `bytes`, and `targets`) — pipe it to `jq` or `ConvertFrom-Json`. Command-based cleaners
+(docker, winsxs, …) can't be measured up front; tables show them as *n/a (runs command)* and JSON
+marks them with `"sizeIsEstimatable": false`.
 
 ## `cleaner clean [cleaners...]`
 
@@ -49,10 +56,13 @@ cleaner clean --category "IDEs / editors"
 | `--category <name>` | `-c` | Act on all cleaners in a category. |
 | `--dry-run` | `-n` | Preview reclaimable space; delete nothing. |
 | `--yes` | `-y` | Skip the confirmation prompt. |
-| `--force` | `-f` | Include targets that are otherwise treated cautiously. |
+| `--force` | `-f` | Include targets that are otherwise treated cautiously (e.g. `windows-old`, docker volumes). |
 | `--path <dir>` | `-p` | Base directory for project-local cleaners (defaults to the current directory). |
+| `--verbose` | `-v` | Show the individual directories behind each cleaner's size. |
+| `--json` | | (`scan` only) Emit the report as JSON on stdout. |
 
-You can find cleaner ids with `cleaner list`.
+You can find cleaner ids with `cleaner list`. An unknown `--category` prints the list of valid
+category names.
 
 ## `cleaner --version`
 
@@ -105,7 +115,15 @@ them at a project with `--path`:
 cleaner clean build-artifacts --path ./my-repo --dry-run
 ```
 
+## Scripts, CI, and redirected output
+
+When output is redirected (or no terminal is attached), Cleaner skips the banner, spinners, and
+progress bars and never prompts: the interactive menu exits with guidance, and `clean` requires
+`--yes`. Use `scan --json` for machine-readable results.
+
 ## Exit codes
 
 - `0` — success (including dry runs and "nothing to clean").
-- `1` — invalid selection (unknown id / no selection), or one or more cleaners reported errors.
+- `1` — invalid selection (unknown id/category, no selection), a non-interactive `clean` without
+  `--yes`, or one or more cleaners reported errors.
+- `130` — cancelled with Ctrl+C.
