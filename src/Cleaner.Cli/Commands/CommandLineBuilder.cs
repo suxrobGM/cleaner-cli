@@ -29,6 +29,9 @@ public sealed class CommandLineBuilder(CleanerApp app, IConsoleRenderer renderer
         AllowMultipleArgumentsPerToken = true,
     };
 
+    private readonly Option<bool> jsonOption = new("--json") { Description = "Emit the scan report as JSON on stdout (for scripts and CI)." };
+    private readonly Option<bool> verboseOption = new("--verbose", "-v") { Description = "Show the individual directories behind each cleaner's size." };
+
     private readonly Option<bool> checkOption = new("--check") { Description = "Only check for a newer release; don't download or install." };
 
     public RootCommand Build()
@@ -38,7 +41,7 @@ public sealed class CommandLineBuilder(CleanerApp app, IConsoleRenderer renderer
 
         var scanCommand = new Command("scan", "Report reclaimable space without deleting anything.")
         {
-            idsArgument, allOption, categoryOption, pathOption,
+            idsArgument, allOption, categoryOption, pathOption, jsonOption, verboseOption,
         };
         scanCommand.SetAction((result, ct) =>
             TryResolve(result, out var selected)
@@ -47,7 +50,7 @@ public sealed class CommandLineBuilder(CleanerApp app, IConsoleRenderer renderer
 
         var cleanCommand = new Command("clean", "Scan, preview, confirm, and delete the selected caches.")
         {
-            idsArgument, allOption, categoryOption, dryRunOption, yesOption, forceOption, pathOption,
+            idsArgument, allOption, categoryOption, dryRunOption, yesOption, forceOption, pathOption, verboseOption,
         };
         cleanCommand.SetAction((result, ct) =>
             TryResolve(result, out var selected)
@@ -81,6 +84,8 @@ public sealed class CommandLineBuilder(CleanerApp app, IConsoleRenderer renderer
             DryRun = result.GetValue(dryRunOption),
             Force = result.GetValue(forceOption),
             AssumeYes = result.GetValue(yesOption),
+            Json = result.GetValue(jsonOption),
+            Verbose = result.GetValue(verboseOption),
             WorkingDirectory = paths is { Length: > 0 } ? paths[0] : Environment.CurrentDirectory,
             ScanRoots = paths,
         };
@@ -105,6 +110,14 @@ public sealed class CommandLineBuilder(CleanerApp app, IConsoleRenderer renderer
         {
             renderer.Line($"[red]Unknown cleaner id(s): {string.Join(", ", unknown).EscapeMarkup()}[/]");
             renderer.Line("[grey]Run 'cleaner list' to see available cleaners.[/]");
+            return false;
+        }
+
+        // A category typo would otherwise silently select nothing; name the valid ones instead.
+        if (!string.IsNullOrWhiteSpace(category) && selected.Count == 0)
+        {
+            renderer.Line($"[red]Unknown category '{category.EscapeMarkup()}'.[/]");
+            renderer.Line($"[grey]Valid categories: {string.Join(", ", app.Categories).EscapeMarkup()}[/]");
             return false;
         }
 

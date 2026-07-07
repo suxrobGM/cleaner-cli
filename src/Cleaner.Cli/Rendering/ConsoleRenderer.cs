@@ -7,11 +7,17 @@ namespace Cleaner.Cli.Rendering;
 /// <summary>The Spectre.Console implementation of <see cref="IConsoleRenderer"/>.</summary>
 public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 {
+    public bool IsInteractive => console.Profile.Capabilities.Interactive;
+
     public void Line(string markup) => console.MarkupLine(markup);
 
     public void InteractiveHeader(string version)
     {
-        console.Write(new FigletText("Cleaner").Color(Color.Teal));
+        if (IsInteractive)
+        {
+            console.Write(new FigletText("Cleaner").Color(Color.Teal));
+        }
+
         console.MarkupLine($"[grey]Reclaim disk space from dev, OS, and app caches.[/] [dim]v{version.EscapeMarkup()}[/]");
         console.WriteLine();
     }
@@ -45,10 +51,15 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         console.MarkupLine($"[grey]{entries.Count} cleaners across {categoryCount} categories.[/]");
     }
 
-    public void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader)
+    public void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false)
     {
-        var nonEmpty = rows.Where(r => r.Result.TotalBytes > 0).OrderByDescending(r => r.Result.TotalBytes).ToList();
-        if (nonEmpty.Count == 0)
+        // Command-based cleaners can't be pre-measured; keep their rows visible with a label
+        // instead of dropping them as 0 B. Sorting by size puts them last naturally.
+        var visible = rows
+            .Where(r => r.Result.TotalBytes > 0 || r.CommandBased)
+            .OrderByDescending(r => r.Result.TotalBytes)
+            .ToList();
+        if (visible.Count == 0)
         {
             console.MarkupLine("[green]Nothing found to clean.[/]");
             return;
@@ -58,11 +69,24 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         table.AddColumn("[bold]Cleaner[/]");
         table.AddColumn(new TableColumn($"[bold]{sizeHeader.EscapeMarkup()}[/]").RightAligned());
 
-        foreach (var row in nonEmpty)
+        foreach (var row in visible)
         {
-            table.AddRow(
-                row.Cleaner.Name.EscapeMarkup(),
-                $"[yellow]{SizeFormatter.Humanize(row.Result.TotalBytes)}[/]");
+            var size = row.Result.TotalBytes > 0
+                ? $"[yellow]{SizeFormatter.Humanize(row.Result.TotalBytes)}[/]"
+                : "[grey]n/a (runs command)[/]";
+            table.AddRow(row.Cleaner.Name.EscapeMarkup(), size);
+
+            if (!verbose)
+            {
+                continue;
+            }
+
+            foreach (var target in row.Result.Targets.Where(t => t.Bytes > 0).OrderByDescending(t => t.Bytes))
+            {
+                table.AddRow(
+                    $"  [grey]{target.Path.EscapeMarkup()}[/]",
+                    $"[grey]{SizeFormatter.Humanize(target.Bytes)}[/]");
+            }
         }
 
         var total = rows.Sum(r => r.Result.TotalBytes);
@@ -103,7 +127,8 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         }
     }
 
-    public bool Confirm(string markup, bool defaultValue = false) => console.Confirm(markup, defaultValue);
+    public bool Confirm(string markup, bool defaultValue = false) =>
+        IsInteractive ? console.Confirm(markup, defaultValue) : defaultValue;
 
     public IReadOnlyList<ICleaner> PromptSelection(IReadOnlyList<ICleaner> choosable)
     {
@@ -116,6 +141,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         // Nest every category under a single "All cleaners" node. In the default Leaf selection mode,
         // toggling a parent cascades to its descendants while only leaf cleaners are returned, so this
         // gives the user a one-keystroke "select all" (and per-category) shortcut for free.
+        // Labels embed the unique Id so two cleaners sharing a display name can never mismap.
         var labels = new Dictionary<string, ICleaner>(StringComparer.Ordinal);
         var all = prompt.AddChoice("All cleaners");
 
@@ -124,8 +150,9 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             var group = all.AddChild(category);
             foreach (var cleaner in choosable.Where(c => string.Equals(c.Category, category, StringComparison.Ordinal)))
             {
-                labels[cleaner.Name] = cleaner;
-                group.AddChild(cleaner.Name);
+                var label = $"{cleaner.Name} [grey]({cleaner.Id})[/]";
+                labels[label] = cleaner;
+                group.AddChild(label);
             }
         }
 
@@ -143,18 +170,34 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         Func<ICleaner, Task<ScanResult>> scan,
         CancellationToken cancellationToken)
     {
-        var rows = new List<ScanRow>(cleaners.Count);
-        await console.Status()
-            .Spinner(Spinner.Known.Dots)
-            .StartAsync("Scanning…", async ctx =>
+        // Scans are disk-walk heavy and independent, so run them concurrently; the array keeps the
+        // caller's ordering stable regardless of completion order.
+        var rows = new ScanRow[cleaners.Count];
+        var scanned = 0;
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 1, 8),
+            CancellationToken = cancellationToken,
+        };
+
+        Task ScanAllAsync(Action<int>? onScanned) =>
+            Parallel.ForEachAsync(Enumerable.Range(0, cleaners.Count), parallelOptions, async (i, _) =>
             {
-                foreach (var cleaner in cleaners)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    ctx.Status($"Scanning [green]{cleaner.Name.EscapeMarkup()}[/]…");
-                    rows.Add(new ScanRow(cleaner, await scan(cleaner)));
-                }
+                rows[i] = new ScanRow(cleaners[i], await scan(cleaners[i]));
+                onScanned?.Invoke(Interlocked.Increment(ref scanned));
             });
+
+        if (IsInteractive)
+        {
+            await console.Status()
+                .Spinner(Spinner.Known.Dots)
+                .StartAsync($"Scanning… [green]0/{cleaners.Count}[/]", ctx =>
+                    ScanAllAsync(done => ctx.Status($"Scanning… [green]{done}/{cleaners.Count}[/]")));
+        }
+        else
+        {
+            await ScanAllAsync(onScanned: null);
+        }
 
         return rows;
     }
@@ -165,6 +208,17 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         CancellationToken cancellationToken)
     {
         var results = new List<CleanRow>(cleaners.Count);
+        if (!IsInteractive)
+        {
+            foreach (var cleaner in cleaners)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                results.Add(new CleanRow(cleaner, await clean(cleaner)));
+            }
+
+            return results;
+        }
+
         await console.Progress()
             .Columns(
                 new TaskDescriptionColumn(),

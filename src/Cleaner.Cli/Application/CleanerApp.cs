@@ -20,6 +20,9 @@ public sealed class CleanerApp(
     IUpdateService updateService,
     IAppLogger logger)
 {
+    /// <summary>Distinct categories, for command-line validation messages.</summary>
+    public IReadOnlyList<string> Categories => registry.Categories;
+
     /// <summary>Resolve a selection from ids/category/all. Unknown ids are returned separately.</summary>
     public IReadOnlyList<ICleaner> Resolve(
         IReadOnlyList<string> ids,
@@ -142,12 +145,34 @@ public sealed class CleanerApp(
         var applicable = cleaners.Where(c => c.IsApplicable(context)).ToList();
         if (applicable.Count == 0)
         {
-            renderer.Line("[yellow]No applicable cleaners selected for this OS.[/]");
+            if (options.Json)
+            {
+                Console.Out.WriteLine(JsonOutput.Serialize([]));
+            }
+            else
+            {
+                renderer.Line("[yellow]No applicable cleaners selected for this OS.[/]");
+            }
+
+            return 0;
+        }
+
+        if (options.Json)
+        {
+            // Keep stdout pure JSON: scan without any spinner/table chrome.
+            var jsonRows = new List<ScanRow>(applicable.Count);
+            foreach (var cleaner in applicable)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                jsonRows.Add(MarkCommandBased(new ScanRow(cleaner, await SafeScanAsync(cleaner, context, cancellationToken)), context));
+            }
+
+            Console.Out.WriteLine(JsonOutput.Serialize(jsonRows));
             return 0;
         }
 
         var rows = await renderer.ScanAsync(applicable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken);
-        renderer.SizeTable(rows, "Reclaimable");
+        renderer.SizeTable(MarkCommandBased(rows, context), "Reclaimable", options.Verbose);
         return 0;
     }
 
@@ -156,6 +181,12 @@ public sealed class CleanerApp(
 
     public async Task<int> InteractiveAsync(RunOptions options, CancellationToken cancellationToken)
     {
+        if (!renderer.IsInteractive)
+        {
+            renderer.Line("[yellow]No interactive terminal detected — use 'cleaner scan' or 'cleaner clean' (with --yes) instead.[/]");
+            return 1;
+        }
+
         renderer.InteractiveHeader(updateService.CurrentVersion);
 
         var context = contextFactory.Create(options);
@@ -211,8 +242,10 @@ public sealed class CleanerApp(
             $"Clean run starting - {runnable.Count} cleaner(s): {string.Join(", ", runnable.Select(c => c.Id))}" +
             $" (dry-run: {options.DryRun}, force: {options.Force}).");
 
-        var rows = await renderer.ScanAsync(runnable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken);
-        renderer.SizeTable(rows, options.DryRun ? "Would free" : "Reclaimable");
+        var rows = MarkCommandBased(
+            await renderer.ScanAsync(runnable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken),
+            context);
+        renderer.SizeTable(rows, options.DryRun ? "Would free" : "Reclaimable", options.Verbose);
 
         if (blocked.Count > 0)
         {
@@ -221,6 +254,7 @@ public sealed class CleanerApp(
         }
 
         var total = rows.Sum(r => r.Result.TotalBytes);
+        var commandBased = rows.Count(r => r.CommandBased);
 
         // Process-backed cleaners (e.g. docker, conda) can't be pre-measured but are still actionable
         // when their tool is present. Keep them in the run set even when the measured total is 0.
@@ -233,8 +267,17 @@ public sealed class CleanerApp(
 
         if (options.DryRun)
         {
-            renderer.Line($"[grey]Dry run — would free [bold]{SizeFormatter.Humanize(total)}[/]. Nothing was deleted.[/]");
+            var note = commandBased > 0
+                ? $" {commandBased} command-based cleaner(s) report their size only after running."
+                : string.Empty;
+            renderer.Line($"[grey]Dry run — would free [bold]{SizeFormatter.Humanize(total)}[/]. Nothing was deleted.{note}[/]");
             return 0;
+        }
+
+        if (!options.AssumeYes && !renderer.IsInteractive)
+        {
+            renderer.Line("[yellow]No interactive terminal — re-run with --yes to confirm deletion.[/]");
+            return 1;
         }
 
         var prompt = total > 0
@@ -260,6 +303,13 @@ public sealed class CleanerApp(
 
         return failed > 0 ? 1 : 0;
     }
+
+    /// <summary>Flag rows whose cleaner can't pre-measure but would still run a command.</summary>
+    private static IReadOnlyList<ScanRow> MarkCommandBased(IReadOnlyList<ScanRow> rows, CleanupContext context) =>
+        [.. rows.Select(r => MarkCommandBased(r, context))];
+
+    private static ScanRow MarkCommandBased(ScanRow row, CleanupContext context) =>
+        row with { CommandBased = !row.Cleaner.SupportsSizeEstimate && row.Cleaner.IsAvailable(context) };
 
     private Task<ScanResult> SafeScanAsync(ICleaner cleaner, CleanupContext context, CancellationToken cancellationToken) =>
         CleanerRunner.SafeScanAsync(cleaner, context, logger, cancellationToken);

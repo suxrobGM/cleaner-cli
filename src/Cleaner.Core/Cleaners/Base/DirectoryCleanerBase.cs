@@ -17,6 +17,9 @@ public abstract class DirectoryCleanerBase : ICleaner
 
     public virtual bool RequiresElevation => false;
 
+    /// <inheritdoc cref="ICleaner.SupportsSizeEstimate"/>
+    public virtual bool SupportsSizeEstimate => true;
+
     /// <summary>The candidate directories this cleaner targets. May include paths that don't exist.</summary>
     protected abstract IEnumerable<CleanupPath> GetTargets(CleanupContext context);
 

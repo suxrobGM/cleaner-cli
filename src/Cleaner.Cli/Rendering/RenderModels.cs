@@ -2,8 +2,12 @@ using Cleaner.Core.Abstractions;
 
 namespace Cleaner.Cli.Rendering;
 
-/// <summary>A cleaner paired with its scan result, ready for size reporting.</summary>
-public sealed record ScanRow(ICleaner Cleaner, ScanResult Result);
+/// <summary>
+/// A cleaner paired with its scan result, ready for size reporting. <paramref name="CommandBased"/>
+/// marks rows whose size is only knowable after an external command runs, so the table can label
+/// them instead of hiding them as 0 B.
+/// </summary>
+public sealed record ScanRow(ICleaner Cleaner, ScanResult Result, bool CommandBased = false);
 
 /// <summary>A cleaner paired with its clean result, ready for the run summary.</summary>
 public sealed record CleanRow(ICleaner Cleaner, CleanResult Result);

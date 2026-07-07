@@ -19,6 +19,12 @@ public interface ICleaner
     /// <summary>True if removing this cleaner's targets requires administrator/root privileges.</summary>
     bool RequiresElevation { get; }
 
+    /// <summary>
+    /// False when reclaimable space can't be measured up front because an external command does the
+    /// work (e.g. <c>docker system prune</c>); the UI labels these rows instead of showing 0 B.
+    /// </summary>
+    bool SupportsSizeEstimate => true;
+
     /// <summary>True if this cleaner is meaningful on the current operating system.</summary>
     bool IsApplicable(CleanupContext context);
 

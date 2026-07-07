@@ -17,6 +17,8 @@ public sealed class DockerCleaner : ProcessCleanerBase
 
     public override string Category => Categories.Containers;
 
+    public override bool SupportsSizeEstimate => false;
+
     protected override string Executable => "docker";
 
     // The declared safe command, used for the dry-run/missing-tool fallback path.

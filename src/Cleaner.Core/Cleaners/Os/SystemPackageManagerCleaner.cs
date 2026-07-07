@@ -26,6 +26,9 @@ public sealed class SystemPackageManagerCleaner(
 
     public override bool RequiresElevation => requiresElevation;
 
+    // Without declared directories the size is only knowable after the command runs.
+    public override bool SupportsSizeEstimate => targets is not null;
+
     public override bool IsApplicable(CleanupContext context) => isApplicable(context.Environment);
 
     protected override string Executable => executable;

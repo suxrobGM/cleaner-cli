@@ -9,6 +9,9 @@ namespace Cleaner.Cli.Rendering;
 /// </summary>
 public interface IConsoleRenderer
 {
+    /// <summary>False when output is redirected or no live terminal is attached (no prompts/spinners).</summary>
+    bool IsInteractive { get; }
+
     /// <summary>Write a single line of Spectre markup.</summary>
     void Line(string markup);
 
@@ -18,8 +21,11 @@ public interface IConsoleRenderer
     /// <summary>Render the <c>list</c> table of cleaners, grouped by category, plus the footer count.</summary>
     void CleanerList(IReadOnlyList<CleanerListEntry> entries, int categoryCount);
 
-    /// <summary>Render a name/size table for scan results under the given size-column header.</summary>
-    void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader);
+    /// <summary>
+    /// Render a name/size table for scan results under the given size-column header; with
+    /// <paramref name="verbose"/>, include a per-target path breakdown beneath each cleaner.
+    /// </summary>
+    void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false);
 
     /// <summary>Render the post-clean summary table (freed bytes, status) and any error detail.</summary>
     void CleanSummary(IReadOnlyList<CleanRow> results);
