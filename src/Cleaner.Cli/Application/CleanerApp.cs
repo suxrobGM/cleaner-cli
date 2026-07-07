@@ -235,8 +235,11 @@ public sealed class CleanerApp(
             return 0;
         }
 
-        var runnable = applicable.Where(c => !c.RequiresElevation || environment.IsElevated).ToList();
-        var blocked = applicable.Where(c => c.RequiresElevation && !environment.IsElevated).ToList();
+        var forceGated = applicable.Where(c => c.RequiresForce && !options.Force).ToList();
+        var runnable = applicable
+            .Where(c => (!c.RequiresElevation || environment.IsElevated) && !forceGated.Contains(c))
+            .ToList();
+        var blocked = applicable.Where(c => c.RequiresElevation && !environment.IsElevated && !forceGated.Contains(c)).ToList();
 
         logger.Info(
             $"Clean run starting - {runnable.Count} cleaner(s): {string.Join(", ", runnable.Select(c => c.Id))}" +
@@ -251,6 +254,12 @@ public sealed class CleanerApp(
         {
             var names = string.Join(", ", blocked.Select(c => c.Name)).EscapeMarkup();
             renderer.Line($"[yellow]Skipped (needs admin/root): {names}. Re-run elevated to include these.[/]");
+        }
+
+        if (forceGated.Count > 0)
+        {
+            var names = string.Join(", ", forceGated.Select(c => c.Name)).EscapeMarkup();
+            renderer.Line($"[yellow]Skipped (needs --force): {names}. These have real trade-offs — re-run with --force to include them.[/]");
         }
 
         var total = rows.Sum(r => r.Result.TotalBytes);
