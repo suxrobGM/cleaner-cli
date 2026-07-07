@@ -29,6 +29,12 @@ try
     var builder = provider.GetRequiredService<CommandLineBuilder>();
     return await builder.Build().Parse(args).InvokeAsync();
 }
+catch (OperationCanceledException)
+{
+    // User-initiated Ctrl+C is not an error; 130 is the conventional SIGINT exit code.
+    AnsiConsole.MarkupLine("[grey]Cancelled.[/]");
+    return 130;
+}
 catch (Exception ex)
 {
     logger.Error("Cleaner terminated with an unhandled exception", ex);
