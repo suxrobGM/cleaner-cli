@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-07
+
+### Added
+
+- **45 new cleaners** across dev tools, apps, and Windows:
+  - Languages & package managers: `conan` (force-gated package removal), `zig`, `swiftpm`,
+    `opam`, `cpanm`, `julia` (compiled/logs only), `rubygems`, `renv`, `luarocks`, `nim`,
+    `texlive`.
+  - Containers / IaC: `podman`, `helm`, `minikube`, `vagrant` (tmp only), `pulumi` plugins,
+    `kubectl` caches, `ansible`, `lima`.
+  - Python: `pipx` (cache/logs, never venvs), `pre-commit`.
+  - Tooling downloads: `corepack`, `nvm`, `mise`, `asdf`, `sdkman`, `node-gyp`, `gcloud`
+    logs, `sonar` cache.
+  - Machine learning: `wandb`; `ml-cache` now also covers Keras datasets and kagglehub.
+  - Apps: `telegram` media cache (never account state), `game-launchers`
+    (Epic/Battle.net/GOG/EA/Riot web caches), `adobe-media-cache`, `onedrive` logs,
+    `dropbox` internal cache, `cocoapods`; WhatsApp/Element and new Teams WebView2 caches
+    in `electron-app-cache`.
+  - Game development: `unreal` DerivedDataCache.
+  - IDEs: `zed`, `neovim`; `vscode` now covers Cursor/VSCodium/Windsurf; `xcode` adds
+    DeviceSupport and simulator caches.
+  - OS / package managers: `winget` downloads+logs, `flatpak` unused runtimes, `nix`
+    garbage collection, `gpu-installers` (extraction leftovers only), `winsxs` (DISM
+    component cleanup), `windows-old` (force-gated).
+- **Force-gated cleaners** (`ICleaner.RequiresForce`): cleanups with a real trade-off beyond
+  re-fetching a cache (e.g. removing Windows.old drops upgrade rollback) stay scannable but
+  are skipped — with an explicit message — unless `--force` is passed.
+- **Parallel scanning**: scans run concurrently (bounded by CPU count, max 8) with a live
+  scanned-count status, cutting wall-clock time on dozens of disk walks.
+- **`scan --json`** emits a machine-readable report via a source-generated
+  `JsonSerializerContext` (AOT-safe), making the scripts-and-CI story real.
+- **`--verbose`** on `clean`/`scan` lists the individual directories behind each size.
+
+### Changed
+
+- Non-TTY runs skip the figlet banner, spinners, progress bars, and prompts; the interactive
+  menu and unconfirmed cleans point at `scan`/`clean --yes`.
+- Command-based cleaners (docker, dnf, …) show `n/a (runs command)` instead of being hidden
+  as 0 B, and dry runs note that they are not in the estimate
+  (new `ICleaner.SupportsSizeEstimate`).
+- Unknown `--category` names now list the valid categories instead of silently matching
+  nothing, and interactive selection is keyed by cleaner id so duplicate display names cannot
+  mismap.
+
+### Fixed
+
+- `Ctrl+C` is now treated as cancellation: it prints a plain `Cancelled.` message and exits
+  with the conventional SIGINT code 130 instead of reporting an unexpected error.
+- Cleaners honor cache-relocation environment variables (`NUGET_PACKAGES`, `CARGO_HOME`,
+  `RUSTUP_HOME`, `GOMODCACHE`, `GRADLE_USER_HOME`, `npm_config_cache`, `YARN_CACHE_FOLDER`,
+  `BUN_INSTALL(_CACHE_DIR)`, `PIP_CACHE_DIR`, `POETRY_CACHE_DIR`, `UV_CACHE_DIR`, `PUB_CACHE`),
+  so scans no longer under-report and deletion no longer misses relocated caches.
+- `conda` and `yarn` cache locations corrected: conda now finds the package cache under the
+  install root (`<root>/pkgs`) and honors `CONDA_PKGS_DIRS`/`CONDA_PREFIX`/`MAMBA_ROOT_PREFIX`;
+  yarn covers the capital-Y macOS Classic cache and the Berry global cache. Target de-dup is
+  now platform-aware (case-sensitive on Linux) and checks existence before consuming a slot.
+- The `jetbrains` cleaner no longer wipes Toolbox-installed IDEs on Windows — it now targets
+  only the caches, index, log, and tmp subdirectories of each product and skips Toolbox.
+
 ## [1.0.4] - 2026-06-16
 
 ### Fixed
@@ -67,7 +126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `list`, `scan`, `clean`, `update`, and interactive menu commands.
 - Self-update command with version reporting in the interactive banner.
 
-[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.4...v1.1.0
 [1.0.4]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.1...v1.0.2
