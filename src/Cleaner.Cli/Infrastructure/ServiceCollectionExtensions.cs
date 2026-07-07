@@ -2,10 +2,6 @@ using Cleaner.Cli.Application;
 using Cleaner.Cli.Commands;
 using Cleaner.Cli.Rendering;
 using Cleaner.Core.Abstractions;
-using Cleaner.Core.Cleaners.Applications;
-using Cleaner.Core.Cleaners.Base;
-using Cleaner.Core.Cleaners.DevTools;
-using Cleaner.Core.Cleaners.Os;
 using Cleaner.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
@@ -14,9 +10,10 @@ namespace Cleaner.Cli.Infrastructure;
 
 /// <summary>
 /// The composition root. Everything is registered explicitly with factory lambdas — no assembly
-/// scanning and no reflection-based activation — so the app stays Native-AOT clean.
+/// scanning and no reflection-based activation — so the app stays Native-AOT clean. The per-category
+/// cleaner registrations live in the <c>ServiceCollectionExtensions.*.cs</c> partial files.
 /// </summary>
-internal static class ServiceCollectionExtensions
+internal static partial class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCleaner(this IServiceCollection services)
     {
@@ -40,200 +37,15 @@ internal static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers every cleaner. Adding a new cleaner is one line here — keep them grouped by the
-    /// same categories used for display.
+    /// Registers every cleaner, delegating to the per-category partials. Adding a new cleaner is one
+    /// line in the matching <c>AddXCleaners</c> method.
     /// </summary>
     private static void AddCleaners(this IServiceCollection services)
     {
-        // .NET
-        services.AddSingleton<ICleaner, NuGetCleaner>();
-        services.AddSingleton<ICleaner, DotnetCleaner>();
-
-        // JavaScript / TypeScript
-        services.AddSingleton<ICleaner, NpmCleaner>();
-        services.AddSingleton<ICleaner, NpxCleaner>();
-        services.AddSingleton<ICleaner, YarnCleaner>();
-        services.AddSingleton<ICleaner, PnpmCleaner>();
-        services.AddSingleton<ICleaner, BunCleaner>();
-        services.AddSingleton<ICleaner, DenoCleaner>();
-
-        // Python
-        services.AddSingleton<ICleaner, PipCleaner>();
-        services.AddSingleton<ICleaner, PipenvCleaner>();
-        services.AddSingleton<ICleaner, PoetryCleaner>();
-        services.AddSingleton<ICleaner, CondaCleaner>();
-        services.AddSingleton<ICleaner, PdmCleaner>();
-        services.AddSingleton<ICleaner, UvCleaner>();
-        services.AddSingleton<ICleaner, PipxCleaner>();
-        services.AddSingleton<ICleaner, PreCommitCleaner>();
-
-        // Rust
-        services.AddSingleton<ICleaner, CargoCleaner>();
-        services.AddSingleton<ICleaner, RustupCleaner>();
-        services.AddSingleton<ICleaner, SccacheCleaner>();
-
-        // Go
-        services.AddSingleton<ICleaner, GoCleaner>();
-
-        // Machine learning
-        services.AddSingleton<ICleaner, MlCacheCleaner>();
-        services.AddSingleton<ICleaner, WandbCleaner>();
-
-        // JVM / Android
-        services.AddSingleton<ICleaner, GradleCleaner>();
-        services.AddSingleton<ICleaner, MavenCleaner>();
-        services.AddSingleton<ICleaner, SbtIvyCleaner>();
-        services.AddSingleton<ICleaner, KonanCleaner>();
-        services.AddSingleton<ICleaner, AndroidSdkCleaner>();
-
-        // Mobile (React Native / Expo)
-        services.AddSingleton<ICleaner, ReactNativeCleaner>();
-        services.AddSingleton<ICleaner, ExpoCleaner>();
-        services.AddSingleton<ICleaner, CocoaPodsCleaner>();
-
-        // Other languages
-        services.AddSingleton<ICleaner, GemBundlerCleaner>();
-        services.AddSingleton<ICleaner, ComposerCleaner>();
-        services.AddSingleton<ICleaner, PubCleaner>();
-        services.AddSingleton<ICleaner, HexMixCleaner>();
-        services.AddSingleton<ICleaner, VcpkgCleaner>();
-        services.AddSingleton<ICleaner, CabalStackCleaner>();
-        services.AddSingleton<ICleaner, ConanCleaner>();
-        services.AddSingleton<ICleaner, ZigCleaner>();
-        services.AddSingleton<ICleaner, SwiftPmCleaner>();
-        services.AddSingleton<ICleaner, OpamCleaner>();
-        services.AddSingleton<ICleaner, CpanmCleaner>();
-        services.AddSingleton<ICleaner, JuliaCleaner>();
-        services.AddSingleton<ICleaner, RubyGemsCleaner>();
-        services.AddSingleton<ICleaner, RenvCleaner>();
-        services.AddSingleton<ICleaner, LuaRocksCleaner>();
-        services.AddSingleton<ICleaner, NimCleaner>();
-        services.AddSingleton<ICleaner, TexLiveCleaner>();
-
-        // Build / monorepo caches
-        services.AddSingleton<ICleaner, CcacheCleaner>();
-        services.AddSingleton<ICleaner, BazelCleaner>();
-        services.AddSingleton<ICleaner, TurboNxCleaner>();
-        services.AddSingleton<ICleaner, NodeModulesCacheCleaner>();
-
-        // Containers / IaC
-        services.AddSingleton<ICleaner, DockerCleaner>();
-        services.AddSingleton<ICleaner, TerraformCleaner>();
-        services.AddSingleton<ICleaner, PodmanCleaner>();
-        services.AddSingleton<ICleaner, HelmCleaner>();
-        services.AddSingleton<ICleaner, MinikubeCleaner>();
-        services.AddSingleton<ICleaner, VagrantCleaner>();
-        services.AddSingleton<ICleaner, PulumiCleaner>();
-        services.AddSingleton<ICleaner, KubectlCleaner>();
-        services.AddSingleton<ICleaner, AnsibleCleaner>();
-        services.AddSingleton<ICleaner, LimaCleaner>();
-
-        // IDEs / editors
-        services.AddSingleton<ICleaner, JetBrainsCleaner>();
-        services.AddSingleton<ICleaner, VsCodeCleaner>();
-        services.AddSingleton<ICleaner, VisualStudioCleaner>();
-        services.AddSingleton<ICleaner, XcodeCleaner>();
-        services.AddSingleton<ICleaner, ZedCleaner>();
-        services.AddSingleton<ICleaner, NeovimCleaner>();
-
-        // Tooling downloads
-        services.AddSingleton<ICleaner, BrowserAutomationCleaner>();
-        services.AddSingleton<ICleaner, ElectronCacheCleaner>();
-        services.AddSingleton<ICleaner, AzureFunctionsToolsCleaner>();
-        services.AddSingleton<ICleaner, DotslashCleaner>();
-        services.AddSingleton<ICleaner, CorepackCleaner>();
-        services.AddSingleton<ICleaner, NvmCleaner>();
-        services.AddSingleton<ICleaner, MiseCleaner>();
-        services.AddSingleton<ICleaner, AsdfCleaner>();
-        services.AddSingleton<ICleaner, SdkmanCleaner>();
-        services.AddSingleton<ICleaner, NodeGypCleaner>();
-        services.AddSingleton<ICleaner, GcloudCleaner>();
-        services.AddSingleton<ICleaner, SonarCleaner>();
-
-        // Project-local
-        services.AddSingleton<ICleaner, BuildArtifactCleaner>();
-
-        // Operating system
-        services.AddSingleton<ICleaner, UserTempCleaner>();
-        services.AddSingleton<ICleaner, TrashCleaner>();
-        services.AddSingleton<ICleaner, BrowserCacheCleaner>();
-        services.AddSingleton<ICleaner, WindowsUpdateCacheCleaner>();
-        services.AddSingleton<ICleaner, WindowsTempCleaner>();
-        services.AddSingleton<ICleaner, ThumbnailCacheCleaner>();
-        services.AddSingleton<ICleaner, CrashDumpCleaner>();
-        services.AddSingleton<ICleaner, DeliveryOptimizationCleaner>();
-        services.AddSingleton<ICleaner, WindowsLogCleaner>();
-        services.AddSingleton<ICleaner, ServiceProfileTempCleaner>();
-        services.AddSingleton<ICleaner, DownloadedProgramFilesCleaner>();
-        services.AddSingleton<ICleaner, SystemMemoryDumpCleaner>();
-        services.AddSingleton<ICleaner, GpuShaderCacheCleaner>();
-        services.AddSingleton<ICleaner, InetCacheCleaner>();
-        services.AddSingleton<ICleaner, StoreAppCacheCleaner>();
-        services.AddSingleton<ICleaner, MacUserCachesCleaner>();
-        services.AddSingleton<ICleaner, XdgCacheCleaner>();
-        services.AddSingleton<ICleaner, JournalLogCleaner>();
-        services.AddSingleton<ICleaner, GpuInstallerLeftoverCleaner>();
-        services.AddSingleton<ICleaner, WinSxSCleaner>();
-        services.AddSingleton<ICleaner, WindowsOldCleaner>();
-
-        // System package managers
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "apt", "APT cache", "apt-get", ["clean"], requiresElevation: true,
-            env => env.IsLinux,
-            _ => [new CleanupPath("/var/cache/apt/archives", DeleteMode.ClearContents)]));
-
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "dnf", "DNF cache", "dnf", ["clean", "all"], requiresElevation: true,
-            env => env.IsLinux));
-
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "pacman", "Pacman cache", "pacman", ["-Sc", "--noconfirm"], requiresElevation: true,
-            env => env.IsLinux));
-
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "brew", "Homebrew cache", "brew", ["cleanup", "-s"], requiresElevation: false,
-            env => env.IsMacOs || env.IsLinux,
-            ctx =>
-            [
-                new CleanupPath(ctx.Environment.IsMacOs
-                    ? Path.Combine(ctx.Environment.HomeDirectory, "Library", "Caches", "Homebrew")
-                    : Path.Combine(ctx.Environment.CacheDirectory, "Homebrew"), DeleteMode.ClearContents),
-            ]));
-
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "scoop", "Scoop cache", "scoop", ["cache", "rm", "*"], requiresElevation: false,
-            env => env.IsWindows,
-            ctx => [new CleanupPath(ctx.Environment.HomePath("scoop", "cache"), DeleteMode.ClearContents)]));
-
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "choco", "Chocolatey cache", "choco", ["cache", "remove"], requiresElevation: true,
-            env => env.IsWindows,
-            ctx => [new CleanupPath(Path.Combine(ctx.Environment.TempDirectory, "chocolatey"), DeleteMode.ClearContents)]));
-
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "flatpak", "Flatpak unused runtimes", "flatpak", ["uninstall", "--unused", "--assumeyes"],
-            requiresElevation: false,
-            env => env.IsLinux));
-
-        // No -d: unreachable store paths only, keeping rollback generations intact.
-        services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "nix", "Nix store garbage", "nix-collect-garbage", [], requiresElevation: false,
-            env => env.IsLinux || env.IsMacOs));
-
-        services.AddSingleton<ICleaner, WingetCleaner>();
-
-        // Game development
-        services.AddSingleton<ICleaner, UnityCleaner>();
-        services.AddSingleton<ICleaner, UnrealCleaner>();
-
-        // Applications
-        services.AddSingleton<ICleaner, SteamCleaner>();
-        services.AddSingleton<ICleaner, ElectronAppCacheCleaner>();
-        services.AddSingleton<ICleaner, SpotifyCleaner>();
-        services.AddSingleton<ICleaner, TelegramCleaner>();
-        services.AddSingleton<ICleaner, GameLauncherCleaner>();
-        services.AddSingleton<ICleaner, AdobeMediaCacheCleaner>();
-        services.AddSingleton<ICleaner, OneDriveCleaner>();
-        services.AddSingleton<ICleaner, DropboxCleaner>();
+        services.AddDevToolCleaners();
+        services.AddOsCleaners();
+        services.AddSystemPackageManagerCleaners();
+        services.AddApplicationCleaners();
     }
+
 }
