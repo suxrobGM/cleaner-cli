@@ -116,6 +116,49 @@ public sealed class CleanerCatalogTests
     }
 
     [Fact]
+    public async Task CondaCleaner_finds_the_install_root_package_cache_and_keeps_envs()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/home/test/miniconda3/pkgs/numpy-1.0.tar.bz2", 6_000)
+            .AddFile("/home/test/miniconda3/envs/proj/bin/python", 9_999); // installed env — must survive
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new CondaCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(6_000, result.BytesFreed);
+        Assert.True(fs.FileExists("/home/test/miniconda3/envs/proj/bin/python"));
+    }
+
+    [Fact]
+    public async Task CondaCleaner_honors_CONDA_PKGS_DIRS()
+    {
+        var fs = new FakeFileSystem().AddFile("/data/conda-pkgs/pkg.conda", 2_500);
+        var env = new FakeEnvironment { Os = OsPlatform.Linux }.SetVariable("CONDA_PKGS_DIRS", "/data/conda-pkgs");
+
+        var result = await new CondaCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(2_500, result.TotalBytes);
+    }
+
+    [Fact]
+    public async Task YarnCleaner_covers_classic_and_berry_caches_on_macos()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/home/test/Library/Caches/Yarn/v6/pkg.zip", 1_000)
+            .AddFile("/home/test/.yarn/berry/cache/pkg-2.zip", 2_000);
+        var env = new FakeEnvironment
+        {
+            HomeDirectory = "/home/test",
+            CacheDirectory = "/home/test/Library/Caches",
+            Os = OsPlatform.MacOs,
+        };
+
+        var result = await new YarnCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(3_000, result.TotalBytes);
+    }
+
+    [Fact]
     public async Task JetBrainsCleaner_keeps_toolbox_and_local_history_on_windows()
     {
         const string local = @"C:\Users\test\AppData\Local";

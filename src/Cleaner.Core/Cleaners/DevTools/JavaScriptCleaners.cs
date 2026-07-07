@@ -65,9 +65,22 @@ public sealed class YarnCleaner : ProcessCleanerBase
             yield break;
         }
 
-        yield return env.IsWindows
-            ? new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "Yarn", "Cache"))
-            : new CleanupPath(Path.Combine(env.CacheDirectory, "yarn"));
+        if (env.IsWindows)
+        {
+            yield return new CleanupPath(Path.Combine(env.LocalAppDataDirectory, "Yarn", "Cache"));
+        }
+        else
+        {
+            yield return new CleanupPath(Path.Combine(env.CacheDirectory, "yarn"));
+            if (env.IsMacOs)
+            {
+                // Yarn Classic uses a capital Y; matters on case-sensitive APFS volumes.
+                yield return new CleanupPath(Path.Combine(env.HomeDirectory, "Library", "Caches", "Yarn"));
+            }
+        }
+
+        // Yarn Berry keeps its global mirror separately from the Classic cache.
+        yield return new CleanupPath(env.HomePath(".yarn", "berry", "cache"), Description: "Berry global cache");
     }
 }
 

@@ -88,7 +88,9 @@ public abstract class DirectoryCleanerBase : ICleaner
     /// <summary>Targets that actually exist on disk, de-duplicated by path.</summary>
     protected IEnumerable<CleanupPath> ExistingTargets(CleanupContext context)
     {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Linux paths are case-sensitive; Windows and (default) macOS volumes are not.
+        var comparer = context.Environment.IsLinux ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        var seen = new HashSet<string>(comparer);
         foreach (var path in GetTargets(context))
         {
             if (string.IsNullOrWhiteSpace(path.Path))
@@ -96,7 +98,10 @@ public abstract class DirectoryCleanerBase : ICleaner
                 continue;
             }
 
-            if (seen.Add(path.Path) && context.FileSystem.DirectoryExists(path.Path))
+            // Normalize separators so the same directory spelled two ways de-dupes, and check
+            // existence first so a nonexistent candidate doesn't shadow a real one it aliases.
+            var key = path.Path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            if (context.FileSystem.DirectoryExists(path.Path) && seen.Add(key))
             {
                 yield return path;
             }
