@@ -155,4 +155,75 @@ public sealed class CommandSizedCleanerTests
         Assert.Equal(2L * 1024 * 1024 * 1024, result.BytesFreed);
         Assert.Empty(result.Errors);
     }
+
+    [Fact]
+    public async Task DockerCleaner_sizes_the_prune_against_what_its_own_scan_measured()
+    {
+        var runner = new FakeProcessRunner().WithAvailable("docker");
+        var pruned = false;
+        runner.Respond = (_, arguments) =>
+        {
+            if (arguments[0] != "system" || arguments[1] != "df")
+            {
+                pruned = true;
+                return new ProcessResult(0, string.Empty, string.Empty);
+            }
+
+            return new ProcessResult(0, pruned ? "400MB|0B (0%)" : "1.2GB|800MB (66%)", string.Empty);
+        };
+
+        var context = TestContext.Create(new FakeFileSystem(), processRunner: runner);
+        var cleaner = new DockerCleaner();
+        await cleaner.ScanAsync(context);
+        var result = await cleaner.CleanAsync(context);
+
+        // The scan's total is the baseline, so the daemon is asked before and after the run, not thrice.
+        Assert.Equal(800_000_000, result.BytesFreed);
+        Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("df")));
+    }
+
+    [Fact]
+    public async Task WinSxSCleaner_sizes_the_cleanup_against_the_report_its_scan_already_produced()
+    {
+        var environment = FakeEnvironment.Windows();
+        environment.IsElevated = true;
+        var runner = new FakeProcessRunner().WithAvailable("dism");
+        var cleaned = false;
+        runner.Respond = (_, arguments) =>
+        {
+            if (arguments.Contains("/StartComponentCleanup"))
+            {
+                cleaned = true;
+                return new ProcessResult(0, string.Empty, string.Empty);
+            }
+
+            return new ProcessResult(0, cleaned ? DismReport.Replace("6.50 GB", "4.50 GB") : DismReport, string.Empty);
+        };
+
+        var context = TestContext.Create(new FakeFileSystem(), environment, runner);
+        var cleaner = new WinSxSCleaner();
+        await cleaner.ScanAsync(context);
+        var result = await cleaner.CleanAsync(context);
+
+        // Each analysis costs about a minute, so the run pays for two rather than three.
+        Assert.Equal(2L * 1024 * 1024 * 1024, result.BytesFreed);
+        Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("/AnalyzeComponentStore")));
+    }
+
+    [Fact]
+    public async Task WinSxSCleaner_measures_afresh_when_the_scan_belonged_to_an_earlier_run()
+    {
+        var environment = FakeEnvironment.Windows();
+        environment.IsElevated = true;
+        var runner = new FakeProcessRunner().WithAvailable("dism");
+        runner.Result = new ProcessResult(0, DismReport, string.Empty);
+
+        var fileSystem = new FakeFileSystem();
+        var cleaner = new WinSxSCleaner();
+        await cleaner.ScanAsync(TestContext.Create(fileSystem, environment, runner));
+        await cleaner.CleanAsync(TestContext.Create(fileSystem, environment, runner));
+
+        // A number from a previous run would be stale, so the second run analyzes both sides itself.
+        Assert.Equal(3, runner.Invocations.Count(i => i.Arguments.Contains("/AnalyzeComponentStore")));
+    }
 }

@@ -9,6 +9,9 @@ namespace Cleaner.Core.Cleaners.Base;
 /// </summary>
 public abstract class ProcessCleanerBase : DirectoryCleanerBase
 {
+    private CleanupContext? _measuredContext;
+    private long? _measuredBytes;
+
     /// <summary>The executable to invoke (resolved on PATH), e.g. "dotnet", "npm", "docker".</summary>
     protected abstract string Executable { get; }
 
@@ -32,7 +35,7 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
             return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
         }
 
-        var before = await MeasureAsync(context, cancellationToken).ConfigureAwait(false);
+        var before = await BaselineAsync(context, cancellationToken).ConfigureAwait(false);
         foreach (var arguments in CommandSequence(context))
         {
             var result = await context.ProcessRunner
@@ -54,6 +57,30 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
         var freed = before is { } start && after is { } end ? Math.Max(0, start - end) : 0;
         progress?.Report(new CleanProgress(Name, freed));
         return new CleanResult(freed, 1, []);
+    }
+
+    /// <summary>
+    /// Hand the clean the size a scan has just measured, so a run that scans first does not pay
+    /// for the same measurement twice. Only the context that produced the number can spend it, and
+    /// only once, so a later run always measures afresh.
+    /// </summary>
+    protected void RememberMeasurement(CleanupContext context, long? bytes)
+    {
+        _measuredContext = context;
+        _measuredBytes = bytes;
+    }
+
+    /// <summary>The pre-clean size: whatever the scan remembered for this run, else a fresh measure.</summary>
+    private async ValueTask<long?> BaselineAsync(CleanupContext context, CancellationToken cancellationToken)
+    {
+        var remembered = _measuredBytes;
+        var matches = ReferenceEquals(_measuredContext, context);
+
+        // Spent either way, so a stale number can never be read and the context is not held on.
+        _measuredContext = null;
+        _measuredBytes = null;
+
+        return matches ? remembered : await MeasureAsync(context, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

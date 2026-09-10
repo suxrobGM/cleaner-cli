@@ -46,6 +46,10 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
     {
         var report = await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false);
         var reclaimable = report is null ? 0 : ReclaimableLabels.Sum(label => Measure(report, label));
+
+        // This report also carries the store size the clean measures against, and producing another
+        // one costs the best part of a minute — so the clean spends this one instead.
+        RememberMeasurement(context, StoreSize(report));
         return reclaimable > 0
             ? new ScanResult([new CleanupTarget("WinSxS", reclaimable, "superseded components, backups, and servicing scratch")])
             : ScanResult.Empty;
@@ -55,9 +59,13 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
     /// Size the store from DISM itself, so the summary reports what the store actually gave back
     /// rather than the estimate. Each measurement adds about a minute to an already slow operation.
     /// </summary>
-    protected override async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken)
+    protected override async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken) =>
+        StoreSize(await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false));
+
+    /// <summary>The store size a report gives, or null when there is no usable number in it.</summary>
+    private static long? StoreSize(string? report)
     {
-        var size = Measure(await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false), ActualSizeLabel);
+        var size = Measure(report, ActualSizeLabel);
         return size > 0 ? size : null;
     }
 

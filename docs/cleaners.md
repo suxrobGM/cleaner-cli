@@ -23,7 +23,9 @@ Some cleaners own nothing the host can measure, because an external tool holds t
 tool can be asked, they ask it: `docker` and `docker-vhdx` read `docker system df`, and `winsxs` runs
 `DISM /AnalyzeComponentStore`, which is what makes a scan including it take about a minute longer.
 When the tool can't answer — the Docker daemon is down, DISM isn't elevated, the output isn't in
-English — the preview shows *n/a (unknown until it runs)* and the size is reported after the run. Cleaners marked
+English — the preview shows *n/a (unknown until it runs)* and the size is reported after the run. What
+the scan measured doubles as the baseline the clean subtracts from, so a run asks the tool twice, not
+three times. Cleaners marked
 **asks again** have a real trade-off beyond "cache is re-downloaded", so they print that trade-off
 and take their own yes/no before the run-wide confirmation.
 

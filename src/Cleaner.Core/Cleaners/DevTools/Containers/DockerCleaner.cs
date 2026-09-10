@@ -38,6 +38,9 @@ public sealed class DockerCleaner : ProcessCleanerBase
     public override async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
     {
         var usage = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
+
+        // A clean follows the scan, and the daemon's total is the baseline it needs — keep it.
+        RememberMeasurement(context, usage.Used);
         return usage.Reclaimable > 0
             ? new ScanResult([new CleanupTarget("docker", usage.Reclaimable, "unused images, containers, volumes, and build cache")])
             : ScanResult.Empty;
