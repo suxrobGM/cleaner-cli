@@ -62,12 +62,12 @@ public sealed class CompositionRootTests
                      "corepack", "mise", "winget", "flatpak", "nix", "telegram", "gpu-installers",
                      "game-launchers", "unreal", "winsxs", "windows-old", "rubygems", "wandb",
                      "app-leftovers", "vscode-cpptools", "android-studio", "amd-telemetry",
-                     "winre-agent", "razer", "claude-desktop", "codex",
+                     "winre-agent", "razer", "claude-desktop", "codex", "docker-vhdx", "ngen-cache", "windows-installer-orphans",
                  })
         {
             Assert.NotNull(registry.Find(id));
         }
 
-        Assert.Equal(128, registry.All.Count);
+        Assert.Equal(131, registry.All.Count);
     }
 }

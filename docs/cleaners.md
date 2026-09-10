@@ -1,6 +1,6 @@
 # Cleaners
 
-Cleaner ships with 128 cleaners. Pick **List all cleaners** in the menu to see which apply to your
+Cleaner ships with 131 cleaners. Pick **List all cleaners** in the menu to see which apply to your
 machine; the **id** below is what each one is listed under.
 
 > Cleaners only ever remove caches, temp files, and rebuildable artifacts — never source, configs,
@@ -126,6 +126,7 @@ and take their own yes/no before the run-wide confirmation.
 | Id | Removes |
 | --- | --- |
 | `docker` | Stopped containers, unused networks, every unreferenced image, all build cache, and unused **named volumes** (`docker system prune -a --volumes` + `docker builder prune -a`) — that can delete data such as database volumes. On Docker Desktop/WSL2 this frees space inside the virtual disk; compact the `.vhdx` separately to shrink the host file. |
+| `docker-vhdx` | Compacts Docker Desktop's WSL2 virtual disks in place. `docker` frees space *inside* the disk; the host `.vhdx` only ever grows, so it stays huge long after the images are gone. Shuts WSL down, then compacts with `diskpart`. Deletes nothing, and **asks again** first. | Windows · needs admin |
 | `terraform` | Terraform provider plugin cache. |
 | `podman` | `podman system prune -a --volumes` (same caveats as docker). |
 | `helm` | Helm chart repository cache (honors `HELM_REPOSITORY_CACHE`). |
@@ -171,7 +172,7 @@ and take their own yes/no before the run-wide confirmation.
 
 | Id | Removes |
 | --- | --- |
-| `build-artifacts` | `bin`, `obj`, `node_modules`, `target`, `dist`, `.next`, `.nuxt`, `.svelte-kit`, `.astro`, `.gradle`, `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.terragrunt-cache` under each `--path` (default cwd). Repeat `-p` to sweep whole workspaces. |
+| `build-artifacts` | `bin`, `obj`, `node_modules`, `target`, `dist`, `.next`, `.nuxt`, `.svelte-kit`, `.astro`, `.turbo`, `.parcel-cache`, `.vite`, `.gradle`, Python virtualenvs (`.venv`, `venv`, `.tox`, `.nox`) and tool caches (`__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.terragrunt-cache`) under each `--path` root. `build` is taken too, but only beside a Gradle, Maven, CMake, or Meson project file — the name is far too common to sweep on sight. Matches are not descended into. |
 
 ## Operating system
 
@@ -196,6 +197,8 @@ and take their own yes/no before the run-wide confirmation.
 | `amd-telemetry` | AMD driver usage logs under `ProgramData\AMD\PPC` (`sdkusage.csv` and friends, plus the upload staging folders). They are append-only and never rotated, so they reach several GB. `config.csv` is kept. | Windows |
 | `winre-agent` | `C:\$WinREAgent`, the scratch folder Windows Setup uses during a feature update and routinely leaves behind. | Windows · needs admin |
 | `winsxs` | Superseded Windows component-store versions (`DISM /StartComponentCleanup`; no `/ResetBase`, so updates stay uninstallable). Slow (minutes) but often the largest Windows reclaim. | Windows · needs admin |
+| `ngen-cache` | The .NET Framework native image cache (`NativeImages_v*` under `C:\Windows\assembly`). Rebuilt lazily by the NGEN maintenance task, so Framework apps start slower until it catches up — it **asks again**. The GAC itself is never touched. | Windows · needs admin |
+| `windows-installer-orphans` | Cached `.msi`/`.msp` packages in `C:\Windows\Installer` that no installed product or patch still references. The live set is read from the Installer's `UserData` registry key; if that read fails or comes back empty the cleaner does nothing, rather than treating the whole cache as garbage. **Asks again** before running. | Windows · needs admin |
 | `windows-old` | The previous Windows installation (`C:\Windows.old`). Deleting it removes the ability to roll back the last upgrade. | Windows · needs admin · **asks again** |
 | `mac-caches` | `~/Library/Caches` and `~/Library/Logs`. | macOS |
 | `xdg-cache` | The `~/.cache` user cache root. | Linux |

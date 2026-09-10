@@ -31,6 +31,38 @@ public sealed class BuildCacheCleanerTests
     }
 
     [Fact]
+    public async Task BuildArtifactCleaner_sweeps_python_virtualenvs()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/work/api/.venv/lib/site-packages/torch.so", 5_000)
+            .AddFile("/work/cli/venv/lib/x.py", 1_000)
+            .AddFile("/work/api/main.py", 10);
+
+        var result = await new BuildArtifactCleaner().CleanAsync(TestContext.Create(fs, workingDirectory: "/work"));
+
+        Assert.Equal(6_000, result.BytesFreed);
+        Assert.True(fs.FileExists("/work/api/main.py"));
+    }
+
+    [Fact]
+    public async Task BuildArtifactCleaner_takes_build_only_beside_a_build_system()
+    {
+        // "build" is swept next to a Gradle/CMake project, but left alone where it is just a folder.
+        var fs = new FakeFileSystem()
+            .AddFile("/work/android/build.gradle", 10)
+            .AddFile("/work/android/build/outputs/app.apk", 4_000)
+            .AddFile("/work/native/CMakeLists.txt", 10)
+            .AddFile("/work/native/build/libfoo.a", 2_000)
+            .AddFile("/work/docs/build/index.html", 9_999);
+
+        var result = await new BuildArtifactCleaner().CleanAsync(TestContext.Create(fs, workingDirectory: "/work"));
+
+        Assert.Equal(6_000, result.BytesFreed);
+        Assert.True(fs.FileExists("/work/docs/build/index.html"));
+        Assert.True(fs.FileExists("/work/android/build.gradle"));
+    }
+
+    [Fact]
     public async Task BuildArtifactCleaner_sweeps_every_scan_root()
     {
         var fs = new FakeFileSystem()

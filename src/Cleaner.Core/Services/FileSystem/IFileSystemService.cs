@@ -25,6 +25,9 @@ public interface IFileSystemService
 
     void DeleteFile(string path);
 
+    /// <summary>Write text to <paramref name="path"/>, creating or overwriting it.</summary>
+    void WriteAllText(string path, string contents);
+
     /// <summary>Delete everything inside a directory but keep the directory itself.</summary>
     void DeleteContents(string path);
 }

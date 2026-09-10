@@ -115,6 +115,11 @@ public sealed class FakeFileSystem : IFileSystemService
         _files.Remove(p);
     }
 
+    public void WriteAllText(string path, string contents)
+    {
+        AddFile(path, contents.Length);
+    }
+
     public void DeleteContents(string path)
     {
         var p = Norm(path);

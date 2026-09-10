@@ -82,6 +82,7 @@ internal static partial class ServiceCollectionExtensions
 
         // Containers / IaC
         services.AddSingleton<ICleaner, DockerCleaner>();
+        services.AddSingleton<ICleaner, DockerVhdxCleaner>();
         services.AddSingleton<ICleaner, TerraformCleaner>();
         services.AddSingleton<ICleaner, PodmanCleaner>();
         services.AddSingleton<ICleaner, HelmCleaner>();

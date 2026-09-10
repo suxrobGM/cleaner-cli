@@ -114,6 +114,17 @@ public sealed class FileSystemService : IFileSystemService
         File.Delete(path);
     }
 
+    public void WriteAllText(string path, string contents)
+    {
+        var directory = Path.GetDirectoryName(path);
+        if (directory is { Length: > 0 })
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        File.WriteAllText(path, contents);
+    }
+
     public void DeleteContents(string path)
     {
         if (!Directory.Exists(path))
