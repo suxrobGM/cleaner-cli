@@ -1,4 +1,4 @@
-﻿using Cleaner.Core.Abstractions;
+using Cleaner.Core.Abstractions;
 using CategoryLayout = Cleaner.Core.Cleaners.Categories;
 
 namespace Cleaner.Core.Services;

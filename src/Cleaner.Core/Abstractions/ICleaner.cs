@@ -1,4 +1,4 @@
-﻿namespace Cleaner.Core.Abstractions;
+namespace Cleaner.Core.Abstractions;
 
 /// <summary>
 /// Cleaner's extension point: every cache target is one of these. Add one by deriving from a base

@@ -1,4 +1,4 @@
-﻿using Cleaner.Core.Abstractions;
+using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Applications;
 using Cleaner.Core.Cleaners.DevTools;
 using Cleaner.Core.Cleaners.Os;

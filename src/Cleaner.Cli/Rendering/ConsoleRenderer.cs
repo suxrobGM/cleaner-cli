@@ -1,4 +1,4 @@
-﻿using Cleaner.Core.Abstractions;
+using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners;
 using Cleaner.Core.Utils;
 using Spectre.Console;

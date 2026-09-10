@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Cleaner.Cli.Infrastructure;
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners;

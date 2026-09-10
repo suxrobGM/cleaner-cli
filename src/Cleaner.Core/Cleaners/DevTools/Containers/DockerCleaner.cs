@@ -1,4 +1,4 @@
-﻿using Cleaner.Core.Abstractions;
+using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;

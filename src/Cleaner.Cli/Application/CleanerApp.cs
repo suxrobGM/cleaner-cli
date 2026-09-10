@@ -1,4 +1,4 @@
-﻿using Cleaner.Cli.Rendering;
+using Cleaner.Cli.Rendering;
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners;
 using Cleaner.Core.Services;

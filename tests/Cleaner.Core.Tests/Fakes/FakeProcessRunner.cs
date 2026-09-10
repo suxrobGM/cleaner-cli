@@ -1,4 +1,4 @@
-﻿using Cleaner.Core.Services;
+using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Tests.Fakes;
 
