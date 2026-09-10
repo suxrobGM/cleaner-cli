@@ -5,8 +5,8 @@ namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
 /// Conan (C/C++) package cache. <c>conan cache clean "*"</c> removes source/build/download/temp
-/// folders but keeps package binaries; with <c>--force</c> the cached packages themselves are
-/// removed too (re-downloaded or rebuilt on the next install).
+/// folders, then <c>conan remove "*"</c> drops the cached package binaries themselves; both are
+/// re-downloaded or rebuilt on the next install.
 /// </summary>
 public sealed class ConanCleaner : ProcessCleanerBase
 {
@@ -23,10 +23,7 @@ public sealed class ConanCleaner : ProcessCleanerBase
     protected override IEnumerable<IReadOnlyList<string>> CommandSequence(CleanupContext context)
     {
         yield return CleanArguments;
-        if (context.Force)
-        {
-            yield return ["remove", "*", "--confirm"];
-        }
+        yield return ["remove", "*", "--confirm"];
     }
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)

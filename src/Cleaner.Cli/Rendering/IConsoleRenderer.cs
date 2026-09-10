@@ -33,6 +33,9 @@ public interface IConsoleRenderer
     /// <summary>Ask a yes/no question.</summary>
     bool Confirm(string markup, bool defaultValue = false);
 
+    /// <summary>Show the top-level menu and return the action the user picked.</summary>
+    MainMenuChoice PromptMainMenu();
+
     /// <summary>Show the multi-select menu grouped by category; returns the chosen cleaners.</summary>
     IReadOnlyList<ICleaner> PromptSelection(IReadOnlyList<ICleaner> choosable);
 

@@ -18,7 +18,8 @@ for AOT-safe argument parsing, and **Microsoft.Extensions.DependencyInjection** 
 ## Project layout
 
 - `src/Cleaner.Core/` — class library: abstractions, cleaner implementations, services. Unit-testable.
-- `src/Cleaner.Cli/` — Native AOT executable: Spectre.Console.Cli commands + DI composition root.
+- `src/Cleaner.Cli/` — Native AOT executable: the interactive menu, Spectre.Console rendering, and
+  the DI composition root.
 - `tests/Cleaner.Core.Tests/` — xUnit tests against an in-memory filesystem fake.
 
 ## Commands
@@ -26,9 +27,8 @@ for AOT-safe argument parsing, and **Microsoft.Extensions.DependencyInjection** 
 ```bash
 dotnet build                                   # build all (warnings are errors)
 dotnet test                                    # run unit tests
-dotnet run --project src/Cleaner.Cli           # interactive menu
-dotnet run --project src/Cleaner.Cli -- list   # list cleaners
-dotnet run --project src/Cleaner.Cli -- clean nuget --dry-run
+dotnet run --project src/Cleaner.Cli           # interactive menu (the only entry point)
+dotnet run --project src/Cleaner.Cli -- --verbose
 dotnet publish src/Cleaner.Cli -r win-x64 -c Release   # Native AOT binary (must be 0 trim warnings)
 ```
 
@@ -57,8 +57,11 @@ dotnet publish src/Cleaner.Cli -r win-x64 -c Release   # Native AOT binary (must
 - **Native AOT safe**: no reflection-based discovery, no assembly scanning. Register cleaners
   **explicitly** in the composition root. `IsAotCompatible=true` runs the trim/AOT analyzers at
   build, and `dotnet publish -r <rid>` must produce **zero trim/AOT warnings**.
-- **Safe by default**: deletes are gated behind scan → preview → confirm (or `--yes`). Never delete
-  user data — only caches/temp/derived artifacts.
+- **Interactive only**: no subcommands, no unattended flags. `cleaner` opens a menu; the only flags
+  are `--path` and `--verbose`. Don't add a way to delete without a human at the prompt.
+- **Safe by default**: deletes are gated behind scan → preview → confirm. Cleaners with a real
+  trade-off set `ConfirmationWarning` and are confirmed separately. Never delete user data — only
+  caches/temp/derived artifacts.
 - **Commit by group**: land focused, conventional commits (e.g.
   `feat(cleaners): add Python cache cleaners`), not one big commit.
 - `TreatWarningsAsErrors` is on; keep the build clean.

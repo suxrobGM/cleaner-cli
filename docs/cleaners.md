@@ -1,14 +1,14 @@
 # Cleaners
 
-Cleaner ships with 120 cleaners. Run `cleaner list` to see which apply to your machine. Use the
-**id** with `cleaner clean <id>` / `cleaner scan <id>`.
+Cleaner ships with 121 cleaners. Pick **List all cleaners** in the menu to see which apply to your
+machine; the **id** below is what each one is listed under.
 
 > Cleaners only ever remove caches, temp files, and rebuildable artifacts — never source, configs,
 > credentials, installed games, or save data.
 
-Workspace-sweeping cleaners (`build-artifacts`, `unity`) take the `--path`/`-p <dir>` option, which
-can be repeated to scan several workspaces at once, e.g.
-`cleaner clean build-artifacts unity -p ~/source -p ~/work`. It defaults to the current directory.
+Workspace-sweeping cleaners (`build-artifacts`, `unity`) act on the `--path`/`-p <dir>` roots, which
+can be repeated to sweep several workspaces at once, e.g. `cleaner -p ~/source -p ~/work`. It
+defaults to the current directory.
 
 Cleaners honor the usual cache-relocation environment variables (`NUGET_PACKAGES`, `CARGO_HOME`,
 `GOMODCACHE`, `GRADLE_USER_HOME`, `npm_config_cache`, `YARN_CACHE_FOLDER`, `PIP_CACHE_DIR`,
@@ -16,9 +16,9 @@ Cleaners honor the usual cache-relocation environment variables (`NUGET_PACKAGES
 where the tool actually keeps it.
 
 Command-based cleaners (`docker`, `podman`, `winsxs`, `dnf`, …) can't estimate their size up front;
-`scan` shows them as *n/a (runs command)* and reports the space after they run. Cleaners marked
-**needs --force** have a real trade-off beyond "cache is re-downloaded" and are skipped by `clean`
-(with a message) unless `--force` is given.
+the preview shows them as *n/a (runs command)* and reports the space after they run. Cleaners marked
+**asks again** have a real trade-off beyond "cache is re-downloaded", so they print that trade-off
+and take their own yes/no before the run-wide confirmation.
 
 ## Package managers (.NET)
 
@@ -100,7 +100,7 @@ Command-based cleaners (`docker`, `podman`, `winsxs`, `dnf`, …) can't estimate
 | `hex` | Elixir Hex packages and Mix archives. |
 | `vcpkg` | vcpkg download and binary-archive caches (C/C++). |
 | `haskell` | cabal packages and stack pantry. |
-| `conan` | Conan (C/C++) source/build/download/temp folders (`conan cache clean "*"`). With `--force` also removes cached packages (`conan remove "*"`); they re-download or rebuild. Honors `CONAN_HOME`. |
+| `conan` | Conan (C/C++) cache: source/build/download/temp folders (`conan cache clean "*"`) **and** the cached package binaries (`conan remove "*"`); both re-download or rebuild on the next install. Honors `CONAN_HOME`. |
 | `zig` | Zig global compilation cache. |
 | `swiftpm` | Swift Package Manager repository/artifact caches (macOS/Linux). |
 | `opam` | opam (OCaml) download cache. Keeps switches and installed packages. |
@@ -125,9 +125,9 @@ Command-based cleaners (`docker`, `podman`, `winsxs`, `dnf`, …) can't estimate
 
 | Id | Removes |
 | --- | --- |
-| `docker` | Dangling images, stopped containers, unused networks, and **all** unused build cache (`docker system prune` + `docker builder prune -a`). With `--force` also removes every unused image and **named volume** (`docker system prune -a --volumes`) — that can delete data such as database volumes. On Docker Desktop/WSL2 this frees space inside the virtual disk; compact the `.vhdx` separately to shrink the host file. |
+| `docker` | Stopped containers, unused networks, every unreferenced image, all build cache, and unused **named volumes** (`docker system prune -a --volumes` + `docker builder prune -a`) — that can delete data such as database volumes. On Docker Desktop/WSL2 this frees space inside the virtual disk; compact the `.vhdx` separately to shrink the host file. |
 | `terraform` | Terraform provider plugin cache. |
-| `podman` | `podman system prune` (with `--force`: `-a --volumes`, same caveats as docker). |
+| `podman` | `podman system prune -a --volumes` (same caveats as docker). |
 | `helm` | Helm chart repository cache (honors `HELM_REPOSITORY_CACHE`). |
 | `minikube` | minikube image/ISO download cache. Keeps profiles and VMs. |
 | `vagrant` | Vagrant temp downloads (`~/.vagrant.d/tmp`). **Boxes are never touched.** |
@@ -191,7 +191,7 @@ Command-based cleaners (`docker`, `podman`, `winsxs`, `dnf`, …) can't estimate
 | `delivery-optimization` | Delivery Optimization download cache. | Windows · needs admin |
 | `gpu-installers` | GPU driver installer leftovers: `C:\NVIDIA`, `C:\AMD`, `C:\Intel` extraction folders and NVIDIA's download cache. Never touches DriverStore, `Installer2`, or installed drivers. | Windows · needs admin |
 | `winsxs` | Superseded Windows component-store versions (`DISM /StartComponentCleanup`; no `/ResetBase`, so updates stay uninstallable). Slow (minutes) but often the largest Windows reclaim. | Windows · needs admin |
-| `windows-old` | The previous Windows installation (`C:\Windows.old`). Deleting it removes the ability to roll back the last upgrade. | Windows · needs admin · **needs --force** |
+| `windows-old` | The previous Windows installation (`C:\Windows.old`). Deleting it removes the ability to roll back the last upgrade. | Windows · needs admin · **asks again** |
 | `mac-caches` | `~/Library/Caches` and `~/Library/Logs`. | macOS |
 | `xdg-cache` | The `~/.cache` user cache root. | Linux |
 | `journal` | Vacuums the systemd journal to 100 MB. | Linux · needs admin |
@@ -229,3 +229,4 @@ Command-based cleaners (`docker`, `podman`, `winsxs`, `dnf`, …) can't estimate
 | `adobe-media-cache` | Adobe shared media caches (Premiere/After Effects render, database, and audio peak files; regenerated). |
 | `onedrive` | OneDrive client and setup logs (Windows). Synced content is never touched. |
 | `dropbox` | Dropbox's internal `.dropbox.cache` staging folder (officially safe to purge). Synced files are never touched. |
+| `app-leftovers` | Profile directories left behind by apps that are **no longer installed** — Claude Desktop, Docker Desktop (including its multi-GB WSL2 virtual disk), Discord, Slack, Unity Hub, and the Epic Games Launcher. Each app is listed with the markers that exist only while it is installed, so an installed app is never touched. This is settings and history rather than cache, so it **asks again** before running. Windows and macOS. |

@@ -118,7 +118,7 @@ public sealed class WindowsCleanerTests
         var cleaner = new WindowsOldCleaner();
         var result = await cleaner.CleanAsync(TestContext.Create(fs, env, runner));
 
-        Assert.True(cleaner.RequiresForce);
+        Assert.False(string.IsNullOrEmpty(cleaner.ConfirmationWarning));
         Assert.True(cleaner.RequiresElevation);
         Assert.Equal(10_000, result.BytesFreed);
         Assert.False(fs.DirectoryExists(@"C:\Windows.old"));

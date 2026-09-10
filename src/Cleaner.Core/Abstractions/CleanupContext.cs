@@ -17,9 +17,6 @@ public sealed class CleanupContext
     /// <summary>When true, cleaners measure and report but never delete.</summary>
     public bool DryRun { get; init; }
 
-    /// <summary>When true, cleaners may remove targets that are otherwise treated cautiously.</summary>
-    public bool Force { get; init; }
-
     /// <summary>Base directory for project-local sweeps (bin/obj, node_modules, ...). Defaults to cwd.</summary>
     public string WorkingDirectory { get; init; } = System.Environment.CurrentDirectory;
 

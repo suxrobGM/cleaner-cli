@@ -26,10 +26,11 @@ public interface ICleaner
     bool SupportsSizeEstimate => true;
 
     /// <summary>
-    /// True for cleaners with a real trade-off beyond "cache is re-fetched" (e.g. Windows.old removes
-    /// upgrade rollback). They still scan, but cleaning skips them unless <c>--force</c> is given.
+    /// Non-null for cleaners with a real trade-off beyond "the cache gets re-fetched" (e.g. deleting
+    /// Windows.old removes the ability to roll a Windows upgrade back). The text states that
+    /// trade-off and is confirmed on its own, per cleaner, before the run-wide confirmation.
     /// </summary>
-    bool RequiresForce => false;
+    string? ConfirmationWarning => null;
 
     /// <summary>True if this cleaner is meaningful on the current operating system.</summary>
     bool IsApplicable(CleanupContext context);

@@ -11,6 +11,67 @@ namespace Cleaner.Core.Tests;
 public sealed class ApplicationCleanerTests
 {
     [Fact]
+    public async Task AppLeftoverCleaner_removes_data_of_an_uninstalled_app()
+    {
+        // Claude Desktop is gone (no install marker) but its Electron profile and VM image remain.
+        var fs = new FakeFileSystem()
+            .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000)
+            .AddFile(@"C:\Users\test\AppData\Roaming\Claude-3p\claude_desktop_config.json", 100);
+
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, WindowsEnvironment()));
+
+        Assert.Equal(9_100, result.BytesFreed);
+        Assert.False(fs.DirectoryExists(@"C:\Users\test\AppData\Roaming\Claude"));
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_keeps_data_while_the_app_is_installed()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile(@"C:\Users\test\AppData\Local\AnthropicClaude\app-1.0\claude.exe", 500)
+            .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000);
+
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, WindowsEnvironment()));
+
+        Assert.Equal(0, result.BytesFreed);
+        Assert.True(fs.FileExists(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx"));
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_never_touches_claude_code()
+    {
+        // Claude Code (the CLI and the editor extension) is a separate product from the desktop app;
+        // removing the desktop app's profile must not take its state with it.
+        var fs = new FakeFileSystem()
+            .AddFile(@"C:\Users\test\AppData\Roaming\Claude\Preferences", 400)
+            .AddFile(@"C:\Users\test\.claude\projects\session.jsonl", 7_000)
+            .AddFile(@"C:\Users\test\AppData\Local\claude-cli-nodejs\cache.bin", 2_000)
+            .AddFile(@"C:\Users\test\AppData\Local\ClaudeCodeExtension\bin.exe", 1_000);
+
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, WindowsEnvironment()));
+
+        Assert.Equal(400, result.BytesFreed);
+        Assert.True(fs.FileExists(@"C:\Users\test\.claude\projects\session.jsonl"));
+        Assert.True(fs.FileExists(@"C:\Users\test\AppData\Local\claude-cli-nodejs\cache.bin"));
+        Assert.True(fs.FileExists(@"C:\Users\test\AppData\Local\ClaudeCodeExtension\bin.exe"));
+    }
+
+    [Fact]
+    public void AppLeftoverCleaner_asks_for_its_own_confirmation()
+    {
+        // It removes settings and history rather than cache, so it never runs on the blanket yes.
+        Assert.False(string.IsNullOrEmpty(new UninstalledAppLeftoverCleaner().ConfirmationWarning));
+    }
+
+    private static FakeEnvironment WindowsEnvironment() => new()
+    {
+        Os = OsPlatform.Windows,
+        HomeDirectory = @"C:\Users\test",
+        LocalAppDataDirectory = @"C:\Users\test\AppData\Local",
+        AppDataDirectory = @"C:\Users\test\AppData\Roaming",
+    };
+
+    [Fact]
     public async Task SteamCleaner_clears_caches_but_never_installed_games()
     {
         const string root = "/home/test/.steam/steam";

@@ -8,7 +8,7 @@ whole thing compiles cleanly to Native AOT.
 - **`Cleaner.Core`** — a class library with the abstractions, all cleaners, and the services they
   depend on. UI-free and fully unit-testable.
 - **`Cleaner.Cli`** — the Native AOT executable. Wires up dependency injection, owns the
-  Spectre.Console rendering, and parses arguments with System.CommandLine.
+  Spectre.Console rendering, and parses the handful of flags with System.CommandLine.
 - **`Cleaner.Core.Tests`** — xUnit tests that run cleaners against an in-memory filesystem fake.
 
 ## The cleaner model
@@ -50,6 +50,19 @@ Everything a cleaner needs arrives through `CleanupContext`, never through stati
   fake in tests.
 - **`IProcessRunner`** — `PATH` probing and process execution for `ProcessCleanerBase`.
 - **`ICleanerRegistry`** — the explicitly-registered set of cleaners, with lookup by id and category.
+
+## The user interface
+
+Cleaner is interactive only: there are no subcommands and no unattended mode. `CommandLineBuilder`
+parses `--path`/`--verbose` (plus the built-in `--help`/`--version`) and hands straight to
+`CleanerApp.InteractiveAsync`, a menu loop over `MainMenuChoice`. Every action — clean, preview,
+list, update — is reached from there, and every deletion ends in a confirmation prompt. Without a
+real terminal the app prints guidance and exits 1 rather than doing anything.
+
+Two prompts guard a run. The run-wide one names the total and the cleaner count. Before it, any
+cleaner exposing a non-null `ICleaner.ConfirmationWarning` prints that trade-off and takes its own
+yes/no, so declining one (say `windows-old`) drops just that cleaner and leaves the rest of the run
+intact.
 
 ## Composition root
 

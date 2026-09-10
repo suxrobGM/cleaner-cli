@@ -123,6 +123,27 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
     public bool Confirm(string markup, bool defaultValue = false) =>
         IsInteractive ? console.Confirm(markup, defaultValue) : defaultValue;
 
+    public MainMenuChoice PromptMainMenu()
+    {
+        // Spectre's SelectionPrompt is string-based, so keep the label/choice mapping in one place
+        // rather than parsing the returned text back into an enum.
+        var choices = new (string Label, MainMenuChoice Choice)[]
+        {
+            ("Clean caches", MainMenuChoice.Clean),
+            ("Preview only (nothing is deleted)", MainMenuChoice.Preview),
+            ("List all cleaners", MainMenuChoice.List),
+            ("Check for updates", MainMenuChoice.Update),
+            ("Exit", MainMenuChoice.Exit),
+        };
+
+        var prompt = new SelectionPrompt<string>()
+            .Title("What would you like to do?")
+            .AddChoices(choices.Select(c => c.Label));
+
+        var picked = console.Prompt(prompt);
+        return choices.First(c => string.Equals(c.Label, picked, StringComparison.Ordinal)).Choice;
+    }
+
     public IReadOnlyList<ICleaner> PromptSelection(IReadOnlyList<ICleaner> choosable)
     {
         var prompt = new MultiSelectionPrompt<string>()

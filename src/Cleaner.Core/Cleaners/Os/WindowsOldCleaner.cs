@@ -6,7 +6,7 @@ namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
 /// The previous Windows installation left behind by an upgrade. Scans always report its size, but
-/// deleting it removes the ability to roll back the upgrade, so cleaning requires <c>--force</c>.
+/// deleting it removes the ability to roll back the upgrade, so it carries its own confirmation.
 /// Files are owned by TrustedInstaller, so ownership is taken (on this directory only) before deletion.
 /// </summary>
 public sealed class WindowsOldCleaner : WindowsCleanerBase
@@ -17,7 +17,9 @@ public sealed class WindowsOldCleaner : WindowsCleanerBase
 
     public override bool RequiresElevation => true;
 
-    public override bool RequiresForce => true;
+    public override string ConfirmationWarning =>
+        "deleting this removes the ability to roll back to the previous Windows version, and Windows " +
+        "normally clears it automatically about 10 days after an upgrade";
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

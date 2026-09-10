@@ -20,11 +20,12 @@ Cleaner finds the caches that quietly eat your disk — package managers, build 
 browsers, system junk, even Steam — shows you exactly how much you'd get back, and clears them
 only after you say yes.
 
-- **120 built-in cleaners** across dev tools, the operating system, and applications.
-- **Safe by default** — every run scans and previews first; nothing is deleted without confirmation.
+- **121 built-in cleaners** across dev tools, the operating system, and applications.
+- **Safe by default** — every run scans and previews first; nothing is deleted without confirmation,
+  and the few cleaners with a real trade-off ask again on their own.
 - **Cross-platform** — a single native binary for Windows, macOS, and Linux (no runtime required).
-- **Two ways to use it** — a friendly interactive menu, or direct commands (with `scan --json`) for
-  scripts and CI.
+- **Interactive by design** — one menu, no subcommands and no unattended flags; you pick, preview,
+  and confirm every time.
 
 ## What it cleans
 
@@ -33,8 +34,8 @@ Conan, Composer, pub, Julia, Zig, and more), build & monorepo caches (ccache, Ba
 containers & IaC (Docker, Podman, Helm, minikube, Pulumi), IDEs (JetBrains, VS Code/Cursor, Visual
 Studio, Xcode, Unreal/Unity derived data), version managers (mise, asdf, nvm, SDKMAN!), browsers,
 messaging apps (Discord, Telegram, WhatsApp, Teams), game launchers (Steam, Epic, Battle.net, GOG,
-EA, Riot), OS junk (temp, recycle bin, Windows Update cache, WinSxS, GPU driver installer
-leftovers, `Windows.old`), and system package managers (apt/dnf/pacman/brew/scoop/choco/winget/
+EA, Riot), leftovers from apps you already uninstalled, OS junk (temp, recycle bin, Windows Update
+cache, WinSxS, GPU driver installer leftovers, `Windows.old`), and system package managers (apt/dnf/pacman/brew/scoop/choco/winget/
 flatpak/nix).
 
 See the full list in **[docs/cleaners.md](docs/cleaners.md)**.
@@ -61,34 +62,30 @@ unpack it, and put `cleaner` on your `PATH`.
 
 ## Update
 
-Check your version and update in place — Cleaner downloads the right binary for your platform,
-replaces itself, and relaunches:
-
-```bash
-cleaner --version          # show the installed version
-cleaner update --check     # is a newer release available?
-cleaner update             # download & install it
-```
+Pick **Check for updates** in the menu. Cleaner downloads the right binary for your platform,
+replaces itself, and relaunches. `cleaner --version` prints the installed version without touching
+the network.
 
 ## Quick start
 
+Run it. That's the whole interface:
+
 ```bash
-# Launch the interactive menu — pick what to clean, preview, confirm
 cleaner
-
-# See everything Cleaner can clean and how much space is reclaimable
-cleaner list
-
-# Preview without deleting
-cleaner clean nuget npm --dry-run
-
-# Clean specific tools, skipping the prompt
-cleaner clean gradle docker --yes
-
-# Clean a whole category, or everything
-cleaner clean --category "Package managers"
-cleaner clean --all
 ```
+
+```text
+What would you like to do?
+> Clean caches
+  Preview only (nothing is deleted)
+  List all cleaners
+  Check for updates
+  Exit
+```
+
+Pick **Clean caches**, tick what you want with the spacebar (toggle **All cleaners** to select
+everything), and press Enter. Two flags exist for the things a menu can't ask for — `--path` to
+point the project-local cleaners at your code, and `--verbose` for a per-directory breakdown.
 
 A run looks like this:
 
@@ -105,7 +102,7 @@ Delete 25 GB across 2 cleaner(s)? [y/N]
 
 ## Documentation
 
-- **[Usage](docs/usage.md)** — every command, flag, and example.
+- **[Usage](docs/usage.md)** — the menu, the two flags, and what each action does.
 - **[Cleaners](docs/cleaners.md)** — the full catalog and what each one removes.
 - **[Architecture](docs/architecture.md)** — how it's built.
 - **[Contributing](docs/contributing.md)** — add a new cleaner in a few lines.

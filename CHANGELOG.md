@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`app-leftovers`** — removes the per-user profile directories that uninstalled applications leave
+  behind. Uninstallers routinely drop the program but keep its data, which for an Electron app that
+  bundles a runtime or a VM image runs to gigabytes. Seeded with Claude Desktop, Docker Desktop
+  (including its WSL2 virtual disk), Discord, Slack, Unity Hub, and the Epic Games Launcher, on
+  Windows and macOS. Every app is listed explicitly as a pair of install markers and data
+  directories, and leftovers are offered only when all of that app's markers are gone — a
+  name-matching heuristic over `AppData` flags live tools like nvm and vcpkg, so the list is curated
+  rather than inferred. Because it removes settings and history rather than cache, it sets
+  `ConfirmationWarning` and is confirmed on its own.
+
+### Changed
+
+- **Cleaner is now interactive only.** Running `cleaner` opens a menu — Clean caches, Preview only,
+  List all cleaners, Check for updates, Exit — and every action is chosen, previewed, and confirmed
+  there. The `list`, `scan`, and `clean` subcommands are gone; `update` remains (it may be needed
+  before the menu is useful) and is also reachable from the menu.
+- **`--force` is gone, and its behavior is now the default.** It was redundant with the confirmation
+  prompt and did not gate what it claimed to. `docker` and `podman` now always run
+  `system prune -a --volumes` (plus `docker builder prune -a`), and `conan` always follows
+  `cache clean "*"` with `conan remove "*"`.
+- **`windows-old` is no longer flag-gated.** It appears in the menu like any other cleaner and states
+  its trade-off — deleting it gives up Windows upgrade rollback — in its own yes/no prompt just
+  before the run-wide confirmation. Declining it drops only that cleaner.
+- `ICleaner.RequiresForce` is replaced by `ICleaner.ConfirmationWarning`, a string explaining the
+  trade-off; a non-null value triggers the per-cleaner prompt. `CleanupContext.Force` is removed.
+
+### Removed
+
+- The `--yes` and `--json` flags, the `scan --json` report, and the `list` / `scan` / `clean`
+  subcommands. There is no longer any way to delete without a human at the prompt. Use the menu's
+  **Preview only** action in place of `scan` / `--dry-run`.
+
 ## [1.1.1] - 2026-07-07
 
 ### Changed

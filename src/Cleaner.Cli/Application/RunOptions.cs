@@ -1,17 +1,10 @@
 namespace Cleaner.Cli.Application;
 
-/// <summary>Per-invocation options shared by the scan/clean/interactive flows.</summary>
+/// <summary>Per-invocation options shared by the interactive flows.</summary>
 public sealed record RunOptions
 {
+    /// <summary>When true, measure and report but never delete. Set by the menu's preview action.</summary>
     public bool DryRun { get; init; }
-
-    public bool Force { get; init; }
-
-    /// <summary>Skip the confirmation prompt before deleting.</summary>
-    public bool AssumeYes { get; init; }
-
-    /// <summary>Emit the scan report as JSON on stdout instead of a table (scan only).</summary>
-    public bool Json { get; init; }
 
     /// <summary>Show the per-target path breakdown in size tables.</summary>
     public bool Verbose { get; init; }

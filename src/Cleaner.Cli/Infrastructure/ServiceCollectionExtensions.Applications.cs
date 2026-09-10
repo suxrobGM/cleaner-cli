@@ -17,5 +17,6 @@ internal static partial class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, AdobeMediaCacheCleaner>();
         services.AddSingleton<ICleaner, OneDriveCleaner>();
         services.AddSingleton<ICleaner, DropboxCleaner>();
+        services.AddSingleton<ICleaner, UninstalledAppLeftoverCleaner>();
     }
 }

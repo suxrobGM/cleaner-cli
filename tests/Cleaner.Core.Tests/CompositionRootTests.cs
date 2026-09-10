@@ -61,11 +61,12 @@ public sealed class CompositionRootTests
                      "nuget", "npm", "uv", "conan", "zig", "julia", "podman", "helm", "pipx",
                      "corepack", "mise", "winget", "flatpak", "nix", "telegram", "gpu-installers",
                      "game-launchers", "unreal", "winsxs", "windows-old", "rubygems", "wandb",
+                     "app-leftovers",
                  })
         {
             Assert.NotNull(registry.Find(id));
         }
 
-        Assert.Equal(120, registry.All.Count);
+        Assert.Equal(121, registry.All.Count);
     }
 }

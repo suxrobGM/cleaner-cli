@@ -23,3 +23,22 @@ public enum CleanerStatus
 
 /// <summary>A cleaner plus its resolved <see cref="CleanerStatus"/>, for listing.</summary>
 public sealed record CleanerListEntry(ICleaner Cleaner, CleanerStatus Status);
+
+/// <summary>The top-level actions offered by the interactive menu.</summary>
+public enum MainMenuChoice
+{
+    /// <summary>Pick cleaners, preview the total, confirm, and delete.</summary>
+    Clean,
+
+    /// <summary>Pick cleaners and report what would be freed, deleting nothing.</summary>
+    Preview,
+
+    /// <summary>Show every cleaner and whether it applies to this machine.</summary>
+    List,
+
+    /// <summary>Check for a newer release and optionally install it.</summary>
+    Update,
+
+    /// <summary>Leave the menu.</summary>
+    Exit,
+}

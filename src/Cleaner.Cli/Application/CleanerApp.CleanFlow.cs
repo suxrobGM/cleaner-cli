@@ -7,84 +7,45 @@ namespace Cleaner.Cli.Application;
 
 public sealed partial class CleanerApp
 {
-    public async Task<int> ScanAsync(IReadOnlyList<ICleaner> cleaners, RunOptions options, CancellationToken cancellationToken)
-    {
-        var context = contextFactory.Create(options);
-        var applicable = cleaners.Where(c => c.IsApplicable(context)).ToList();
-        if (applicable.Count == 0)
-        {
-            if (options.Json)
-            {
-                Console.Out.WriteLine(JsonOutput.Serialize([]));
-            }
-            else
-            {
-                renderer.Line("[yellow]No applicable cleaners selected for this OS.[/]");
-            }
-
-            return 0;
-        }
-
-        if (options.Json)
-        {
-            // Keep stdout pure JSON: scan without any spinner/table chrome.
-            var jsonRows = new List<ScanRow>(applicable.Count);
-            foreach (var cleaner in applicable)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                jsonRows.Add(MarkCommandBased(new ScanRow(cleaner, await SafeScanAsync(cleaner, context, cancellationToken)), context));
-            }
-
-            Console.Out.WriteLine(JsonOutput.Serialize(jsonRows));
-            return 0;
-        }
-
-        var rows = await renderer.ScanAsync(applicable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken);
-        renderer.SizeTable(MarkCommandBased(rows, context), "Reclaimable", options.Verbose);
-        return 0;
-    }
-
-    public Task<int> CleanAsync(IReadOnlyList<ICleaner> cleaners, RunOptions options, CancellationToken cancellationToken) =>
-        RunCleanFlowAsync(cleaners, options, cancellationToken);
-
+    /// <summary>
+    /// The whole user interface: a menu that loops until the user exits. Cleaner has no unattended
+    /// mode, so this is the single entry point for every action.
+    /// </summary>
     public async Task<int> InteractiveAsync(RunOptions options, CancellationToken cancellationToken)
     {
         if (!renderer.IsInteractive)
         {
-            renderer.Line("[yellow]No interactive terminal detected — use 'cleaner scan' or 'cleaner clean' (with --yes) instead.[/]");
+            renderer.Line("[yellow]Cleaner is interactive only and needs a real terminal.[/]");
+            renderer.Line("[grey]Run it directly in a console rather than through a pipe or redirect.[/]");
             return 1;
         }
 
         renderer.InteractiveHeader(updateService.CurrentVersion);
 
-        var context = contextFactory.Create(options);
-        var choosable = registry.All.Where(c => c.IsApplicable(context)).ToList();
-        if (choosable.Count == 0)
-        {
-            renderer.Line("[yellow]No cleaners are applicable on this system.[/]");
-            return 0;
-        }
-
-        // Keep the menu open after each run so finishing a clean returns to the
-        // selection instead of exiting the app. Exit only when the user asks to.
         var exitCode = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var selected = renderer.PromptSelection(choosable);
-            if (selected.Count == 0)
+            switch (renderer.PromptMainMenu())
             {
-                renderer.Line("[grey]Nothing selected.[/]");
-            }
-            else
-            {
-                exitCode = await RunCleanFlowAsync(selected, options, cancellationToken);
-            }
+                case MainMenuChoice.Clean:
+                    exitCode = await SelectAndRunAsync(options with { DryRun = false }, cancellationToken);
+                    break;
 
-            renderer.Line(string.Empty);
-            if (!renderer.Confirm("Return to the menu?", defaultValue: true))
-            {
-                renderer.Line("[grey]Goodbye.[/]");
-                break;
+                case MainMenuChoice.Preview:
+                    exitCode = await SelectAndRunAsync(options with { DryRun = true }, cancellationToken);
+                    break;
+
+                case MainMenuChoice.List:
+                    exitCode = List();
+                    break;
+
+                case MainMenuChoice.Update:
+                    exitCode = await UpdateAsync(checkOnly: false, cancellationToken);
+                    break;
+
+                default:
+                    renderer.Line("[grey]Goodbye.[/]");
+                    return exitCode;
             }
 
             renderer.Line(string.Empty);
@@ -93,7 +54,31 @@ public sealed partial class CleanerApp
         return exitCode;
     }
 
-    private async Task<int> RunCleanFlowAsync(IReadOnlyList<ICleaner> cleaners, RunOptions options, CancellationToken cancellationToken)
+    /// <summary>Ask which cleaners to act on, then run the scan / preview / confirm / delete flow.</summary>
+    private async Task<int> SelectAndRunAsync(RunOptions options, CancellationToken cancellationToken)
+    {
+        var context = contextFactory.Create(options);
+        var choosable = registry.All.Where(c => c.IsApplicable(context)).ToList();
+        if (choosable.Count == 0)
+        {
+            renderer.Line("[yellow]No cleaners are applicable on this system.[/]");
+            return 0;
+        }
+
+        var selected = renderer.PromptSelection(choosable);
+        if (selected.Count == 0)
+        {
+            renderer.Line("[grey]Nothing selected.[/]");
+            return 0;
+        }
+
+        return await RunCleanFlowAsync(selected, options, cancellationToken);
+    }
+
+    private async Task<int> RunCleanFlowAsync(
+        IReadOnlyList<ICleaner> cleaners,
+        RunOptions options,
+        CancellationToken cancellationToken)
     {
         var context = contextFactory.Create(options);
         var applicable = cleaners.Where(c => c.IsApplicable(context)).ToList();
@@ -103,25 +88,23 @@ public sealed partial class CleanerApp
             return 0;
         }
 
-        var (runnable, blocked, forceGated) = Partition(applicable, options);
+        var (runnable, blocked) = Partition(applicable);
 
         logger.Info(
             $"Clean run starting - {runnable.Count} cleaner(s): {string.Join(", ", runnable.Select(c => c.Id))}" +
-            $" (dry-run: {options.DryRun}, force: {options.Force}).");
+            $" (dry-run: {options.DryRun}).");
 
         var rows = MarkCommandBased(
             await renderer.ScanAsync(runnable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken),
             context);
         renderer.SizeTable(rows, options.DryRun ? "Would free" : "Reclaimable", options.Verbose);
-        ReportSkipped(blocked, forceGated);
-
-        var total = rows.Sum(r => r.Result.TotalBytes);
-        var commandBased = rows.Count(r => r.CommandBased);
+        ReportSkipped(blocked);
 
         // Process-backed cleaners (e.g. docker, conda) can't be pre-measured but are still actionable
         // when their tool is present. Keep them in the run set even when the measured total is 0.
-        var actionable = runnable.Where(c => c.IsAvailable(context)).ToList();
-        if (total == 0 && actionable.Count == 0)
+        var available = runnable.Where(c => c.IsAvailable(context)).ToList();
+        var scannedTotal = rows.Sum(r => r.Result.TotalBytes);
+        if (scannedTotal == 0 && available.Count == 0)
         {
             renderer.Line("[green]Nothing to reclaim — already clean.[/]");
             return 0;
@@ -129,62 +112,91 @@ public sealed partial class CleanerApp
 
         if (options.DryRun)
         {
+            var commandBased = rows.Count(r => r.CommandBased);
             var note = commandBased > 0
                 ? $" {commandBased} command-based cleaner(s) report their size only after running."
                 : string.Empty;
-            renderer.Line($"[grey]Dry run — would free [bold]{SizeFormatter.Humanize(total)}[/]. Nothing was deleted.{note}[/]");
+            renderer.Line(
+                $"[grey]Preview only — would free [bold]{SizeFormatter.Humanize(scannedTotal)}[/]. Nothing was deleted.{note}[/]");
             return 0;
         }
 
-        return await ConfirmAndCleanAsync(actionable, total, options, context, cancellationToken);
+        // Cleaners with a real trade-off get their own yes/no before the run-wide confirmation, so
+        // the warning is read next to the single cleaner it applies to.
+        var actionable = ConfirmGuarded(available);
+        if (actionable.Count == 0)
+        {
+            renderer.Line("[grey]Nothing left to run.[/]");
+            return 0;
+        }
+
+        var selectedBytes = rows
+            .Where(r => actionable.Contains(r.Cleaner))
+            .Sum(r => r.Result.TotalBytes);
+
+        return await ConfirmAndCleanAsync(actionable, selectedBytes, context, cancellationToken);
     }
 
-    /// <summary>Partition the applicable cleaners into what can run now, what needs admin, and what needs --force.</summary>
-    private (List<ICleaner> Runnable, List<ICleaner> Blocked, List<ICleaner> ForceGated) Partition(
-        IReadOnlyList<ICleaner> applicable, RunOptions options)
+    /// <summary>Partition the applicable cleaners into what can run now and what needs admin.</summary>
+    private (List<ICleaner> Runnable, List<ICleaner> Blocked) Partition(IReadOnlyList<ICleaner> applicable)
     {
-        var forceGated = applicable.Where(c => c.RequiresForce && !options.Force).ToList();
-        var runnable = applicable
-            .Where(c => (!c.RequiresElevation || environment.IsElevated) && !forceGated.Contains(c))
-            .ToList();
-        var blocked = applicable.Where(c => c.RequiresElevation && !environment.IsElevated && !forceGated.Contains(c)).ToList();
-        return (runnable, blocked, forceGated);
+        var runnable = applicable.Where(c => !c.RequiresElevation || environment.IsElevated).ToList();
+        var blocked = applicable.Where(c => c.RequiresElevation && !environment.IsElevated).ToList();
+        return (runnable, blocked);
     }
 
-    /// <summary>Tell the user which cleaners were left out and why (needs admin / needs --force).</summary>
-    private void ReportSkipped(IReadOnlyList<ICleaner> blocked, IReadOnlyList<ICleaner> forceGated)
+    /// <summary>Tell the user which cleaners were left out because they need admin/root.</summary>
+    private void ReportSkipped(IReadOnlyList<ICleaner> blocked)
     {
         if (blocked.Count > 0)
         {
             var names = string.Join(", ", blocked.Select(c => c.Name)).EscapeMarkup();
             renderer.Line($"[yellow]Skipped (needs admin/root): {names}. Re-run elevated to include these.[/]");
         }
-
-        if (forceGated.Count > 0)
-        {
-            var names = string.Join(", ", forceGated.Select(c => c.Name)).EscapeMarkup();
-            renderer.Line($"[yellow]Skipped (needs --force): {names}. These have real trade-offs — re-run with --force to include them.[/]");
-        }
     }
 
-    /// <summary>Confirm the deletion (unless --yes) and run the actionable cleaners, printing a summary.</summary>
+    /// <summary>
+    /// Drop any cleaner carrying an <see cref="ICleaner.ConfirmationWarning"/> that the user declines.
+    /// These are the ones whose cost is more than "the cache gets re-fetched" — deleting Windows.old
+    /// removes the ability to roll a Windows upgrade back, for instance.
+    /// </summary>
+    private List<ICleaner> ConfirmGuarded(IReadOnlyList<ICleaner> available)
+    {
+        var kept = new List<ICleaner>(available.Count);
+        foreach (var cleaner in available)
+        {
+            if (cleaner.ConfirmationWarning is not { Length: > 0 } warning)
+            {
+                kept.Add(cleaner);
+                continue;
+            }
+
+            var name = cleaner.Name.EscapeMarkup();
+            renderer.Line($"[yellow]![/] [bold]{name}[/]: {warning.EscapeMarkup()}");
+            if (renderer.Confirm($"Include [bold]{name}[/] anyway?"))
+            {
+                kept.Add(cleaner);
+            }
+            else
+            {
+                renderer.Line($"[grey]Skipped {name}.[/]");
+            }
+        }
+
+        return kept;
+    }
+
+    /// <summary>Confirm the deletion and run the actionable cleaners, printing a summary.</summary>
     private async Task<int> ConfirmAndCleanAsync(
         IReadOnlyList<ICleaner> actionable,
         long total,
-        RunOptions options,
         CleanupContext context,
         CancellationToken cancellationToken)
     {
-        if (!options.AssumeYes && !renderer.IsInteractive)
-        {
-            renderer.Line("[yellow]No interactive terminal — re-run with --yes to confirm deletion.[/]");
-            return 1;
-        }
-
         var prompt = total > 0
             ? $"Delete [bold]{SizeFormatter.Humanize(total)}[/] across {actionable.Count} cleaner(s)?"
             : $"Run {actionable.Count} cleaner(s)? (size is reported after running)";
-        if (!options.AssumeYes && !renderer.Confirm(prompt, defaultValue: false))
+        if (!renderer.Confirm(prompt))
         {
             renderer.Line("[grey]Cancelled.[/]");
             return 0;

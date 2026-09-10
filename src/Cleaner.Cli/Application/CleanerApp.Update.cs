@@ -6,7 +6,11 @@ namespace Cleaner.Cli.Application;
 
 public sealed partial class CleanerApp
 {
-    public async Task<int> UpdateAsync(bool checkOnly, bool assumeYes, CancellationToken cancellationToken)
+    /// <summary>
+    /// Check for a newer release and, unless <paramref name="checkOnly"/>, offer to download and
+    /// install it in place once the user confirms.
+    /// </summary>
+    public async Task<int> UpdateAsync(bool checkOnly, CancellationToken cancellationToken)
     {
         UpdateCheckResult check;
         try
@@ -52,8 +56,8 @@ public sealed partial class CleanerApp
             return 1;
         }
 
-        if (!assumeYes &&
-            !renderer.Confirm($"Update from [bold]{check.CurrentVersion.EscapeMarkup()}[/] to [bold green]{check.LatestVersion.EscapeMarkup()}[/]?"))
+        if (!renderer.Confirm(
+                $"Update from [bold]{check.CurrentVersion.EscapeMarkup()}[/] to [bold green]{check.LatestVersion.EscapeMarkup()}[/]?"))
         {
             renderer.Line("[grey]Cancelled.[/]");
             return 0;

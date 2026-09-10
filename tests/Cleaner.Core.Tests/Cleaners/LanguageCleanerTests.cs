@@ -41,7 +41,7 @@ public sealed class LanguageCleanerTests
     }
 
     [Fact]
-    public async Task ConanCleaner_runs_cache_clean_and_only_removes_packages_with_force()
+    public async Task ConanCleaner_runs_cache_clean_then_removes_packages()
     {
         var runner = new FakeProcessRunner().WithAvailable("conan");
         var fs = new FakeFileSystem().AddFile("/home/test/.conan2/p/pkg/file", 100);
@@ -50,8 +50,7 @@ public sealed class LanguageCleanerTests
         await new ConanCleaner().CleanAsync(TestContext.Create(fs, env, runner));
 
         var commands = runner.Invocations.Select(i => string.Join(' ', i.Arguments)).ToList();
-        Assert.Contains("cache clean *", commands);
-        Assert.DoesNotContain(commands, c => c.StartsWith("remove"));
+        Assert.Equal(["cache clean *", "remove * --confirm"], commands);
     }
 
     [Fact]

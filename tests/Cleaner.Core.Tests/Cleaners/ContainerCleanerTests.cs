@@ -11,7 +11,7 @@ namespace Cleaner.Core.Tests;
 public sealed class ContainerCleanerTests
 {
     [Fact]
-    public async Task DockerCleaner_safe_run_prunes_system_and_build_cache()
+    public async Task DockerCleaner_prunes_images_volumes_and_build_cache()
     {
         var runner = new FakeProcessRunner().WithAvailable("docker");
         var context = new CleanupContext
@@ -19,26 +19,6 @@ public sealed class ContainerCleanerTests
             FileSystem = new FakeFileSystem(),
             Environment = new FakeEnvironment(),
             ProcessRunner = runner,
-            Force = false,
-        };
-
-        await new DockerCleaner().CleanAsync(context);
-
-        Assert.Equal(2, runner.Invocations.Count);
-        Assert.Equal(["system", "prune", "--force"], runner.Invocations[0].Arguments);
-        Assert.Equal(["builder", "prune", "--all", "--force"], runner.Invocations[1].Arguments);
-    }
-
-    [Fact]
-    public async Task DockerCleaner_force_run_also_removes_images_and_volumes()
-    {
-        var runner = new FakeProcessRunner().WithAvailable("docker");
-        var context = new CleanupContext
-        {
-            FileSystem = new FakeFileSystem(),
-            Environment = new FakeEnvironment(),
-            ProcessRunner = runner,
-            Force = true,
         };
 
         await new DockerCleaner().CleanAsync(context);
@@ -46,6 +26,23 @@ public sealed class ContainerCleanerTests
         Assert.Equal(2, runner.Invocations.Count);
         Assert.Equal(["system", "prune", "-a", "--volumes", "--force"], runner.Invocations[0].Arguments);
         Assert.Equal(["builder", "prune", "--all", "--force"], runner.Invocations[1].Arguments);
+    }
+
+    [Fact]
+    public async Task PodmanCleaner_prunes_images_and_volumes()
+    {
+        var runner = new FakeProcessRunner().WithAvailable("podman");
+        var context = new CleanupContext
+        {
+            FileSystem = new FakeFileSystem(),
+            Environment = new FakeEnvironment(),
+            ProcessRunner = runner,
+        };
+
+        await new PodmanCleaner().CleanAsync(context);
+
+        Assert.Single(runner.Invocations);
+        Assert.Equal(["system", "prune", "-a", "--volumes", "--force"], runner.Invocations[0].Arguments);
     }
 
     [Fact]
