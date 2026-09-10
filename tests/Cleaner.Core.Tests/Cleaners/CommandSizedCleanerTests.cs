@@ -6,10 +6,7 @@ using Xunit;
 
 namespace Cleaner.Core.Tests;
 
-/// <summary>
-/// Cleaners with nothing measurable on disk, which get their numbers from the tool they drive. The
-/// point of each test is that a real size reaches the preview instead of "unknown until it runs".
-/// </summary>
+/// <summary>Tests cleaners whose reclaimable size comes from an external tool.</summary>
 public sealed class CommandSizedCleanerTests
 {
     private const string DockerDf = """
@@ -37,7 +34,6 @@ public sealed class CommandSizedCleanerTests
 
         var scan = await new DockerCleaner().ScanAsync(TestContext.Create(new FakeFileSystem(), processRunner: runner));
 
-        // 800 MB + 150 MB + 1.5 GB, in the decimal units Docker prints.
         Assert.Equal(800_000_000L + 150_000_000L + 1_500_000_000L, scan.TotalBytes);
         Assert.Equal(["system", "df", "--format", "{{.Size}}|{{.Reclaimable}}"], runner.Invocations[0].Arguments);
     }
@@ -50,7 +46,6 @@ public sealed class CommandSizedCleanerTests
 
         var scan = await new DockerCleaner().ScanAsync(TestContext.Create(new FakeFileSystem(), processRunner: runner));
 
-        // Nothing measurable beats a wrong number: the UI labels the row instead.
         Assert.Equal(0, scan.TotalBytes);
     }
 
@@ -111,7 +106,7 @@ public sealed class CommandSizedCleanerTests
 
         var scan = await new WinSxSCleaner().ScanAsync(TestContext.Create(new FakeFileSystem(), environment, runner));
 
-        // Backups and disabled features plus the servicing scratch — never the shared components.
+        // Shared components are not reclaimable.
         Assert.Equal((2L * 1024 * 1024 * 1024) + (500L * 1024 * 1024), scan.TotalBytes);
         Assert.Contains("/AnalyzeComponentStore", runner.Invocations[0].Arguments);
     }
@@ -119,7 +114,6 @@ public sealed class CommandSizedCleanerTests
     [Fact]
     public async Task WinSxSCleaner_does_not_analyze_without_elevation()
     {
-        // The analysis needs admin just as the cleanup does, so asking would only fail slowly.
         var runner = new FakeProcessRunner().WithAvailable("dism");
         runner.Result = new ProcessResult(0, DismReport, string.Empty);
 
@@ -177,7 +171,7 @@ public sealed class CommandSizedCleanerTests
         await cleaner.ScanAsync(context);
         var result = await cleaner.CleanAsync(context);
 
-        // The scan's total is the baseline, so the daemon is asked before and after the run, not thrice.
+        // The cleanup measures the daemon before and after pruning.
         Assert.Equal(800_000_000, result.BytesFreed);
         Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("df")));
     }
@@ -205,7 +199,7 @@ public sealed class CommandSizedCleanerTests
         await cleaner.ScanAsync(context);
         var result = await cleaner.CleanAsync(context);
 
-        // Each analysis costs about a minute, so the run pays for two rather than three.
+        // Reuse the scan result instead of performing a third analysis.
         Assert.Equal(2L * 1024 * 1024 * 1024, result.BytesFreed);
         Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("/AnalyzeComponentStore")));
     }
@@ -223,7 +217,7 @@ public sealed class CommandSizedCleanerTests
         await cleaner.ScanAsync(TestContext.Create(fileSystem, environment, runner));
         await cleaner.CleanAsync(TestContext.Create(fileSystem, environment, runner));
 
-        // A number from a previous run would be stale, so the second run analyzes both sides itself.
+        // Each run must measure its own before/after sizes.
         Assert.Equal(3, runner.Invocations.Count(i => i.Arguments.Contains("/AnalyzeComponentStore")));
     }
 }

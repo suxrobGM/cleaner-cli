@@ -4,9 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// AMD's usage-telemetry logs under <c>ProgramData\AMD\PPC</c>. They are append-only and never
-/// rotated, so <c>sdkusage.csv</c> alone reaches several GB on a machine with AMD drivers. The
-/// driver recreates them on demand; <c>config.csv</c> is left alone.
+/// AMD usage-telemetry logs under <c>ProgramData\AMD\PPC</c>. The driver recreates these logs;
+/// configuration files are preserved.
 /// </summary>
 public sealed class AmdTelemetryCleaner : WindowsCleanerBase
 {

@@ -2,7 +2,6 @@ using Cleaner.Core.Abstractions;
 
 namespace Cleaner.Core.Tests.Fakes;
 
-/// <summary>Convenience factory for a <see cref="CleanupContext"/> backed by fakes.</summary>
 public static class TestContext
 {
     public static CleanupContext Create(

@@ -5,9 +5,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
-/// Clears the Chromium HTTP/GPU/shader caches of common Electron desktop apps (Discord, Slack,
-/// Microsoft Teams, Claude, and more). Each app stores its data under a per-OS root; we only touch
-/// the cache subdirectories (see <see cref="ChromiumCache"/>) and never config, logs, or local storage.
+/// Clears Chromium HTTP/GPU/shader caches for known Electron apps. Only cache subdirectories are
+/// targeted; configuration, logs, and local storage remain untouched.
 /// </summary>
 public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
 {

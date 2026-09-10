@@ -13,7 +13,7 @@ public sealed class ApplicationCleanerTests
     [Fact]
     public async Task AppLeftoverCleaner_removes_data_of_an_uninstalled_app()
     {
-        // Claude Desktop is gone (no install marker) but its Electron profile and VM image remain.
+        // No install marker remains, but the profile and VM image do.
         var fs = new FakeFileSystem()
             .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000)
             .AddFile(@"C:\Users\test\AppData\Roaming\Claude-3p\claude_desktop_config.json", 100);
@@ -40,8 +40,7 @@ public sealed class ApplicationCleanerTests
     [Fact]
     public async Task AppLeftoverCleaner_never_touches_claude_code()
     {
-        // Claude Code (the CLI and the editor extension) is a separate product from the desktop app;
-        // removing the desktop app's profile must not take its state with it.
+        // Claude Code is separate from the desktop app and its state must survive.
         var fs = new FakeFileSystem()
             .AddFile(@"C:\Users\test\AppData\Roaming\Claude\Preferences", 400)
             .AddFile(@"C:\Users\test\.claude\projects\session.jsonl", 7_000)
@@ -59,7 +58,6 @@ public sealed class ApplicationCleanerTests
     [Fact]
     public void AppLeftoverCleaner_asks_for_its_own_confirmation()
     {
-        // It removes settings and history rather than cache, so it never runs on the blanket yes.
         Assert.False(string.IsNullOrEmpty(new UninstalledAppLeftoverCleaner().ConfirmationWarning));
     }
 
@@ -77,8 +75,8 @@ public sealed class ApplicationCleanerTests
         var result = await new SteamCleaner().CleanAsync(TestContext.Create(fs, env));
 
         Assert.Equal(3_500, result.BytesFreed);
-        Assert.True(fs.FileExists($"{root}/steamapps/common/MyGame/game.exe")); // game untouched
-        Assert.False(fs.FileExists($"{root}/steamapps/shadercache/x.bin")); // cache contents cleared
+        Assert.True(fs.FileExists($"{root}/steamapps/common/MyGame/game.exe"));
+        Assert.False(fs.FileExists($"{root}/steamapps/shadercache/x.bin"));
     }
 
     [Fact]
@@ -88,7 +86,7 @@ public sealed class ApplicationCleanerTests
         var fs = new FakeFileSystem()
             .AddFile($@"{local}\Spotify\Storage\a.file", 4_000)
             .AddFile($@"{local}\Spotify\Data\b.file", 2_000)
-            .AddFile($@"{local}\Spotify\Users\prefs", 50); // settings — must survive
+            .AddFile($@"{local}\Spotify\Users\prefs", 50);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
 
         var result = await new SpotifyCleaner().CleanAsync(TestContext.Create(fs, env));
@@ -104,7 +102,7 @@ public sealed class ApplicationCleanerTests
         var fs = new FakeFileSystem()
             .AddFile($@"{roaming}\discord\Cache\a.bin", 1_000)
             .AddFile($@"{roaming}\Slack\GPUCache\b.bin", 500)
-            .AddFile($@"{roaming}\discord\settings.json", 42); // config — must survive
+            .AddFile($@"{roaming}\discord\settings.json", 42);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, AppDataDirectory = roaming };
 
         var result = await new ElectronAppCacheCleaner().CleanAsync(TestContext.Create(fs, env));
@@ -119,7 +117,7 @@ public sealed class ApplicationCleanerTests
         const string roaming = @"C:\Users\test\AppData\Roaming";
         var fs = new FakeFileSystem()
             .AddFile($@"{roaming}\Claude\Cache\a.bin", 12_000)
-            .AddFile($@"{roaming}\Claude\config.json", 42); // config — must survive
+            .AddFile($@"{roaming}\Claude\config.json", 42);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, AppDataDirectory = roaming };
 
         var result = await new ElectronAppCacheCleaner().CleanAsync(TestContext.Create(fs, env));
@@ -135,8 +133,8 @@ public sealed class ApplicationCleanerTests
         var fs = new FakeFileSystem()
             .AddFile($@"{tdata}\user_data\cache\0\a.jpg", 5_000)
             .AddFile($@"{tdata}\user_data\media_cache\1\b.mp4", 7_000)
-            .AddFile($@"{tdata}\key_datas", 9_999) // session keys — must survive
-            .AddFile($@"{tdata}\D877F783D5D3EF8C\maps", 9_999); // account data — must survive
+            .AddFile($@"{tdata}\key_datas", 9_999)
+            .AddFile($@"{tdata}\D877F783D5D3EF8C\maps", 9_999);
         var env = new FakeEnvironment
         {
             Os = OsPlatform.Windows,

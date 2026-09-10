@@ -1,9 +1,6 @@
 namespace Cleaner.Core.Services;
 
-/// <summary>
-/// All filesystem access, so cleaners can be tested against an in-memory fake. Best-effort:
-/// enumeration and sizing skip entries that throw rather than failing the whole operation.
-/// </summary>
+/// <summary>Filesystem abstraction with best-effort enumeration and sizing.</summary>
 public interface IFileSystemService
 {
     bool DirectoryExists(string path);

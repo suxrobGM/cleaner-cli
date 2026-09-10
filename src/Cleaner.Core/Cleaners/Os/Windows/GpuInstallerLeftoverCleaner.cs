@@ -5,9 +5,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// GPU driver installer leftovers: the extraction folders NVIDIA/AMD/Intel installers drop at the
-/// drive root and NVIDIA's download cache. Never touches DriverStore, Installer2 (needed for driver
-/// repair/uninstall), or any installed driver files. Shader caches are covered by gpu-shader-cache.
+/// GPU driver installer extraction folders and NVIDIA's download cache. DriverStore, Installer2,
+/// installed drivers, and shader caches are preserved.
 /// </summary>
 public sealed class GpuInstallerLeftoverCleaner : WindowsCleanerBase
 {

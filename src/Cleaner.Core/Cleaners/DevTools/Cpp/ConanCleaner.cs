@@ -4,8 +4,7 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Conan (C/C++) package cache. <c>conan cache clean "*"</c> removes source/build/download/temp
-/// folders, then <c>conan remove "*"</c> drops the cached package binaries themselves; both are
+/// Conan (C/C++) package cache. Source, build, download, temporary, and binary caches are
 /// re-downloaded or rebuilt on the next install.
 /// </summary>
 public sealed class ConanCleaner : ProcessCleanerBase

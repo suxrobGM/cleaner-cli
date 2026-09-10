@@ -21,6 +21,6 @@ public sealed class JvmCleanerTests
 
         var result = await new KonanCleaner().ScanAsync(TestContext.Create(fs, env));
 
-        Assert.Equal(8_000, result.TotalBytes); // cache + dependencies + downloaded compiler
+        Assert.Equal(8_000, result.TotalBytes);
     }
 }

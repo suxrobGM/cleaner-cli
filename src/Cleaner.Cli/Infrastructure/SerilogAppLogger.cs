@@ -5,11 +5,7 @@ using Serilog.Events;
 
 namespace Cleaner.Cli.Infrastructure;
 
-/// <summary>
-/// File-backed <see cref="IAppLogger"/> built on Serilog. Configured entirely in code (no
-/// reflection-based <c>Serilog.Settings.Configuration</c>) so it stays Native-AOT clean. Writes to a
-/// size-rolling <c>cleaner.log</c> under <see cref="IEnvironmentService.LogDirectory"/>.
-/// </summary>
+/// <summary>Native-AOT-safe, file-backed Serilog implementation of <see cref="IAppLogger"/>.</summary>
 public sealed class SerilogAppLogger : IAppLogger, IDisposable
 {
     private readonly Logger _logger;

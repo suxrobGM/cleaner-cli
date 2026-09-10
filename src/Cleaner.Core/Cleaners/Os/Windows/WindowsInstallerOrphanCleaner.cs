@@ -5,23 +5,18 @@ namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
 /// Cached <c>.msi</c>/<c>.msp</c> packages in <c>C:\Windows\Installer</c> that no installed
-/// product or patch still references. Windows caches one per product for repair and uninstall but
-/// never prunes them, so after a few Visual Studio or Office upgrades the strays dominate.
+/// product or patch references.
 /// </summary>
 /// <remarks>
-/// The live set comes from the <c>LocalPackage</c> values under the Installer's <c>UserData</c>
-/// registry key, read in a single <c>reg query</c> so no registry API is needed. If that read fails
-/// or comes back empty the cleaner does nothing: treating an empty set as "nothing is referenced"
-/// would wipe the cache and break repair for everything installed.
+/// The live set comes from <c>LocalPackage</c> values under the Installer's <c>UserData</c> registry
+/// key. A failed or empty query is treated as unknown; deleting in that case could break repair.
 /// </remarks>
 public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
 {
     private const string UserDataKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData";
 
     /// <summary>
-    /// The orphan set for one run. Discovery costs a full directory enumeration and a recursive
-    /// registry query, and the cleaner is a singleton scanned then cleaned against the same context,
-    /// so the answer is kept until a different context asks.
+    /// Cached orphan results for the current run context.
     /// </summary>
     private (CleanupContext Context, IReadOnlyList<CleanupPath> Targets)? _orphans;
 
@@ -93,16 +88,13 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
         || extension.Equals(".msp", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// A package path reduced to the form both sides can be compared in: separators unified, so a
-    /// registry value and an enumerated path differing only in slash direction still match.
+    /// Normalizes separators so registry and filesystem paths compare consistently.
     /// </summary>
     private static string Normalize(string path) =>
         path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
 
     /// <summary>
-    /// Every <c>LocalPackage</c> path recorded under the Installer's <c>UserData</c> key. Compared
-    /// case-insensitively because the registry stores them with a different casing (<c>C:\WINDOWS</c>)
-    /// than enumeration returns.
+    /// Reads every <c>LocalPackage</c> path under the Installer's <c>UserData</c> key.
     /// </summary>
     private static async Task<HashSet<string>> ReferencedPackagesAsync(CleanupContext context, CancellationToken cancellationToken)
     {

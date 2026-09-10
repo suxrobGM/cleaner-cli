@@ -4,9 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// HuggingFace and Torch model caches under <c>~/.cache</c> (re-downloaded on demand). Honors the
-/// <c>HF_HOME</c>/<c>HF_HUB_CACHE</c>/<c>TRANSFORMERS_CACHE</c>/<c>HF_DATASETS_CACHE</c>/<c>TORCH_HOME</c>
-/// overrides. Leaves installed model registries like <c>~/.ollama/models</c> alone.
+/// HuggingFace and Torch model caches (re-downloaded on demand), honoring their cache-location
+/// environment variables. Installed model registries such as <c>~/.ollama/models</c> are preserved.
 /// </summary>
 public sealed class MlCacheCleaner : DirectoryCleanerBase
 {

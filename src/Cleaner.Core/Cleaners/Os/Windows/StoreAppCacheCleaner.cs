@@ -5,8 +5,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// Per-package caches and scratch state of Microsoft Store / UWP apps. Only clears the well-known
-/// cache subdirectories under each package — never <c>LocalState</c> or <c>Settings</c> (real data).
+/// Per-package caches and scratch state of Microsoft Store/UWP apps. Only known cache subdirectories
+/// are cleared; <c>LocalState</c> and <c>Settings</c> are preserved.
 /// </summary>
 public sealed class StoreAppCacheCleaner : WindowsCleanerBase
 {

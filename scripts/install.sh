@@ -17,7 +17,7 @@ error() { printf '\033[0;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 command -v curl >/dev/null 2>&1 || error "curl is required but was not found."
 command -v tar  >/dev/null 2>&1 || error "tar is required but was not found."
 
-# 1. Detect platform -> runtime identifier (e.g. linux-x64, osx-arm64).
+# Detect platform and map it to the release runtime identifier.
 case "$(uname -s)" in
   Linux)  rid_os="linux" ;;
   Darwin) rid_os="osx" ;;
@@ -33,7 +33,7 @@ esac
 rid="${rid_os}-${rid_arch}"
 info "Detected platform: ${rid}"
 
-# 2. Resolve the matching asset on the latest release.
+# Resolve the matching asset from the latest release.
 asset_url="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
   | grep -o '"browser_download_url": *"[^"]*"' \
   | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/' \
@@ -42,7 +42,7 @@ asset_url="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
 
 [ -n "${asset_url}" ] || error "No release asset found for ${rid}. See https://github.com/${REPO}/releases"
 
-# 3. Download and extract into a scratch dir.
+# Download and extract into a temporary directory.
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 info "Downloading ${asset_url##*/}"
@@ -51,12 +51,12 @@ tar -xzf "${tmp}/cleaner.tar.gz" -C "${tmp}"
 
 [ -f "${tmp}/${BIN_NAME}" ] || error "The downloaded archive did not contain a '${BIN_NAME}' binary."
 
-# 4. Install into ~/.cleaner/bin.
+# Install into ~/.cleaner/bin.
 mkdir -p "${INSTALL_DIR}"
 install -m 0755 "${tmp}/${BIN_NAME}" "${INSTALL_DIR}/${BIN_NAME}"
 info "Installed to ${INSTALL_DIR}/${BIN_NAME}"
 
-# 5. Put ~/.cleaner/bin on PATH (idempotent).
+# Add ~/.cleaner/bin to PATH when needed.
 add_to_path() {
   case ":${PATH}:" in
     *":${INSTALL_DIR}:"*) return ;;

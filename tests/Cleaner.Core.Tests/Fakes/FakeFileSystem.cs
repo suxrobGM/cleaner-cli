@@ -3,14 +3,12 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Tests.Fakes;
 
-/// <summary>An in-memory <see cref="IFileSystemService"/> for fast, side-effect-free tests.</summary>
 public sealed class FakeFileSystem : IFileSystemService
 {
     private static readonly char S = Path.DirectorySeparatorChar;
     private readonly Dictionary<string, long> _files = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _dirs = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Paths whose deletion should throw, to exercise error handling.</summary>
     public HashSet<string> ThrowOnDelete { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public FakeFileSystem AddFile(string path, long size)
@@ -78,10 +76,7 @@ public sealed class FakeFileSystem : IFileSystemService
         }
     }
 
-    /// <summary>
-    /// Mirrors the wildcard matching the real <c>Directory.EnumerateFiles</c> does, so a cleaner that
-    /// narrows by pattern (e.g. rotated <c>*.log</c> files) is actually exercised by its test.
-    /// </summary>
+    /// <summary>Matches the wildcard behavior of <c>Directory.EnumerateFiles</c>.</summary>
     private static bool MatchesPattern(string path, string searchPattern)
     {
         if (searchPattern is "*" or "*.*")

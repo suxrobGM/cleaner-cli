@@ -5,9 +5,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// A configurable cleaner for system package managers (apt, dnf, pacman, brew, scoop, choco).
-/// Each instance is constructed in the composition root with its command and applicability, so a
-/// new manager is one registration line rather than a new class.
+/// Configurable cleaner for system package managers (apt, dnf, pacman, brew, scoop, and choco).
+/// Instances provide their command and applicability from the composition root.
 /// </summary>
 public sealed class SystemPackageManagerCleaner(
     string id,

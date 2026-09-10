@@ -1,9 +1,8 @@
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// The cache subdirectory names every Chromium app shares, browsers and Electron apps alike, so
-/// their cleaners don't each repeat the list. Only re-fetchable data: cookies, history, passwords,
-/// Local/Session Storage, and IndexedDB are user data and stay out.
+/// Cache subdirectories shared by Chromium browsers and Electron apps. Cookies, history, passwords,
+/// storage, and IndexedDB are user data and are excluded.
 /// </summary>
 internal static class ChromiumCache
 {
@@ -20,8 +19,7 @@ internal static class ChromiumCache
     ];
 
     /// <summary>
-    /// On-device model stores, which sit beside the profiles rather than inside one. Chrome and Edge
-    /// download these for their built-in AI features and they dwarf the HTTP cache.
+    /// On-device model stores beside browser profiles; Chrome and Edge re-download them as needed.
     /// </summary>
     public static readonly string[] ModelStores =
         ["OptGuideOnDeviceModel", "OptGuideOnDeviceClassifierModel", "optimization_guide_model_store"];

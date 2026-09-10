@@ -4,8 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Unreal Engine's shared DerivedDataCache — shaders and asset derivations that rebuild on demand.
-/// Projects, plugins, and engine installs are never touched.
+/// Unreal Engine's shared DerivedDataCache for regenerable shaders and asset derivations. Projects,
+/// plugins, and engine installs are preserved.
 /// </summary>
 public sealed class UnrealCleaner : DirectoryCleanerBase
 {

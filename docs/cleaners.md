@@ -1,7 +1,7 @@
 # Cleaners
 
-Cleaner ships with 131 cleaners. Pick **List all cleaners** in the menu to see which apply to your
-machine; the **id** below is what each one is listed under.
+Cleaner ships with 131 cleaners. Use **List all cleaners** to see which apply to your machine; the
+**id** below is the menu identifier.
 
 Every category belongs to one of three groups — **Operating system**, **Development tools**, and
 **Applications** — which is how the list and the selection menu are laid out. Toggling a group in
@@ -10,9 +10,8 @@ the selection menu takes everything under it.
 > Cleaners only ever remove caches, temp files, and rebuildable artifacts — never source, configs,
 > credentials, installed games, or save data.
 
-Workspace-sweeping cleaners (`build-artifacts`, `unity`) act on the `--path`/`-p <dir>` roots, which
-can be repeated to sweep several workspaces at once, e.g. `cleaner -p ~/source -p ~/work`. It
-defaults to the current directory.
+Workspace sweepers (`build-artifacts`, `unity`) use repeatable `--path`/`-p <dir>` roots (default:
+the current directory), e.g. `cleaner -p ~/source -p ~/work`.
 
 Cleaners honor the usual cache-relocation environment variables (`NUGET_PACKAGES`, `CARGO_HOME`,
 `GOMODCACHE`, `GRADLE_USER_HOME`, `npm_config_cache`, `YARN_CACHE_FOLDER`, `PIP_CACHE_DIR`,

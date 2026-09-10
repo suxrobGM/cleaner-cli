@@ -3,11 +3,7 @@ using Xunit;
 
 namespace Cleaner.Core.Tests;
 
-/// <summary>
-/// Exercises the concrete <see cref="FileSystemService"/> against a real temp directory — the
-/// read-only and reparse-point behaviour the in-memory fake can't model. Regression coverage for the
-/// build-artifact sweep that hung when the read-only pre-walk followed symlinks/junctions.
-/// </summary>
+/// <summary>Exercises real-file behavior that the in-memory fake cannot model.</summary>
 public sealed class FileSystemServiceTests : IDisposable
 {
     private readonly FileSystemService _fs = new();
@@ -16,8 +12,7 @@ public sealed class FileSystemServiceTests : IDisposable
     [Fact]
     public void DeleteDirectory_removes_tree_containing_read_only_files()
     {
-        // NuGet and other package caches mark cached files read-only, which blocks a plain recursive
-        // delete on Windows. The delete must still clear them and succeed.
+        // Package caches can contain read-only files on Windows.
         var dir = Path.Combine(_root, "cache");
         var file = Path.Combine(dir, "locked.dll");
         Directory.CreateDirectory(dir);
@@ -32,9 +27,7 @@ public sealed class FileSystemServiceTests : IDisposable
     [Fact]
     public void DeleteDirectory_does_not_traverse_into_symlinked_directories()
     {
-        // A symlink/junction inside the tree (e.g. node_modules) must be removed as a link, never
-        // followed — otherwise clearing read-only attributes or recursing walks the link's target
-        // (a shared store, or a cycle) and the delete hangs.
+        // Links must be removed without traversing their targets.
         var external = Path.Combine(_root, "external");
         var externalFile = Path.Combine(external, "keep.txt");
         Directory.CreateDirectory(external);
@@ -43,7 +36,7 @@ public sealed class FileSystemServiceTests : IDisposable
         var tree = Path.Combine(_root, "node_modules");
         Directory.CreateDirectory(tree);
 
-        // Force the read-only fallback path (which is what walked the tree and followed links).
+        // Force the read-only fallback path.
         var readOnly = Path.Combine(tree, "pkg.json");
         File.WriteAllText(readOnly, "{}");
         File.SetAttributes(readOnly, FileAttributes.ReadOnly);
@@ -72,7 +65,7 @@ public sealed class FileSystemServiceTests : IDisposable
             return;
         }
 
-        // Best-effort cleanup; clear any read-only bits a failing test may have left behind.
+        // Clear read-only bits before best-effort teardown.
         try
         {
             foreach (var file in Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories))

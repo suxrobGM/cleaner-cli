@@ -1,67 +1,59 @@
 # CLAUDE.md
 
-Guidance for Claude Code (and humans) working in this repository.
+Guidance for Claude Code and contributors working in this repository.
 
-## What this is
+## Project
 
-**Cleaner** is a cross-platform CLI (command: `cleaner`) that reclaims disk space by clearing
-caches from dev tooling (NuGet, npm/yarn/pnpm/bun, pip, cargo, go, Gradle/Maven, etc.), the OS
-(temp/trash, Windows Update cache, browser caches, system package managers), and large apps
-(Steam). Built on **.NET 10 + Native AOT**, **Spectre.Console** for rich UI, **System.CommandLine**
-for AOT-safe argument parsing, and **Microsoft.Extensions.DependencyInjection** for DI.
+Cleaner is an interactive, cross-platform CLI for reclaiming disk space from development tools,
+operating systems, and application caches. It uses .NET 10 with Native AOT, Spectre.Console for the
+UI, System.CommandLine for argument parsing, and Microsoft.Extensions.DependencyInjection.
 
-> **Why System.CommandLine, not Spectre.Console.Cli?** Spectre.Console.Cli relies on reflection
-> (`CommandApp` is `[RequiresDynamicCode]`) and cannot be Native-AOT-compiled cleanly.
-> System.CommandLine is trim/AOT-friendly (the dotnet CLI uses it). We use Spectre.Console purely
-> for rendering (tables, prompts, progress, figlet) — that part *is* fully AOT-safe.
+System.CommandLine is used instead of Spectre.Console.Cli because the latter relies on reflection
+and dynamic code. Spectre.Console is used only for AOT-safe rendering.
 
-## Project layout
+## Layout
 
-- `src/Cleaner.Core/` — class library: abstractions, cleaner implementations, services. Unit-testable.
-- `src/Cleaner.Cli/` — Native AOT executable: the interactive menu, Spectre.Console rendering, and
-  the DI composition root.
-- `tests/Cleaner.Core.Tests/` — xUnit tests against an in-memory filesystem fake.
+- `src/Cleaner.Core/` — abstractions, cleaner implementations, and testable services.
+- `src/Cleaner.Cli/` — Native AOT executable, interactive flows, rendering, and composition root.
+- `tests/Cleaner.Core.Tests/` — xUnit tests using in-memory fakes where possible.
 
 ## Commands
 
 ```bash
-dotnet build                                   # build all (warnings are errors)
-dotnet test                                    # run unit tests
-dotnet run --project src/Cleaner.Cli           # interactive menu (the only entry point)
+dotnet build
+dotnet test
+dotnet run --project src/Cleaner.Cli
 dotnet run --project src/Cleaner.Cli -- --verbose
-dotnet publish src/Cleaner.Cli -r win-x64 -c Release   # Native AOT binary (must be 0 trim warnings)
+dotnet publish src/Cleaner.Cli -r win-x64 -c Release
 ```
 
-## Architecture in brief
+Builds treat warnings as errors. Native AOT publishes must produce no trim or AOT warnings.
 
-- Every cleaner implements `ICleaner` (`Id`, `Name`, `Category`, `RequiresElevation`,
-  `IsApplicable`, `IsAvailable`, `ScanAsync`, `CleanAsync`).
-- Most cleaners derive from **`DirectoryCleanerBase`** — declare candidate cache directories, the
-  base handles size calc, dry-run accounting, deletion, and error capture.
-- Cleaners that must shell out (e.g. `docker system prune`) derive from **`ProcessCleanerBase`**.
-- OS differences live **only** in `IEnvironmentService` (paths, OS detection, elevation). Cleaners
-  never hardcode OS paths or branch on the platform directly.
-- All filesystem access goes through `IFileSystemService` so cleaners are testable.
+## Architecture
 
-## Adding a new cleaner
+- Every cleaner implements `ICleaner`.
+- Filesystem cleaners usually derive from `DirectoryCleanerBase`, which handles sizing, dry runs,
+  deletion, progress, and error capture.
+- Command-driven cleaners usually derive from `ProcessCleanerBase`.
+- Platform identity, standard paths, and elevation checks belong in `IEnvironmentService`.
+- Filesystem and process access go through `IFileSystemService` and `IProcessRunner` for testability.
+- Cleaner registrations are explicit to remain Native-AOT compatible.
 
-1. Create a class in `src/Cleaner.Core/Cleaners/` deriving from `DirectoryCleanerBase`
-   (or `ProcessCleanerBase`). Resolve paths via the injected `IEnvironmentService`.
-2. Register it with one line in the composition root
-   (`src/Cleaner.Cli/Infrastructure/ServiceCollectionExtensions.cs`):
-   `services.AddSingleton<ICleaner, XCleaner>();`
-3. Document it in `docs/cleaners.md`.
+## Adding a cleaner
 
-## Rules / conventions
+1. Add the cleaner under `src/Cleaner.Core/Cleaners/`, normally deriving from
+   `DirectoryCleanerBase` or `ProcessCleanerBase`.
+2. Resolve paths through `IEnvironmentService`; do not hardcode platform-dependent locations.
+3. Register the cleaner in the matching `ServiceCollectionExtensions.*.cs` partial under
+   `src/Cleaner.Cli/Infrastructure/`.
+4. Add tests and document the cleaner in `docs/cleaners.md`.
 
-- **Native AOT safe**: no reflection-based discovery, no assembly scanning. Register cleaners
-  **explicitly** in the composition root. `IsAotCompatible=true` runs the trim/AOT analyzers at
-  build, and `dotnet publish -r <rid>` must produce **zero trim/AOT warnings**.
-- **Interactive only**: no subcommands, no unattended flags. `cleaner` opens a menu; the only flags
-  are `--path` and `--verbose`. Don't add a way to delete without a human at the prompt.
-- **Safe by default**: deletes are gated behind scan → preview → confirm. Cleaners with a real
-  trade-off set `ConfirmationWarning` and are confirmed separately. Never delete user data — only
-  caches/temp/derived artifacts.
-- **Commit by group**: land focused, conventional commits (e.g.
-  `feat(cleaners): add Python cache cleaners`), not one big commit.
-- `TreatWarningsAsErrors` is on; keep the build clean.
+## Conventions
+
+- Keep code Native-AOT safe: avoid reflection-based discovery and assembly scanning.
+- Keep deletion interactive. The main menu drives cleanup; `update` is the only direct subcommand.
+  Do not add unattended deletion flags.
+- Preserve the scan → preview → confirm flow. Set `ConfirmationWarning` when cleanup has a material
+  trade-off, and never delete user data.
+- Keep the build and tests clean; `TreatWarningsAsErrors` and AOT analyzers are enabled.
+- Prefer focused conventional commits, such as `feat(cleaners): add Python cache cleaners`.

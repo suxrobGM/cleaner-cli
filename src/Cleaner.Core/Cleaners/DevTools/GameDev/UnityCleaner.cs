@@ -5,11 +5,9 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Unity's global editor cache plus the regenerable per-project <c>Library</c>/<c>Temp</c>/<c>Logs</c>/
-/// <c>obj</c> folders — only inside actual Unity projects (a dir with both <c>Assets</c> and
-/// <c>ProjectSettings</c>) found under the scan roots (<c>--path</c>, repeatable; default cwd), so the
-/// generic names are never deleted elsewhere. Unity rebuilds these; player builds and the Asset Store
-/// cache are left alone.
+/// Unity's global editor cache and regenerable <c>Library</c>/<c>Temp</c>/<c>Logs</c>/<c>obj</c>
+/// folders inside detected Unity projects. Scan roots come from repeatable <c>--path</c> options
+/// (defaulting to the current directory); player builds and the Asset Store cache are preserved.
 /// </summary>
 public sealed class UnityCleaner : DirectoryCleanerBase
 {

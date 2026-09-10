@@ -4,8 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// VS Code cache directories (keeps settings and installed extensions). Also covers forks with the
-/// same layout: Cursor, VSCodium, and Windsurf.
+/// VS Code cache directories, including forks with the same layout (Cursor, VSCodium, and Windsurf).
+/// Settings and installed extensions are preserved.
 /// </summary>
 public sealed class VsCodeCleaner : DirectoryCleanerBase
 {

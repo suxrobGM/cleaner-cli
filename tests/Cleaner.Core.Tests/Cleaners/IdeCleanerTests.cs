@@ -24,8 +24,8 @@ public sealed class IdeCleanerTests
         var result = await new JetBrainsCleaner().CleanAsync(TestContext.Create(fs, env));
 
         Assert.Equal(1_500, result.BytesFreed);
-        Assert.True(fs.FileExists($@"{local}\JetBrains\Toolbox\apps\rider\rider64.exe")); // installed IDE untouched
-        Assert.True(fs.FileExists($@"{local}\JetBrains\Rider2024.3\LocalHistory\history.db")); // user data untouched
+        Assert.True(fs.FileExists($@"{local}\JetBrains\Toolbox\apps\rider\rider64.exe"));
+        Assert.True(fs.FileExists($@"{local}\JetBrains\Rider2024.3\LocalHistory\history.db"));
         Assert.False(fs.FileExists($@"{local}\JetBrains\Rider2024.3\caches\index.bin"));
     }
 

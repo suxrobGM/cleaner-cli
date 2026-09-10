@@ -3,10 +3,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Utils;
 
-/// <summary>
-/// Pure helpers for comparing semantic versions and picking the right release asset. Kept separate
-/// from <see cref="IUpdateService"/> so the fiddly parsing logic is unit-testable in isolation.
-/// </summary>
+/// <summary>Helpers for semantic-version comparison and release-asset selection.</summary>
 public static class VersionUtils
 {
     /// <summary>Strip a leading <c>v</c> and any <c>+build</c> metadata, e.g. <c>v1.2.3+abc</c> → <c>1.2.3</c>.</summary>
@@ -27,11 +24,7 @@ public static class VersionUtils
         return plus >= 0 ? trimmed[..plus] : trimmed;
     }
 
-    /// <summary>
-    /// Compare two semantic versions. Returns &lt;0 if <paramref name="a"/> precedes
-    /// <paramref name="b"/>, 0 if equal, &gt;0 otherwise. A pre-release (e.g. <c>1.0.0-rc1</c>) ranks
-    /// below its release (<c>1.0.0</c>), per SemVer.
-    /// </summary>
+    /// <summary>Compares semantic versions, ranking pre-releases below their releases.</summary>
     public static int Compare(string a, string b)
     {
         var (releaseA, preA) = SplitPreRelease(Normalize(a));
@@ -65,10 +58,7 @@ public static class VersionUtils
     /// <summary>True if <paramref name="latest"/> is strictly newer than <paramref name="current"/>.</summary>
     public static bool IsNewer(string latest, string current) => Compare(latest, current) > 0;
 
-    /// <summary>
-    /// Pick the asset whose file name contains the runtime identifier (e.g. <c>win-x64</c>), or null
-    /// when no asset matches this platform.
-    /// </summary>
+    /// <summary>Returns the asset matching a runtime identifier, or null if none matches.</summary>
     public static UpdateAsset? SelectAsset(IEnumerable<GitHubAsset> assets, string runtimeIdentifier)
     {
         if (string.IsNullOrWhiteSpace(runtimeIdentifier))

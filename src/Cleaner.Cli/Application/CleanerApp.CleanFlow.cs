@@ -72,10 +72,7 @@ public sealed partial class CleanerApp
         return await RunCleanFlowAsync(selected, context, options, cancellationToken);
     }
 
-    /// <summary>
-    /// Scan, report, confirm, and delete. <paramref name="cleaners"/> is already filtered to what
-    /// applies on this OS, against the same <paramref name="context"/> the run uses throughout.
-    /// </summary>
+    /// <summary>Scans, previews, confirms, and runs the selected cleaners.</summary>
     private async Task<int> RunCleanFlowAsync(
         IReadOnlyList<ICleaner> cleaners,
         CleanupContext context,
@@ -94,10 +91,8 @@ public sealed partial class CleanerApp
         renderer.SizeTable(rows, options.DryRun ? "Would free" : "Reclaimable", options.Verbose);
         ReportSkipped(blocked);
 
-        // Process-backed cleaners (e.g. docker, conda) can't be pre-measured but are still actionable
-        // when their tool is present. Keep them in the run set even when the measured total is 0.
-        // A cleaner the scan already found targets for is available by definition — asking again
-        // would re-walk every one of those directory trees.
+        // Command-backed cleaners may be actionable even when their size is unknown. A scan with
+        // targets already proves availability and avoids walking the same directories twice.
         var scanned = rows.Where(r => r.Result.Targets.Count > 0).Select(r => r.Cleaner).ToHashSet();
         var available = runnable.Where(c => scanned.Contains(c) || c.IsAvailable(context)).ToList();
         var scannedTotal = rows.Sum(r => r.Result.TotalBytes);
@@ -118,7 +113,7 @@ public sealed partial class CleanerApp
             return 0;
         }
 
-        // Ask per cleaner first, so each warning is read next to the cleaner it applies to.
+        // Confirm warnings per cleaner before the run-wide prompt.
         var actionable = ConfirmGuarded(available);
         if (actionable.Count == 0)
         {
@@ -151,10 +146,7 @@ public sealed partial class CleanerApp
         }
     }
 
-    /// <summary>
-    /// Drop any cleaner whose <see cref="ICleaner.ConfirmationWarning"/> the user declines, so
-    /// refusing one leaves the rest of the run intact.
-    /// </summary>
+    /// <summary>Removes cleaners whose individual confirmation warnings are declined.</summary>
     private List<ICleaner> ConfirmGuarded(IReadOnlyList<ICleaner> available)
     {
         var kept = new List<ICleaner>(available.Count);

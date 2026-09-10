@@ -31,7 +31,6 @@ public sealed class SizeParserTests
     [Fact]
     public void An_explicit_binary_unit_wins_over_the_base()
     {
-        // "512MiB" is unambiguous even when the tool otherwise counts in 1000s.
         Assert.True(SizeParser.TryParse("512MiB", out var bytes, unitBase: 1000));
         Assert.Equal(512 * 1024 * 1024, bytes);
     }

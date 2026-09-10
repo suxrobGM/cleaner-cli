@@ -4,14 +4,11 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Compacts Docker Desktop's WSL2 virtual disks. Pruning frees space inside the disk, but the host
-/// <c>.vhdx</c> only ever grows, so it stays the largest file on the machine long after the images
-/// are gone.
+/// Compacts Docker Desktop's WSL2 virtual disks after pruning frees space inside them.
 /// </summary>
 /// <remarks>
-/// Nothing is deleted: WSL is shut down, then each disk is compacted with <c>diskpart</c>, which
-/// every Windows install has (unlike the Hyper-V <c>Optimize-VHD</c> cmdlet). Compacting an
-/// attached disk would corrupt it, hence the shutdown, the elevation, and the confirmation.
+/// WSL is shut down before each disk is compacted with the built-in <c>diskpart</c> utility;
+/// compacting an attached disk could corrupt it.
 /// </remarks>
 public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 {
@@ -23,8 +20,6 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
     public override bool RequiresElevation => true;
 
-    // The disk's internal free space can't be read from the host, so the estimate is inferred from
-    // what Docker says it is holding; without the daemon there is no number until the disk shrinks.
     public override bool SupportsSizeEstimate => false;
 
     public override string ConfirmationWarning =>
@@ -34,10 +29,7 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
 
     /// <summary>
-    /// Estimate the compaction as the gap between the disks on the host and the bytes Docker says it
-    /// is holding inside them: the disk file only ever grows, so that gap is the slack compacting
-    /// gives back. It is an estimate — filesystem overhead inside the disk is counted as slack — and
-    /// it needs the daemon, so without it the cleaner reports nothing rather than guessing.
+    /// Estimates reclaimable slack as host disk size minus Docker's reported usage.
     /// </summary>
     public override async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
     {
@@ -116,8 +108,7 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
     }
 
     /// <summary>
-    /// Drive diskpart through a scripted attach/compact/detach. It only reads a script from a file,
-    /// so one is written to temp and removed afterwards.
+    /// Runs diskpart's attach/compact/detach sequence from a temporary script.
     /// </summary>
     private static async Task<Services.ProcessResult> CompactAsync(
         CleanupContext context,

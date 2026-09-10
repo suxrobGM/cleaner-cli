@@ -31,9 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `reg query`; if that read fails or comes back empty the cleaner does nothing, rather than
     treat the whole cache as garbage.
   - `app-leftovers` — see below.
-- `build-artifacts` now sweeps Python virtualenvs (`.venv`, `venv`, `.tox`, `.nox`) and the
-  `.turbo`/`.parcel-cache`/`.vite` caches. It also takes `build`, but only beside a Gradle, Maven,
-  CMake, or Meson project file — the name is far too common to sweep on sight.
+- `build-artifacts` now sweeps Python virtualenvs (`.venv`, `venv`, `.tox`, `.nox`) and additional
+  frontend caches (`.turbo`, `.parcel-cache`, `.vite`). It also takes `build`, but only beside a
+  Gradle, Maven, CMake, or Meson project file—the name is too common to sweep on sight.
 - Extended: `gpu-installers` covers the NVIDIA app's update staging and the NGX (DLSS) model store;
   `browser-cache` the on-device AI model stores Chrome and Edge keep beside their profiles;
   `vscode` its `WebStorage` and `Crashpad` directories; `browser-automation` the Playwright MCP

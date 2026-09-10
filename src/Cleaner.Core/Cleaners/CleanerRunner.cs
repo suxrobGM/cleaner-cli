@@ -4,9 +4,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners;
 
 /// <summary>
-/// Runs a single cleaner's scan/clean defensively: an unexpected failure becomes a reported result
-/// plus a log entry instead of propagating, so one misbehaving cleaner never aborts a whole run.
-/// Cancellation still propagates so the user can abort the run as a whole.
+/// Runs a cleaner defensively, reporting unexpected failures so one cleaner cannot abort a run.
+/// Cancellation still propagates to support aborting the overall run.
 /// </summary>
 public static class CleanerRunner
 {

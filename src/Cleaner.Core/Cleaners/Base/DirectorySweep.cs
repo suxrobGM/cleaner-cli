@@ -3,8 +3,7 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Traversal for workspace-sweeping cleaners: walk the scan roots, yield each directory the
-/// predicate matches, and never descend into a match.
+/// Traversal for workspace sweep cleaners; matching directories are yielded and not traversed.
 /// </summary>
 internal static class DirectorySweep
 {
@@ -14,8 +13,8 @@ internal static class DirectorySweep
     public static string LeafName(string path) => Path.GetFileName(path.TrimEnd(Separators));
 
     /// <summary>
-    /// Depth-first walk of every existing root, yielding each match without descending into it.
-    /// <paramref name="skipDescentInto"/> prunes whole branches from the walk.
+    /// Depth-first walk of existing roots, optionally pruning branches with
+    /// <paramref name="skipDescentInto"/>.
     /// </summary>
     public static IEnumerable<string> FindDirectories(
         IFileSystemService fileSystem,

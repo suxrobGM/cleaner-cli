@@ -3,9 +3,7 @@ using Cleaner.Core.Abstractions;
 namespace Cleaner.Cli.Rendering;
 
 /// <summary>
-/// A cleaner paired with its scan result, ready for size reporting. <paramref name="CommandBased"/>
-/// marks rows whose size is only knowable after an external command runs, so the table can label
-/// them instead of hiding them as 0 B.
+/// Scan result paired with its cleaner; <paramref name="CommandBased"/> marks when a command-backed size is unknown.
 /// </summary>
 public sealed record ScanRow(ICleaner Cleaner, ScanResult Result, bool CommandBased = false);
 

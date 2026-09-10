@@ -4,8 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// The C/C++ extension's IntelliSense store: precompiled headers (<c>ipch</c>) plus one symbol
-/// database per workspace. Regenerated on the next parse, and the largest cache VS Code produces.
+/// The C/C++ extension's regenerable IntelliSense store: precompiled headers (<c>ipch</c>) and
+/// per-workspace symbol databases.
 /// </summary>
 public sealed class VsCppToolsCleaner : DirectoryCleanerBase
 {

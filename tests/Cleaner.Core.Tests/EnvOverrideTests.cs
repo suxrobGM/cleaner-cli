@@ -6,13 +6,10 @@ using Xunit;
 
 namespace Cleaner.Core.Tests;
 
-/// <summary>
-/// Cleaners must honor the env vars that relocate a tool's cache; otherwise scans under-report and
-/// direct deletion targets a location the tool no longer uses.
-/// </summary>
+/// <summary>Verifies that cache-location environment variables are honored.</summary>
 public sealed class EnvOverrideTests
 {
-    /// <summary>(cleaner, variable, configured value, directory the cleaner must then target).</summary>
+    /// <summary>Cleaner, variable, configured value, and expected target directory.</summary>
     public static TheoryData<Func<ICleaner>, string, string, string> Overrides => new()
     {
         { () => new NuGetCleaner(), "NUGET_PACKAGES", "/mnt/nuget", "/mnt/nuget" },

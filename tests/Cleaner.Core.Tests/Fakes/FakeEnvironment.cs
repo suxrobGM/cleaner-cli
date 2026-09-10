@@ -2,7 +2,6 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Tests.Fakes;
 
-/// <summary>A configurable <see cref="IEnvironmentService"/> with a deterministic, Unix-like layout.</summary>
 public sealed class FakeEnvironment : IEnvironmentService
 {
     private readonly Dictionary<string, string> _vars = new(StringComparer.OrdinalIgnoreCase);
@@ -41,7 +40,6 @@ public sealed class FakeEnvironment : IEnvironmentService
 
     public string HomePath(params string[] segments) => Path.Combine([HomeDirectory, .. segments]);
 
-    /// <summary>The same fake with a complete Windows layout, for tests of Windows-only cleaners.</summary>
     public static FakeEnvironment Windows() => new()
     {
         Os = OsPlatform.Windows,

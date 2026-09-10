@@ -16,7 +16,7 @@ public sealed class MlCleanerTests
         var fs = new FakeFileSystem()
             .AddFile("/home/test/.cache/huggingface/hub/model.bin", 8_000)
             .AddFile("/home/test/.cache/torch/hub/weights.pt", 2_000)
-            .AddFile("/home/test/.cache/keep/other.txt", 99); // unrelated cache — must survive
+            .AddFile("/home/test/.cache/keep/other.txt", 99);
         var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
 
         var result = await new MlCacheCleaner().CleanAsync(TestContext.Create(fs, env));

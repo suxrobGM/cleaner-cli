@@ -2,11 +2,7 @@ using Cleaner.Core.Abstractions;
 
 namespace Cleaner.Cli.Rendering;
 
-/// <summary>
-/// The CLI's entire view layer. Everything that touches Spectre.Console — markup, tables, prompts,
-/// spinners, progress bars — lives behind this interface so the flows in
-/// <see cref="Application.CleanerApp"/> stay rendering-free and testable.
-/// </summary>
+/// <summary>CLI view layer, keeping Spectre.Console details out of application flows.</summary>
 public interface IConsoleRenderer
 {
     /// <summary>False when output is redirected or no live terminal is attached (no prompts/spinners).</summary>
@@ -21,17 +17,10 @@ public interface IConsoleRenderer
     /// <summary>Render the cleaner list, one table per group and a section per category.</summary>
     void CleanerList(IReadOnlyList<CleanerListEntry> entries);
 
-    /// <summary>
-    /// Hold the output on screen until a key is pressed. Without it a long table scrolls away the
-    /// moment the menu redraws, which reads as the menu having ignored the choice. No-op when not
-    /// interactive.
-    /// </summary>
+    /// <summary>Pauses interactive output until a key is pressed; no-op when redirected.</summary>
     void Pause(string markup);
 
-    /// <summary>
-    /// Render a name/size table for scan results under the given size-column header; with
-    /// <paramref name="verbose"/>, include a per-target path breakdown beneath each cleaner.
-    /// </summary>
+    /// <summary>Renders scan sizes, optionally including per-target paths.</summary>
     void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false);
 
     /// <summary>Render the post-clean summary table (freed bytes, status) and any error detail.</summary>

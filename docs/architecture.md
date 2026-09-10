@@ -1,7 +1,7 @@
 # Architecture
 
-Cleaner is a small, layered .NET 10 application designed so new cleaners are cheap to add and the
-whole thing compiles cleanly to Native AOT.
+Cleaner is a layered .NET 10 application designed to be easy to extend and compatible with Native
+AOT.
 
 ## Projects
 
@@ -43,14 +43,19 @@ public interface ICleaner
     string Name { get; }
     string Category { get; }
     bool RequiresElevation { get; }
+    bool SupportsSizeEstimate { get; }
+    string? ConfirmationWarning { get; }
     bool IsApplicable(CleanupContext context);  // right OS?
-    bool IsAvailable(CleanupContext context);    // tool/paths present?
+    bool IsAvailable(CleanupContext context);   // tool/paths present?
     Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken ct = default);
-    Task<CleanResult> CleanAsync(CleanupContext context, IProgress<CleanProgress>? progress = null, CancellationToken ct = default);
+    Task<CleanResult> CleanAsync(
+        CleanupContext context,
+        IProgress<CleanProgress>? progress = null,
+        CancellationToken ct = default);
 }
 ```
 
-Most cleaners don't implement this directly. They derive from a base class:
+Most cleaners derive from a base class:
 
 - **`DirectoryCleanerBase`** — declare candidate cache directories (`GetTargets`, or
   `GetTargetsAsync` when discovery itself needs a registry read or an external command); the base
@@ -58,12 +63,11 @@ Most cleaners don't implement this directly. They derive from a base class:
   clear-contents, or single file), and per-target error capture.
 - **`ProcessCleanerBase`** — for tools where a native command is authoritative (e.g.
   `docker system prune`). Runs the command when the tool is on `PATH`, otherwise falls back to
-  deleting the declared directories. Sizing always comes from those directories so scans and
-  progress still report reclaimable space.
+  declared directories. Specialized cleaners can override sizing with command output.
 
 ## Services
 
-Everything a cleaner needs arrives through `CleanupContext`, never through static OS calls:
+Cleaners receive dependencies through `CleanupContext`, not static OS calls:
 
 - **`IEnvironmentService`** — the single home of OS differences: path resolution, OS detection, and
   elevation (`IsElevated`). Cleaners ask it for `HomeDirectory`, `CacheDirectory`, etc., and report
@@ -75,11 +79,10 @@ Everything a cleaner needs arrives through `CleanupContext`, never through stati
 
 ## The user interface
 
-Cleaner is interactive only: there are no subcommands and no unattended mode. `CommandLineBuilder`
-parses `--path`/`--verbose` (plus the built-in `--help`/`--version`) and hands straight to
-`CleanerApp.InteractiveAsync`, a menu loop over `MainMenuChoice`. Every action — clean, preview,
-list, update — is reached from there, and every deletion ends in a confirmation prompt. Without a
-real terminal the app prints guidance and exits 1 rather than doing anything.
+Cleaner is interactive by default and has no unattended deletion mode. `CommandLineBuilder` parses
+`--path`/`--verbose` (plus `--help`/`--version`) before opening the `MainMenuChoice` loop. The
+`update` action is also available as a direct subcommand. Every deletion requires confirmation;
+without an interactive terminal, the app prints guidance and exits 1.
 
 Two prompts guard a run. The run-wide one names the total and the cleaner count. Before it, any
 cleaner exposing a non-null `ICleaner.ConfirmationWarning` prints that trade-off and takes its own
@@ -88,9 +91,9 @@ intact.
 
 ## Composition root
 
-`ServiceCollectionExtensions.AddCleaner()` registers everything with **explicit factory lambdas** —
-no assembly scanning, no reflection-based activation. Cleaners have parameterless constructors and
-receive their dependencies via `CleanupContext`, which keeps registration trivial and AOT-safe.
+`ServiceCollectionExtensions.AddCleaner()` uses explicit registrations—no assembly scanning or
+reflection-based activation. Cleaners receive runtime dependencies through `CleanupContext`,
+keeping registration simple and AOT-safe.
 
 ## Native AOT
 
@@ -102,8 +105,8 @@ choices keep it warning-free:
    which *is* AOT-safe.
 2. **No reflection** in our own code — explicit registration everywhere.
 
-`IsAotCompatible=true` runs the trim/AOT analyzers during every build, and `TreatWarningsAsErrors`
-makes any regression fail CI. `dotnet publish -r <rid>` must produce zero trim/AOT warnings.
+`IsAotCompatible=true` runs trim/AOT analyzers during every build, and `TreatWarningsAsErrors` makes
+regressions fail CI. `dotnet publish -r <rid>` must produce zero trim/AOT warnings.
 
 ## Resilience & logging
 

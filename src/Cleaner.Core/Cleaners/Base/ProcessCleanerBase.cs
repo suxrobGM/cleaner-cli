@@ -3,9 +3,8 @@ using Cleaner.Core.Abstractions;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// For cleaners where an external command is authoritative (<c>pnpm store prune</c>). Runs the
-/// command when the tool is present, else deletes the declared directories. Sizing always comes
-/// from those directories, so scans report reclaimable space either way.
+/// Base for cleaners driven by an external command. Uses the command when available and falls back
+/// to declared directories otherwise.
 /// </summary>
 public abstract class ProcessCleanerBase : DirectoryCleanerBase
 {
@@ -29,7 +28,6 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
         IProgress<CleanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        // Dry-run or missing tool: measure/delete via the declared directories (base behavior).
         if (context.DryRun || !context.ProcessRunner.Exists(Executable))
         {
             return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);

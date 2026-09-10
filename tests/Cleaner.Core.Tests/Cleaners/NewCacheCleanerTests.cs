@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Cleaner.Core.Tests;
 
-/// <summary>Cleaners added for the caches that dominate a loaded Windows dev machine.</summary>
+/// <summary>Tests for additional Windows development-tool caches.</summary>
 public sealed class NewCacheCleanerTests
 {
     [Fact]
@@ -38,7 +38,7 @@ public sealed class NewCacheCleanerTests
 
         Assert.Equal(5_000, result.BytesFreed);
         Assert.True(fs.FileExists($@"{google}\AndroidStudio2025.3.4\plugins\p.jar"));
-        Assert.True(fs.FileExists($@"{google}\Chrome\User Data\Default\Cache\x")); // not an IDE dir
+        Assert.True(fs.FileExists($@"{google}\Chrome\User Data\Default\Cache\x"));
     }
 
     [Fact]

@@ -2,10 +2,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Abstractions;
 
-/// <summary>
-/// Ambient services and options handed to every cleaner. Cleaners resolve all paths and run all
-/// I/O through these abstractions so they stay cross-platform and unit-testable.
-/// </summary>
+/// <summary>Services and options shared by cleaners for cross-platform, testable I/O.</summary>
 public sealed class CleanupContext
 {
     public required IFileSystemService FileSystem { get; init; }
@@ -20,10 +17,7 @@ public sealed class CleanupContext
     /// <summary>Base directory for project-local sweeps (bin/obj, node_modules, ...). Defaults to cwd.</summary>
     public string WorkingDirectory { get; init; } = System.Environment.CurrentDirectory;
 
-    /// <summary>
-    /// Roots that workspace-sweeping cleaners (build artifacts, Unity projects) recurse into. Set via
-    /// <c>--path</c>; when none are given it falls back to <see cref="WorkingDirectory"/>.
-    /// </summary>
+    /// <summary>Roots for workspace sweeps; defaults to <see cref="WorkingDirectory"/>.</summary>
     public IReadOnlyList<string> ScanRoots
     {
         get => _scanRoots is { Count: > 0 } ? _scanRoots : [WorkingDirectory];

@@ -4,9 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
-/// Telegram Desktop media and emoji caches — the same data its own "Clear cache" button removes
-/// (re-downloaded on view). Account state under <c>tdata</c> (session keys, settings, drafts) is
-/// never touched, so this can't log the user out.
+/// Telegram Desktop media and emoji caches, equivalent to its “Clear cache” action. Account state
+/// under <c>tdata</c> remains untouched.
 /// </summary>
 public sealed class TelegramCleaner : DirectoryCleanerBase
 {

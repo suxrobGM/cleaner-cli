@@ -4,9 +4,7 @@ using Cleaner.Core.Utils;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// What <c>docker system df</c> reports: bytes currently held, and the share of them a prune would
-/// reclaim. Both Docker cleaners size themselves from this, which is the only way either can report
-/// a number before it runs.
+/// Usage and reclaimable bytes reported by <c>docker system df</c>, used to size both Docker cleaners.
 /// </summary>
 /// <param name="Used">Bytes of images, containers, volumes and build cache Docker is holding.</param>
 /// <param name="Reclaimable">The part of <paramref name="Used"/> nothing references any more.</param>
@@ -15,8 +13,7 @@ internal readonly record struct DockerDiskUsage(long Used, long Reclaimable)
     private static readonly DockerDiskUsage Unknown = new(0, 0);
 
     /// <summary>
-    /// Ask the daemon for its disk usage. Returns zeroes when the CLI is missing, the daemon is
-    /// down, or the output does not parse — callers report "unknown" rather than a wrong number.
+    /// Queries the daemon; zeroes indicate a missing CLI, unavailable daemon, or invalid output.
     /// </summary>
     public static async Task<DockerDiskUsage> QueryAsync(CleanupContext context, CancellationToken cancellationToken)
     {

@@ -1,10 +1,6 @@
 namespace Cleaner.Core.Services;
 
-/// <summary>
-/// Minimal application logger for crash diagnostics and per-cleaner error trails. Abstracted (like
-/// <see cref="IProcessRunner"/>) so Core takes no logging-framework dependency; the CLI supplies the
-/// concrete file-backed implementation.
-/// </summary>
+/// <summary>Minimal logger abstraction that keeps Core independent of a logging framework.</summary>
 public interface IAppLogger
 {
     void Info(string message);

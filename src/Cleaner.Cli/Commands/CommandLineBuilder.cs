@@ -3,14 +3,7 @@ using Cleaner.Cli.Application;
 
 namespace Cleaner.Cli.Commands;
 
-/// <summary>
-/// Builds the System.CommandLine root and hands control to the interactive menu.
-/// </summary>
-/// <remarks>
-/// Nothing is ever deleted unattended, so the only flags are the ones a menu can't ask for: where
-/// to look and how much detail to show. <c>update</c> stays a subcommand because you may need it
-/// before the menu is useful; it is on the menu too.
-/// </remarks>
+/// <summary>Builds the command-line root and hands control to the interactive menu.</summary>
 public sealed class CommandLineBuilder(CleanerApp app)
 {
     private readonly Option<string[]> pathOption = new("--path", "-p")
@@ -48,8 +41,7 @@ public sealed class CommandLineBuilder(CleanerApp app)
 
     private RunOptions BuildOptions(ParseResult result)
     {
-        // One --path flag, repeatable: the first is the primary working dir for single-directory
-        // project-local cleaners; all of them are the roots the workspace sweepers recurse into.
+        // The first path is the project-local working directory; all paths feed workspace sweeps.
         var paths = result.GetValue(pathOption) ?? [];
         return new RunOptions
         {

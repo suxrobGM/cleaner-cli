@@ -4,9 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Android Studio caches. It uses the JetBrains layout but lives under a <c>Google</c> root, so the
-/// <c>jetbrains</c> cleaner never sees it, and every upgrade leaves the previous version's caches
-/// behind. Installed plugins and settings are kept.
+/// Android Studio caches under its <c>Google</c> root (separate from the JetBrains cleaner).
+/// Installed plugins and settings are preserved.
 /// </summary>
 public sealed class AndroidStudioCleaner : DirectoryCleanerBase
 {

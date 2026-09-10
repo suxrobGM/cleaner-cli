@@ -11,10 +11,7 @@ public sealed record ProcessResult(int ExitCode, string StandardOutput, string S
             : StandardError.Trim();
 }
 
-/// <summary>
-/// Runs external tools for cleaners that delegate to a native command (e.g. <c>docker system
-/// prune</c>). Abstracted so process-based cleaners can be tested without spawning processes.
-/// </summary>
+/// <summary>Runs external tools through a testable process abstraction.</summary>
 public interface IProcessRunner
 {
     /// <summary>True if <paramref name="executable"/> can be found on PATH.</summary>

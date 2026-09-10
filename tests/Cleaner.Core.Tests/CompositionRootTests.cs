@@ -8,10 +8,7 @@ using Xunit;
 
 namespace Cleaner.Core.Tests;
 
-/// <summary>
-/// Builds the real composition root and audits the cleaner catalog, so a forgotten registration,
-/// duplicate id, or off-convention id fails a test instead of shipping.
-/// </summary>
+/// <summary>Audits cleaner registrations in the real composition root.</summary>
 public sealed class CompositionRootTests
 {
     private static ICleanerRegistry BuildRegistry()
@@ -19,7 +16,6 @@ public sealed class CompositionRootTests
         var services = new ServiceCollection();
         services.AddCleaner();
         using var provider = services.BuildServiceProvider();
-        // CleanerRegistry's id dictionary throws on duplicates, so resolving it is itself an assertion.
         return provider.GetRequiredService<ICleanerRegistry>();
     }
 
@@ -37,7 +33,6 @@ public sealed class CompositionRootTests
     {
         var registry = BuildRegistry();
 
-        // Ordered is the layout the UI groups by: a category missing from it would render ungrouped.
         Assert.All(registry.All, c => Assert.Contains(c.Category, Categories.Ordered));
         Assert.All(registry.All, c => Assert.NotEqual(CategoryGroups.Other, Categories.GroupOf(c.Category)));
         Assert.All(registry.All, c => Assert.False(string.IsNullOrWhiteSpace(c.Name)));
@@ -48,7 +43,6 @@ public sealed class CompositionRootTests
     {
         var registry = BuildRegistry();
 
-        // Spot-check ids across old and new groups; the count catches silently dropped registrations.
         foreach (var id in new[]
                  {
                      "nuget", "npm", "uv", "conan", "zig", "julia", "podman", "helm", "pipx",

@@ -6,10 +6,7 @@ namespace Cleaner.Cli.Application;
 
 public sealed partial class CleanerApp
 {
-    /// <summary>
-    /// Check for a newer release and, unless <paramref name="checkOnly"/>, offer to download and
-    /// install it in place once the user confirms.
-    /// </summary>
+    /// <summary>Checks for updates and, unless <paramref name="checkOnly"/>, offers installation.</summary>
     public async Task<int> UpdateAsync(bool checkOnly, CancellationToken cancellationToken)
     {
         UpdateCheckResult check;

@@ -8,11 +8,7 @@ using Spectre.Console;
 
 namespace Cleaner.Cli.Infrastructure;
 
-/// <summary>
-/// The composition root. Everything is registered explicitly with factory lambdas — no assembly
-/// scanning and no reflection-based activation — so the app stays Native-AOT clean. The per-category
-/// cleaner registrations live in the <c>ServiceCollectionExtensions.*.cs</c> partial files.
-/// </summary>
+/// <summary>Explicit Native-AOT-safe composition root; cleaner categories are split into partials.</summary>
 internal static partial class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCleaner(this IServiceCollection services)
@@ -36,10 +32,7 @@ internal static partial class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>
-    /// Registers every cleaner, delegating to the per-category partials. Adding a new cleaner is one
-    /// line in the matching <c>AddXCleaners</c> method.
-    /// </summary>
+    /// <summary>Registers cleaners from the category-specific partial methods.</summary>
     private static void AddCleaners(this IServiceCollection services)
     {
         services.AddDevToolCleaners();

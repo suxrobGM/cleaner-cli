@@ -4,8 +4,7 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Xcode derived data, device-support symbol caches, and simulator caches (macOS). All are
-/// regenerated on the next build or device connect; Archives (user data) are never touched.
+/// Xcode derived data, device-support symbols, and simulator caches (macOS). Archives are preserved.
 /// </summary>
 public sealed class XcodeCleaner : DirectoryCleanerBase
 {

@@ -56,7 +56,6 @@ public sealed class ConsoleRendererTests
         Assert.Contains(Categories.JavaScript, output, StringComparison.Ordinal);
         Assert.Contains("3 cleaners across 3 categories in 3 groups.", output, StringComparison.Ordinal);
 
-        // Groups render in layout order, so the OS table comes before the apps table.
         Assert.True(
             output.IndexOf("temp", StringComparison.Ordinal) < output.IndexOf("steam", StringComparison.Ordinal));
     }

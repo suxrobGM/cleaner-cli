@@ -48,7 +48,6 @@ public sealed class CleanerRegistryTests
     [Fact]
     public void Categories_are_distinct_and_follow_the_display_order()
     {
-        // The curated order, not the alphabetical one: package managers precede the languages.
         var registry = Build();
         Assert.Equal([Categories.Dotnet, Categories.JavaScript, Categories.Python], CategoriesOf(registry));
     }
@@ -66,7 +65,6 @@ public sealed class CleanerRegistryTests
         Assert.Equal([Categories.Dotnet, "Alien tooling", "Zebra tooling"], CategoriesOf(registry));
     }
 
-    /// <summary>The categories in the order the registry hands its cleaners out.</summary>
     private static string[] CategoriesOf(ICleanerRegistry registry) =>
         [.. registry.All.Select(c => c.Category).Distinct(StringComparer.OrdinalIgnoreCase)];
 

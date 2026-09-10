@@ -1,9 +1,6 @@
 namespace Cleaner.Core.Abstractions;
 
-/// <summary>
-/// Cleaner's extension point: every cache target is one of these. Add one by deriving from a base
-/// class and registering it once in the composition root.
-/// </summary>
+/// <summary>Extension point for a cleanup target, registered once in the composition root.</summary>
 public interface ICleaner
 {
     /// <summary>Stable, kebab-case identifier (e.g. "nuget", "npm").</summary>
@@ -19,16 +16,11 @@ public interface ICleaner
     bool RequiresElevation { get; }
 
     /// <summary>
-    /// False when nothing on disk can be measured directly, so a size may only be knowable after the
-    /// cleaner runs. Such a cleaner can still estimate — several ask their own tool — and the UI
-    /// shows the number when there is one, labelling the row instead of showing 0 B when there isn't.
+    /// False when an available cleaner may have no pre-run size; command estimates can still be reported.
     /// </summary>
     bool SupportsSizeEstimate => true;
 
-    /// <summary>
-    /// States the trade-off for cleaners that cost more than a re-fetch (deleting Windows.old gives
-    /// up upgrade rollback). Non-null earns its own yes/no before the run-wide confirmation.
-    /// </summary>
+    /// <summary>Optional warning shown before running a potentially costly cleanup.</summary>
     string? ConfirmationWarning => null;
 
     /// <summary>True if this cleaner is meaningful on the current operating system.</summary>

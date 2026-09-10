@@ -5,16 +5,15 @@
 ```bash
 dotnet build Cleaner.slnx -c Release          # build (warnings are errors)
 dotnet test Cleaner.slnx -c Release           # run unit tests
-dotnet run --project src/Cleaner.Cli -- list  # try it
+dotnet run --project src/Cleaner.Cli          # launch the interactive menu
 ```
 
-Commits are grouped and use Conventional Commit messages
-(e.g. `feat(cleaners): add Python cache cleaners`).
+Use grouped Conventional Commit messages (for example,
+`feat(cleaners): add Python cache cleaners`).
 
 ## Add a new cleaner
 
-Most cleaners are a dozen lines. Say we want to clean a fictional tool `foo` whose cache lives at
-`~/.cache/foo`.
+Example: a fictional tool `foo` whose cache is `~/.cache/foo`.
 
 ### 1. Write the class
 
@@ -39,20 +38,20 @@ public sealed class FooCleaner : DirectoryCleanerBase
 }
 ```
 
-If the tool's own command is the authoritative way to clean it, derive from `ProcessCleanerBase`
-instead and add `Executable` + `CleanArguments`; the declared directories become the size source and
-the fallback when the tool isn't installed.
+If the tool's command is authoritative, derive from `ProcessCleanerBase` and add `Executable` and
+`CleanArguments`. Declared directories, when present, provide sizing and the fallback when the tool
+is unavailable.
 
-For OS-specific or privileged cleaners, override `IsApplicable` (e.g.
+For OS-specific or privileged cleaners, override `IsApplicable` (for example,
 `context.Environment.IsWindows`) and `RequiresElevation`.
 
 ### 2. Register it
 
-Add one line in `src/Cleaner.Cli/Infrastructure/ServiceCollectionExtensions.cs`, in the matching
-group:
+Add one line to the matching `ServiceCollectionExtensions.*.cs` partial under
+`src/Cleaner.Cli/Infrastructure/`:
 
 ```csharp
-services.AddSingleton<ICleaner>(_ => new FooCleaner());
+services.AddSingleton<ICleaner, FooCleaner>();
 ```
 
 ### 3. Test and document it

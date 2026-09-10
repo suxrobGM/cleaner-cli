@@ -5,14 +5,11 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
-/// Profile directories left behind by uninstalled applications. Uninstallers routinely drop the
-/// program but keep its per-user data, which runs to gigabytes for an Electron app bundling a
-/// runtime or VM image.
+/// Per-user profile directories left by uninstalled applications.
 /// </summary>
 /// <remarks>
-/// Each app pairs its install markers with the directories it leaves behind, and leftovers are
-/// offered only when every marker is gone. The list is curated rather than inferred because
-/// name-matching over <c>AppData</c> flags live tools like nvm and vcpkg.
+/// Targets are curated and offered only when all install markers are absent; broad AppData
+/// name-matching could remove data for live tools.
 /// </remarks>
 public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
 {

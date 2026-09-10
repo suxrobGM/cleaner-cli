@@ -1,65 +1,50 @@
 ---
 name: release
-description: Cut a new Cleaner release — bump the version in Directory.Build.props, roll the CHANGELOG, commit, and create + push the matching git tag that triggers the Release workflow. Use when the user asks to "release", "cut a release", "ship a version", or "bump the version".
+description: Cut a Cleaner release by updating Directory.Build.props and CHANGELOG.md, then committing and tagging it. Use when the user asks to release, ship, or bump a version.
 ---
 
 # Release Cleaner
 
-Cuts a release of the `cleaner` CLI. The version lives in **one place**
-(`Directory.Build.props` → `<Version>`); pushing a `vX.Y.Z` tag fires
-`.github/workflows/release.yml`, which builds the Native AOT binaries and publishes
-a GitHub Release whose notes come from the matching `CHANGELOG.md` section.
+Cleaner’s version is defined only in `Directory.Build.props`. Pushing a `vX.Y.Z` tag triggers
+`.github/workflows/release.yml`, which builds the Native AOT binaries and publishes a GitHub Release
+from the matching `CHANGELOG.md` section.
 
-## Inputs
+## Input
 
-The user may name a version (`1.2.0`) or a bump kind (`patch` / `minor` / `major`).
-If neither is given, propose a bump from the unreleased changes and confirm before tagging.
+Accept an explicit version or a `patch`, `minor`, or `major` bump. If neither is provided, propose a
+bump from the unreleased changes and confirm it before tagging.
 
-## Steps
+## Procedure
 
-1. **Pre-flight.**
-   - Ensure the working tree is clean (`git status --porcelain`). If not, stop and report.
-   - Read the current version from `Directory.Build.props` (`<Version>`).
-   - Confirm you're on the default branch (`main`) and up to date with the remote.
+1. Preflight:
+   - Require a clean working tree (`git status --porcelain`).
+   - Read the current `<Version>` from `Directory.Build.props`.
+   - Confirm the branch is `main` and up to date with its remote.
+2. Choose the version using SemVer:
+   - `major` for breaking changes, `minor` for features, and `patch` for fixes.
+   - Use `CHANGELOG.md` and `git log <lastTag>..HEAD --oneline` as evidence.
+   - State the chosen version and rationale.
+3. Replace `<Version>` in `Directory.Build.props` with `X.Y.Z` (without a `v` prefix).
+4. Roll `CHANGELOG.md`:
+   - Rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, using today’s date from `date +%F`.
+   - Add a new empty `## [Unreleased]` above it.
+   - If Unreleased was empty, summarize commits since the last tag under Keep a Changelog headings.
+   - Add the `[X.Y.Z]` comparison link and point `[Unreleased]` to `vX.Y.Z...HEAD`.
+5. Run `dotnet build` and `dotnet test`. Stop if either fails.
+6. Commit only `Directory.Build.props` and `CHANGELOG.md` as `chore(release): vX.Y.Z`.
+7. Create the annotated tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
+8. Before publishing, ask for confirmation unless the user already authorized a push. Then run:
 
-2. **Decide the new version.** Follow SemVer:
-   - `major` for breaking changes, `minor` for new cleaners/features, `patch` for fixes.
-   - Infer the bump from the `## [Unreleased]` section of `CHANGELOG.md` and/or the commits
-     since the last tag (`git log <lastTag>..HEAD --oneline`). State the chosen version and why.
+   ```bash
+   git push origin main
+   git push origin vX.Y.Z
+   ```
 
-3. **Bump the version.** Edit `Directory.Build.props`, replacing the `<Version>` value
-   with the new `X.Y.Z` (no `v` prefix here).
+9. Report the version, tag, and `https://github.com/suxrobGM/cleaner-cli/actions`.
 
-4. **Roll the CHANGELOG.** In `CHANGELOG.md`:
-   - Rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` using **today's date**
-     (do not guess — get it with `date +%F`).
-   - Add a fresh empty `## [Unreleased]` section above it.
-   - If `## [Unreleased]` had no entries, summarize the commits since the last tag into
-     `Added` / `Changed` / `Fixed` groups (Keep a Changelog style).
-   - Update the link-reference footer: add an `[X.Y.Z]` compare link and point
-     `[Unreleased]` at `vX.Y.Z...HEAD`.
+## Safety
 
-5. **Build & verify.** Run `dotnet build` (warnings are errors) and `dotnet test`.
-   If either fails, stop and report — do not tag a broken build.
-
-6. **Commit.** Stage `Directory.Build.props` and `CHANGELOG.md` and commit:
-   `chore(release): vX.Y.Z`.
-
-7. **Tag.** Create an annotated tag matching the version exactly:
-   `git tag -a vX.Y.Z -m "Release vX.Y.Z"`. The tag's `v` prefix is required —
-   the workflow triggers on `tags: [ 'v*' ]`.
-
-8. **Push (confirm first).** This step publishes a release, so confirm with the user
-   unless they already said to push. Then:
-   `git push origin main` and `git push origin vX.Y.Z`.
-
-9. **Report.** Print the new version, the tag, and the Actions URL
-   (`https://github.com/suxrobGM/cleaner-cli/actions`) so the user can watch the release build.
-
-## Notes
-
-- The release body is taken verbatim from the `## [X.Y.Z]` block in `CHANGELOG.md`,
-  so write it for end users. Missing/empty section ⇒ the workflow falls back to
-  auto-generated notes.
-- Never edit a version number anywhere but `Directory.Build.props`.
-- If the tag already exists, stop — never force-move a published release tag.
+- Write the release section for end users; it becomes the release body. An absent or empty section
+  causes the workflow to use generated notes.
+- Never change the version outside `Directory.Build.props`.
+- Never force-move an existing release tag.

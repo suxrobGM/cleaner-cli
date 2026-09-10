@@ -3,9 +3,8 @@ using Cleaner.Core.Abstractions;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// The common cleaner shape: declare the cache directories, and the base handles existence checks,
-/// sizing, dry-run accounting, deletion, and error capture. Subclasses usually override only
-/// <see cref="GetTargets"/>, or <see cref="GetTargetsAsync"/> when discovery itself needs I/O.
+/// Base implementation for cleaners that declare filesystem targets. Handles sizing, dry runs,
+/// deletion, and error capture; subclasses usually override <see cref="GetTargets"/>.
 /// </summary>
 public abstract class DirectoryCleanerBase : ICleaner
 {
@@ -27,9 +26,8 @@ public abstract class DirectoryCleanerBase : ICleaner
     protected virtual IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
 
     /// <summary>
-    /// Candidate targets when discovery needs I/O of its own — a registry read, an external command.
-    /// Defaults to <see cref="GetTargets"/>. A subclass overriding this instead should also override
-    /// <see cref="IsAvailable"/>, which stays synchronous.
+    /// Candidate targets when discovery requires I/O. Defaults to <see cref="GetTargets"/>;
+    /// asynchronous implementations should also override synchronous <see cref="IsAvailable"/>.
     /// </summary>
     protected virtual ValueTask<IEnumerable<CleanupPath>> GetTargetsAsync(
         CleanupContext context,

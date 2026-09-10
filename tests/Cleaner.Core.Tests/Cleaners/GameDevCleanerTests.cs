@@ -14,13 +14,12 @@ public sealed class GameDevCleanerTests
     public async Task UnityCleaner_clears_project_artifacts_only_inside_unity_projects()
     {
         var fs = new FakeFileSystem()
-            // A real Unity project: has Assets + ProjectSettings.
             .AddFile("/projects/GameA/Assets/Scene.unity", 10)
             .AddFile("/projects/GameA/ProjectSettings/ProjectVersion.txt", 10)
             .AddFile("/projects/GameA/Library/artifacts/a.bin", 5_000)
             .AddFile("/projects/GameA/Temp/b.tmp", 200)
             .AddFile("/projects/GameA/Logs/c.log", 50)
-            // Not a Unity project (no ProjectSettings) but has a Library — must survive.
+            // A Library outside a Unity project is not a target.
             .AddFile("/projects/NotUnity/Library/big.bin", 9_999);
         var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
         var context = new CleanupContext
@@ -33,9 +32,9 @@ public sealed class GameDevCleanerTests
 
         var result = await new UnityCleaner().CleanAsync(context);
 
-        Assert.Equal(5_250, result.BytesFreed); // Library + Temp + Logs of GameA
+        Assert.Equal(5_250, result.BytesFreed);
         Assert.True(fs.FileExists("/projects/NotUnity/Library/big.bin"));
-        Assert.True(fs.FileExists("/projects/GameA/Assets/Scene.unity")); // assets untouched
+        Assert.True(fs.FileExists("/projects/GameA/Assets/Scene.unity"));
     }
 
     [Fact]

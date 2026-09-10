@@ -4,9 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Scratch state of the Codex CLI under <c>~/.codex</c>: the transient folders and the rotated
-/// sandbox logs. Sessions, memories, skills, auth, and config stay, as does the installed CLI itself
-/// under <c>%LOCALAPPDATA%\OpenAI</c>.
+/// Transient Codex CLI state and rotated sandbox logs under <c>~/.codex</c>. Sessions, memories,
+/// skills, credentials, configuration, and the installed CLI are preserved.
 /// </summary>
 public sealed class CodexCleaner : DirectoryCleanerBase
 {

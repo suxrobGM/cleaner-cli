@@ -15,7 +15,7 @@ public sealed class PythonCleanerTests
     {
         var fs = new FakeFileSystem()
             .AddFile("/home/test/miniconda3/pkgs/numpy-1.0.tar.bz2", 6_000)
-            .AddFile("/home/test/miniconda3/envs/proj/bin/python", 9_999); // installed env — must survive
+            .AddFile("/home/test/miniconda3/envs/proj/bin/python", 9_999);
         var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
 
         var result = await new CondaCleaner().CleanAsync(TestContext.Create(fs, env));

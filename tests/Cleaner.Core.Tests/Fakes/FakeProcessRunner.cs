@@ -2,7 +2,6 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Tests.Fakes;
 
-/// <summary>Records process invocations and returns a canned result without spawning anything.</summary>
 public sealed class FakeProcessRunner : IProcessRunner
 {
     private readonly HashSet<string> _available = new(StringComparer.OrdinalIgnoreCase);
@@ -11,13 +10,10 @@ public sealed class FakeProcessRunner : IProcessRunner
 
     public ProcessResult Result { get; set; } = new(0, string.Empty, string.Empty);
 
-    /// <summary>Optional side effect invoked when a process "runs" (e.g. to mutate the fake FS).</summary>
+    /// <summary>Optional side effect invoked when a process runs.</summary>
     public Action? OnRun { get; set; }
 
-    /// <summary>
-    /// Per-command result, for cleaners that both query and act (docker df then prune). Returning
-    /// null falls back to <see cref="Result"/>.
-    /// </summary>
+    /// <summary>Optional per-command result; null falls back to <see cref="Result"/>.</summary>
     public Func<string, IReadOnlyList<string>, ProcessResult?>? Respond { get; set; }
 
     public FakeProcessRunner WithAvailable(params string[] executables)

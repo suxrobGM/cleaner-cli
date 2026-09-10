@@ -17,7 +17,7 @@ public sealed class WindowsCleanerTests
         var fs = new FakeFileSystem()
             .AddFile($@"{windows}\Logs\CBS\CBS.log", 4_000)
             .AddFile($@"{windows}\Logs\DISM\dism.log", 1_000)
-            .AddFile($@"{windows}\System32\kernel32.dll", 9_999); // not a target
+            .AddFile($@"{windows}\System32\kernel32.dll", 9_999);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, WindowsDirectory = windows };
 
         var cleaner = new WindowsLogCleaner();
@@ -25,7 +25,7 @@ public sealed class WindowsCleanerTests
 
         Assert.True(cleaner.RequiresElevation);
         Assert.Equal(5_000, result.BytesFreed);
-        Assert.True(fs.FileExists($@"{windows}\System32\kernel32.dll")); // system files untouched
+        Assert.True(fs.FileExists($@"{windows}\System32\kernel32.dll"));
         Assert.False(fs.FileExists($@"{windows}\Logs\CBS\CBS.log"));
     }
 
@@ -79,7 +79,7 @@ public sealed class WindowsCleanerTests
         var fs = new FakeFileSystem()
             .AddFile($@"{pkg}\AC\INetCache\x.dat", 500)
             .AddFile($@"{pkg}\TempState\y.tmp", 300)
-            .AddFile($@"{pkg}\LocalState\save.db", 9_999); // real data — must survive
+            .AddFile($@"{pkg}\LocalState\save.db", 9_999);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
 
         var result = await new StoreAppCacheCleaner().CleanAsync(TestContext.Create(fs, env));
@@ -95,7 +95,7 @@ public sealed class WindowsCleanerTests
             .AddFile(@"C:\NVIDIA\DisplayDriver\560.81\setup.exe", 4_000)
             .AddFile(@"C:\AMD\Adrenalin\setup.exe", 3_000)
             .AddFile(@"C:\ProgramData\NVIDIA Corporation\Downloader\pkg.bin", 2_000)
-            .AddFile(@"C:\ProgramData\NVIDIA Corporation\Installer2\core\file", 9_999) // needed for repair
+            .AddFile(@"C:\ProgramData\NVIDIA Corporation\Installer2\core\file", 9_999)
             .AddFile(@"C:\Windows\System32\DriverStore\FileRepository\nv.inf", 9_999);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, WindowsDirectory = @"C:\Windows" };
 

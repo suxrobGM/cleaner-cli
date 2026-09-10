@@ -1,13 +1,13 @@
 # Usage
 
-`cleaner` is interactive. Run it with no arguments and drive everything from the menu:
+Run `cleaner` with no arguments to use the interactive menu:
 
 ```bash
 cleaner
 ```
 
-Nothing is ever deleted unattended: every action is chosen from the menu, previewed, and confirmed.
-The one subcommand is `update`, because you may need it before the menu is useful.
+Nothing is deleted unattended: each action is selected, previewed, and confirmed. The `update`
+subcommand is also available for updating before opening the menu.
 
 ## The menu
 
@@ -20,13 +20,11 @@ What would you like to do?
   Exit
 ```
 
-**Clean caches** opens a grouped multi-select of every cleaner that applies to your OS. Toggle
-entries with the spacebar (toggle **All cleaners**, or a category heading, to select in bulk), press
-Enter, review the reclaimable-space table, and confirm. Nothing is removed until you answer that
-prompt.
+**Clean caches** opens a grouped multi-select of cleaners applicable to your OS. Toggle entries with
+the spacebar (or **All cleaners** / a category heading for bulk selection), press Enter, review the
+reclaimable-space table, and confirm. Nothing is removed before confirmation.
 
-**Preview only** runs exactly the same scan and prints the same table, then stops. Use it to see
-where your disk went before deciding what to clear.
+**Preview only** runs the same scan and table, then stops without deleting anything.
 
 **List all cleaners** shows every cleaner with its id, category, and status:
 
@@ -35,20 +33,19 @@ where your disk went before deciding what to clear.
 - **needs admin** — requires elevation; re-run as administrator/root to include it.
 - **n/a (other OS)** — not applicable on the current operating system.
 
-**Check for updates** asks GitHub whether a newer release exists and, on confirmation, downloads the
-prebuilt binary for your platform, replaces the running executable in place, and relaunches it.
-Cleaner only touches the network here — never during a normal clean. On Windows the previous binary
-is briefly kept as `cleaner.exe.old` and removed automatically on the next run.
+**Check for updates** asks GitHub for a newer release and, on confirmation, downloads the platform
+binary, replaces the executable, and relaunches it. Cleaner uses the network only here, never during
+a normal clean. Windows briefly keeps the previous binary as `cleaner.exe.old`, removing it next run.
 
 > If `cleaner` lives in a write-protected location (e.g. `Program Files`), run the update from an
 > elevated shell so it can replace the binary. Auto-update reads the latest **published** GitHub
 > release; draft releases are ignored.
 
-The menu reopens after each action, so you can preview, then clean, then list without restarting.
+The menu reopens after each action, so you can preview, clean, and list without restarting.
 
 ## Flags
 
-Only the two things the menu can't reasonably ask for are flags, plus the built-ins:
+Flags cover the options the menu cannot ask for, plus the built-ins:
 
 | Option | Alias | Description |
 | --- | --- | --- |
@@ -65,8 +62,7 @@ cleaner --version
 
 ## `cleaner update`
 
-The same thing the menu's **Check for updates** does, available directly so you can update without
-opening the menu:
+The menu's **Check for updates** action is also available directly:
 
 ```bash
 cleaner update             # check, then prompt to download & install
@@ -75,22 +71,20 @@ cleaner update --check     # only report current vs. latest; install nothing
 
 ## Cleaners with a trade-off
 
-Most cleaners remove something that is simply re-downloaded or rebuilt. A few cost more than that —
-deleting `C:\Windows.old` gives up the ability to roll back a Windows upgrade, for instance. Those
-carry their own warning and their own yes/no prompt, asked separately just before the run-wide
-confirmation, so you can decline one without cancelling the whole clean.
+Most cleaners remove data that can be downloaded or rebuilt. A few have larger trade-offs: deleting
+`C:\Windows.old`, for example, removes the ability to roll back a Windows upgrade. These cleaners
+show a warning and separate yes/no prompt, so you can decline one without cancelling the run.
 
 ## Elevation
 
 Some OS cleaners (Windows Update cache, system temp, Delivery Optimization, the systemd journal, and
-some system package managers) need administrator/root privileges. When not elevated, Cleaner lists
-them as **needs admin** and skips them during a run with a clear note — re-run from an elevated shell
-to include them.
+some system package managers) need administrator/root privileges. Without elevation, Cleaner lists
+them as **needs admin** and skips them; re-run from an elevated shell to include them.
 
 ## Project-local cleaners
 
-The `build-artifacts` cleaner and a few others act on a directory tree rather than a global cache.
-Point them at your code with `--path`, then pick them from the menu:
+The `build-artifacts` cleaner and some others sweep a directory tree rather than a global cache.
+Point them at your code with `--path`, then select them:
 
 ```bash
 cleaner --path ./my-repo
@@ -98,10 +92,9 @@ cleaner --path ./my-repo
 
 ## Logs
 
-Cleaner logs each run, plus any errors and crashes, to **`~/.cleaner/logs/cleaner.log`**.
+Cleaner logs runs, errors, and crashes to **`~/.cleaner/logs/cleaner.log`**.
 
-If one cleaner fails, the rest still run — the failure shows in the summary and the log path is
-printed so you can see the details.
+If one cleaner fails, the rest still run; the summary shows the failure and prints the log path.
 
 ## Exit codes
 

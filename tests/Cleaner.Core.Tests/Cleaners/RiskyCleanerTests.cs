@@ -67,7 +67,7 @@ public sealed class RiskyCleanerTests
         var scan = await new DockerVhdxCleaner().ScanAsync(context);
         var result = await new DockerVhdxCleaner().CleanAsync(context);
 
-        Assert.Equal(0, scan.TotalBytes); // the file's size is not the reclaimable amount
+        Assert.Equal(0, scan.TotalBytes);
         Assert.Empty(runner.Invocations);
         Assert.True(fs.FileExists(DataDisk));
         Assert.Equal(0, result.BytesFreed);
@@ -111,7 +111,7 @@ public sealed class RiskyCleanerTests
         Assert.Equal(3_000, result.BytesFreed);
         Assert.True(fs.FileExists(@"C:\Windows\Installer\live.msi"));
         Assert.True(fs.FileExists(@"C:\Windows\Installer\patch.msp"));
-        Assert.True(fs.FileExists(@"C:\Windows\Installer\notes.txt")); // not a package
+        Assert.True(fs.FileExists(@"C:\Windows\Installer\notes.txt"));
         Assert.False(fs.FileExists(@"C:\Windows\Installer\stale.msi"));
     }
 

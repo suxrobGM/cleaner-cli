@@ -2,16 +2,12 @@ using System.Globalization;
 
 namespace Cleaner.Core.Utils;
 
-/// <summary>
-/// Reads the human sizes external tools print ("3.2GB", "8.15 GB", "512 MiB") back into bytes, so a
-/// cleaner that can only learn its size from a command's output still reports a real number.
-/// </summary>
+/// <summary>Parses human-readable sizes emitted by external tools into bytes.</summary>
 public static class SizeParser
 {
     /// <summary>
-    /// Parse <paramref name="text"/> as a size. <paramref name="unitBase"/> says what a plain "GB"
-    /// means to the tool that printed it — Docker counts in 1000s, DISM in 1024s — while an explicit
-    /// "GiB" is always 1024. Anything after a "(" is ignored, so Docker's "3.2GB (62%)" parses.
+    /// Parses a tool-formatted size. <paramref name="unitBase"/> applies to short units such as GB;
+    /// explicit binary units such as GiB always use 1024. Trailing parenthetical text is ignored.
     /// </summary>
     public static bool TryParse(string text, out long bytes, int unitBase = 1024)
     {

@@ -6,15 +6,12 @@ using Cleaner.Core.Utils;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// Windows component store (WinSxS) cleanup via <c>DISM /StartComponentCleanup</c> — removes
-/// superseded component versions. Deliberately no <c>/ResetBase</c>, which would prevent
-/// uninstalling updates. Slow (minutes) but the largest legitimate Windows reclaim.
+/// Cleans superseded Windows component versions with <c>DISM /StartComponentCleanup</c>.
+/// Omits <c>/ResetBase</c> so updates remain uninstallable.
 /// </summary>
 /// <remarks>
-/// WinSxS is mostly hard links into the live system, so measuring the folder tells you nothing about
-/// what is removable. DISM's own <c>/AnalyzeComponentStore</c> is the only source of that number, so
-/// the scan runs it — that costs the best part of a minute, and reports nothing on a machine where
-/// DISM is missing, the shell is not elevated, or the output is not in English.
+/// WinSxS is mostly hard links, so DISM's <c>/AnalyzeComponentStore</c> is required to identify
+/// reclaimable bytes. Scans return no estimate when DISM is unavailable, unelevated, or localized.
 /// </remarks>
 public sealed class WinSxSCleaner : ProcessCleanerBase
 {
@@ -47,8 +44,7 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
         var report = await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false);
         var reclaimable = report is null ? 0 : ReclaimableLabels.Sum(label => Measure(report, label));
 
-        // This report also carries the store size the clean measures against, and producing another
-        // one costs the best part of a minute — so the clean spends this one instead.
+        // Reuse the report because each DISM analysis is expensive.
         RememberMeasurement(context, StoreSize(report));
         return reclaimable > 0
             ? new ScanResult([new CleanupTarget("WinSxS", reclaimable, "superseded components, backups, and servicing scratch")])
@@ -56,8 +52,7 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
     }
 
     /// <summary>
-    /// Size the store from DISM itself, so the summary reports what the store actually gave back
-    /// rather than the estimate. Each measurement adds about a minute to an already slow operation.
+    /// Measures the store through DISM so results reflect the actual store size.
     /// </summary>
     protected override async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken) =>
         StoreSize(await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false));

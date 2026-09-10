@@ -28,7 +28,7 @@ public sealed class ProcessCleanerBaseTests
     {
         var fs = new FakeFileSystem().AddFile("/cache/a.bin", 200);
         var runner = new FakeProcessRunner().WithAvailable("tool");
-        runner.OnRun = () => fs.DeleteContents("/cache"); // simulate the command clearing the cache
+        runner.OnRun = () => fs.DeleteContents("/cache");
         var cleaner = new TestProcessCleaner("tool", new CleanupPath("/cache"));
 
         var result = await cleaner.CleanAsync(TestContext.Create(fs, processRunner: runner));
@@ -43,7 +43,7 @@ public sealed class ProcessCleanerBaseTests
     public async Task Falls_back_to_directory_delete_when_tool_missing()
     {
         var fs = new FakeFileSystem().AddFile("/cache/a.bin", 200);
-        var runner = new FakeProcessRunner(); // "tool" not available
+        var runner = new FakeProcessRunner();
         var cleaner = new TestProcessCleaner("tool", new CleanupPath("/cache"));
 
         var result = await cleaner.CleanAsync(TestContext.Create(fs, processRunner: runner));
@@ -64,7 +64,7 @@ public sealed class ProcessCleanerBaseTests
 
         Assert.Empty(runner.Invocations);
         Assert.True(fs.DirectoryExists("/cache"));
-        Assert.Equal(200, result.BytesFreed); // reported as reclaimable
+        Assert.Equal(200, result.BytesFreed);
     }
 
     [Fact]
@@ -72,14 +72,14 @@ public sealed class ProcessCleanerBaseTests
     {
         var fs = new FakeFileSystem().AddFile("/cache/a.bin", 200);
         var runner = new FakeProcessRunner().WithAvailable("tool");
-        runner.Result = new ProcessResult(1, string.Empty, "boom"); // command fails, no OnRun
+        runner.Result = new ProcessResult(1, string.Empty, "boom");
         var cleaner = new TestProcessCleaner("tool", new CleanupPath("/cache"));
 
         var result = await cleaner.CleanAsync(TestContext.Create(fs, processRunner: runner));
 
         Assert.Single(runner.Invocations);
         Assert.True(result.HasErrors);
-        Assert.Equal(200, result.BytesFreed); // fallback deletion succeeded
+        Assert.Equal(200, result.BytesFreed);
         Assert.False(fs.DirectoryExists("/cache"));
     }
 }

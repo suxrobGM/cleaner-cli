@@ -21,8 +21,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 
     public void CleanerList(IReadOnlyList<CleanerListEntry> entries)
     {
-        // One table per group, categories as section rows inside it. With a hundred-odd cleaners a
-        // flat table is a wall of text; the grouping is what makes it scannable.
+        // Grouped tables keep the large cleaner list scannable.
         var categories = 0;
         var groups = 0;
         foreach (var group in ByLayout(entries, e => e.Cleaner.Category))
@@ -76,8 +75,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 
     public void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false)
     {
-        // Cleaners that could not measure themselves keep their row, with a label instead of a
-        // misleading 0 B. Sorting by size puts them last naturally.
+        // Keep unmeasurable cleaners visible without displaying a misleading zero.
         var visible = rows
             .Where(r => r.Result.TotalBytes > 0 || r.CommandBased)
             .OrderByDescending(r => r.Result.TotalBytes)
@@ -148,8 +146,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 
     public MainMenuChoice PromptMainMenu()
     {
-        // Spectre's SelectionPrompt is string-based, so keep the label/choice mapping in one place
-        // rather than parsing the returned text back into an enum.
+        // SelectionPrompt returns strings, so keep the label-to-choice mapping explicit.
         var choices = new (string Label, MainMenuChoice Choice)[]
         {
             ("Clean caches", MainMenuChoice.Clean),
@@ -175,10 +172,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             .MoreChoicesText("[grey](move up/down to reveal more)[/]")
             .InstructionsText("[grey](space to toggle, enter to confirm — toggle a group or [bold]All cleaners[/] to take everything under it)[/]");
 
-        // Nest categories under their group, and every group under a single "All cleaners" node. In
-        // the default Leaf selection mode, toggling a parent cascades to its descendants while only
-        // leaf cleaners are returned, so each tier is a one-keystroke bulk select for free.
-        // Labels embed the unique Id so two cleaners sharing a display name can never mismap.
+        // Parent nodes provide bulk selection; labels include the unique Id for unambiguous mapping.
         var labels = new Dictionary<string, ICleaner>(StringComparer.Ordinal);
         var all = prompt.AddChoice("All cleaners");
 
@@ -201,10 +195,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         return picked.Where(labels.ContainsKey).Select(p => labels[p]).ToList();
     }
 
-    /// <summary>
-    /// Items nested group over category, both in display order. The list and the selection prompt
-    /// walk the same shape, so the layout is expressed once.
-    /// </summary>
+    /// <summary>Groups items by category and display group, preserving curated order.</summary>
     private static IEnumerable<IGrouping<string, IGrouping<string, T>>> ByLayout<T>(
         IEnumerable<T> items,
         Func<T, string> categoryOf) =>
@@ -223,8 +214,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         Func<ICleaner, Task<ScanResult>> scan,
         CancellationToken cancellationToken)
     {
-        // Scans are disk-walk heavy and independent, so run them concurrently; the array keeps the
-        // caller's ordering stable regardless of completion order.
+        // Scans are independent; indexed storage preserves caller order as they complete.
         var rows = new ScanRow[cleaners.Count];
         var scanned = 0;
         var parallelOptions = new ParallelOptions

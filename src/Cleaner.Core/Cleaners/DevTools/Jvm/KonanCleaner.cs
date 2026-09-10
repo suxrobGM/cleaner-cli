@@ -4,8 +4,7 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Kotlin/Native (konan) caches: compiler caches, toolchain dependencies, and auto-downloaded
-/// compiler distributions. The Kotlin Gradle plugin re-fetches whatever a build needs.
+/// Kotlin/Native compiler, toolchain, and downloaded distribution caches. Builds re-fetch needed data.
 /// </summary>
 public sealed class KonanCleaner : DirectoryCleanerBase
 {

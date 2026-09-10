@@ -4,9 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
-/// Razer Cortex caches and its FPS-counter history. <c>CortexFPSData.db3</c> records every measured
-/// session and is never pruned, so it grows without bound; Cortex recreates it empty. Game library
-/// config, macros, and Synapse device profiles are untouched.
+/// Razer Cortex caches and FPS history. Game library configuration, macros, and Synapse device
+/// profiles are untouched.
 /// </summary>
 public sealed class RazerCleaner : DirectoryCleanerBase
 {

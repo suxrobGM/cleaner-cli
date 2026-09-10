@@ -5,12 +5,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Cli.Application;
 
-/// <summary>
-/// Orchestrates the interactive menu and the flows behind it (clean / preview / list / update). All
-/// rendering is delegated to <see cref="IConsoleRenderer"/>; this type only decides what to do, never
-/// how to draw it. The scan/clean pipeline lives in <c>CleanerApp.CleanFlow.cs</c> and the update
-/// flow in <c>CleanerApp.Update.cs</c>.
-/// </summary>
+/// <summary>Orchestrates menu actions; rendering is delegated to <see cref="IConsoleRenderer"/>.</summary>
 public sealed partial class CleanerApp(
     ICleanerRegistry registry,
     IConsoleRenderer renderer,
@@ -28,11 +23,7 @@ public sealed partial class CleanerApp(
         return 0;
     }
 
-    /// <summary>
-    /// Flag rows that came back without a size but would still act — a cleaner with no measurable
-    /// targets whose own tool could not tell it what it holds. Rows that did report a size are not
-    /// flagged, even when the number came from a command.
-    /// </summary>
+    /// <summary>Marks available command-backed cleaners whose size is unknown until execution.</summary>
     private static IReadOnlyList<ScanRow> MarkCommandBased(IReadOnlyList<ScanRow> rows, CleanupContext context) =>
         [.. rows.Select(r => MarkCommandBased(r, context))];
 

@@ -8,11 +8,7 @@ public enum OsPlatform
     Linux,
 }
 
-/// <summary>
-/// The single place operating-system differences live. Cleaners ask this service for paths,
-/// OS identity, and elevation rather than touching <see cref="System.Environment"/> directly,
-/// which keeps them cross-platform and testable.
-/// </summary>
+/// <summary>Provides OS identity, paths, and elevation without direct platform dependencies.</summary>
 public interface IEnvironmentService
 {
     OsPlatform Os { get; }
@@ -38,10 +34,7 @@ public interface IEnvironmentService
     /// <summary>Per-user roaming application data: %APPDATA% on Windows.</summary>
     string AppDataDirectory { get; }
 
-    /// <summary>
-    /// Conventional cache root: %LOCALAPPDATA% on Windows, ~/Library/Caches on macOS,
-    /// $XDG_CACHE_HOME or ~/.cache on Linux.
-    /// </summary>
+    /// <summary>Conventional cache root for the current platform.</summary>
     string CacheDirectory { get; }
 
     /// <summary>The Windows directory (%SystemRoot%), or null on non-Windows.</summary>

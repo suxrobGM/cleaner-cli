@@ -4,9 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// The <c>NativeImages_v*</c> trees under <c>C:\Windows\assembly</c>, where NGEN keeps
-/// ahead-of-time compiled copies of GAC assemblies. Windows rebuilds the ones it still wants
-/// through its own maintenance task. The GAC itself is never touched, and .NET 5+ has no NGEN.
+/// NGEN's <c>NativeImages_v*</c> trees under <c>C:\Windows\assembly</c>. Windows rebuilds needed
+/// images; the GAC itself is not touched.
 /// </summary>
 public sealed class NativeImageCacheCleaner : WindowsCleanerBase
 {

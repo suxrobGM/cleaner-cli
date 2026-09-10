@@ -7,10 +7,7 @@ namespace Cleaner.Cli.Infrastructure;
 
 internal static partial class ServiceCollectionExtensions
 {
-    /// <summary>
-    /// System package managers. Each is a <see cref="SystemPackageManagerCleaner"/> configured with
-    /// its executable, clean arguments, OS predicate, and (optionally) the cache paths to size/delete.
-    /// </summary>
+    /// <summary>Registers system package managers and their platform-specific cache paths.</summary>
     private static void AddSystemPackageManagerCleaners(this IServiceCollection services)
     {
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(

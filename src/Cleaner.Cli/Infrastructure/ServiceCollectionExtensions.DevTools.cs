@@ -50,7 +50,7 @@ internal static partial class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, KonanCleaner>();
         services.AddSingleton<ICleaner, AndroidSdkCleaner>();
 
-        // Mobile (React Native / Expo)
+        // Mobile
         services.AddSingleton<ICleaner, ReactNativeCleaner>();
         services.AddSingleton<ICleaner, ExpoCleaner>();
         services.AddSingleton<ICleaner, CocoaPodsCleaner>();
@@ -74,13 +74,13 @@ internal static partial class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, NimCleaner>();
         services.AddSingleton<ICleaner, TexLiveCleaner>();
 
-        // Build / monorepo caches
+        // Build caches
         services.AddSingleton<ICleaner, CcacheCleaner>();
         services.AddSingleton<ICleaner, BazelCleaner>();
         services.AddSingleton<ICleaner, TurboNxCleaner>();
         services.AddSingleton<ICleaner, NodeModulesCacheCleaner>();
 
-        // Containers / IaC
+        // Containers / infrastructure
         services.AddSingleton<ICleaner, DockerCleaner>();
         services.AddSingleton<ICleaner, DockerVhdxCleaner>();
         services.AddSingleton<ICleaner, TerraformCleaner>();

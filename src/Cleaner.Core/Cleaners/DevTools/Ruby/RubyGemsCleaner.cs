@@ -4,8 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// RubyGems maintenance: <c>gem cleanup</c> removes superseded gem versions; the spec index cache is
-/// deleted directly. Bundler's cache has its own cleaner.
+/// Runs <c>gem cleanup</c> for superseded versions and clears the spec index cache. Bundler has its
+/// own cleaner.
 /// </summary>
 public sealed class RubyGemsCleaner : ProcessCleanerBase
 {

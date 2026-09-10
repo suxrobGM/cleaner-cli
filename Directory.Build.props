@@ -16,7 +16,6 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
-  <!-- Repository metadata shared by all packable projects. -->
   <PropertyGroup>
     <Product>Cleaner</Product>
     <Authors>Sukhrob Ilyosbekov</Authors>

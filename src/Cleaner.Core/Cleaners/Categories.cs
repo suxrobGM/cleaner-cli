@@ -33,11 +33,7 @@ public static class Categories
     public const string ProjectLocal = "Project-local";
     public const string DesktopApps = "Desktop apps";
 
-    /// <summary>
-    /// Every category in the order the UI shows it, paired with its group. Reading order, not
-    /// alphabetical: the OS buckets first, then development tooling from languages outward to the
-    /// caches that surround them, then the everyday apps.
-    /// </summary>
+    /// <summary>Categories in curated UI order, paired with their display groups.</summary>
     private static readonly (string Group, string Category)[] Layout =
     [
         (CategoryGroups.OperatingSystem, SystemCaches),

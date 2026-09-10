@@ -23,7 +23,6 @@ public sealed class BuildCacheCleanerTests
         var context = TestContext.Create(fs, workingDirectory: "/work");
         var result = await new BuildArtifactCleaner().ScanAsync(context);
 
-        // bin, obj, node_modules are matched; keep.txt is not.
         var paths = result.Targets.Select(t => t.Path).ToList();
         Assert.Contains(paths, p => p.EndsWith("bin"));
         Assert.Contains(paths, p => p.EndsWith("obj"));
@@ -47,7 +46,6 @@ public sealed class BuildCacheCleanerTests
     [Fact]
     public async Task BuildArtifactCleaner_takes_build_only_beside_a_build_system()
     {
-        // "build" is swept next to a Gradle/CMake project, but left alone where it is just a folder.
         var fs = new FakeFileSystem()
             .AddFile("/work/android/build.gradle", 10)
             .AddFile("/work/android/build/outputs/app.apk", 4_000)

@@ -17,7 +17,7 @@ public sealed class LanguageCleanerTests
         var fs = new FakeFileSystem()
             .AddFile($@"{local}\vcpkg\downloads\tool.zip", 1_000)
             .AddFile($@"{local}\vcpkg\archives\pkg.zip", 2_000)
-            .AddFile($@"{local}\vcpkg\installed\lib.a", 9_999); // built packages — must survive
+            .AddFile($@"{local}\vcpkg\installed\lib.a", 9_999);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local };
 
         var result = await new VcpkgCleaner().CleanAsync(TestContext.Create(fs, env));
@@ -31,7 +31,7 @@ public sealed class LanguageCleanerTests
     {
         var fs = new FakeFileSystem()
             .AddFile("/mnt/conan/p/zlib1234/p/lib/zlib.a", 4_000)
-            .AddFile("/mnt/conan/profiles/default", 10); // config — must survive
+            .AddFile("/mnt/conan/profiles/default", 10);
         var env = new FakeEnvironment { Os = OsPlatform.Linux }.SetVariable("CONAN_HOME", "/mnt/conan");
 
         var result = await new ConanCleaner().CleanAsync(TestContext.Create(fs, env));

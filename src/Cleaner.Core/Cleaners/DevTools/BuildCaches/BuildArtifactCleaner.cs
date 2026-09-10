@@ -5,10 +5,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Sweeps build-output and dependency directories under each scan root (<c>--path</c>, repeatable;
-/// default cwd): bin, obj, node_modules, target, dist, framework build outputs, Python virtualenvs
-/// and tool caches. Matched directories are not descended into. Opt-in — it only acts on the roots
-/// you point it at, so it can reclaim a whole workspace (e.g. <c>--path ~/source</c>) in one pass.
+/// Sweeps build outputs, dependency directories, virtualenvs, and tool caches under scan roots
+/// (<c>--path</c>, repeatable; default current directory). Opt-in and does not descend into matches.
 /// </summary>
 public sealed class BuildArtifactCleaner : DirectoryCleanerBase
 {

@@ -23,7 +23,6 @@ public sealed class ContainerCleanerTests
 
         await new DockerCleaner().CleanAsync(context);
 
-        // The prune pair, bracketed by the disk-usage queries the freed total is measured with.
         var pruned = runner.Invocations.Where(i => i.Arguments.Contains("prune")).ToList();
         Assert.Equal(2, pruned.Count);
         Assert.Equal(["system", "prune", "-a", "--volumes", "--force"], pruned[0].Arguments);

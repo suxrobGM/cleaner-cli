@@ -21,15 +21,12 @@ public sealed class ProcessRunner : IProcessRunner
             CreateNoWindow = true,
         };
 
-        // Resolve to the concrete file so we launch the same thing Exists() reported. With
-        // UseShellExecute=false, CreateProcess does not consult PATH/PATHEXT, so passing a bare
-        // name (e.g. "npm") would throw Win32Exception(2) even though the tool is installed.
+        // Resolve the path explicitly because CreateProcess does not consult PATH/PATHEXT here.
         var resolved = TryResolve(executable, out var fullPath) ? fullPath : executable;
 
         if (OperatingSystem.IsWindows() && IsBatchScript(resolved))
         {
-            // Batch scripts (npm.cmd, yarn.cmd, …) are not PE images and can't be launched
-            // directly via CreateProcess; route them through the command interpreter.
+            // Windows batch scripts must run through the command interpreter.
             startInfo.FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe";
             startInfo.ArgumentList.Add("/c");
             startInfo.ArgumentList.Add(resolved);
@@ -52,8 +49,7 @@ public sealed class ProcessRunner : IProcessRunner
         }
         catch (Win32Exception ex)
         {
-            // Tool vanished between the availability check and launch, or isn't executable.
-            // Surface as a failed result so callers can fall back instead of crashing.
+            // The tool may have disappeared since the availability check; return a failed result.
             return new ProcessResult(-1, string.Empty, $"Failed to start '{executable}': {ex.Message}");
         }
 
