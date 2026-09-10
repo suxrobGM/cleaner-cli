@@ -1,4 +1,4 @@
-using Cleaner.Core.Abstractions;
+﻿using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.Os;
@@ -69,7 +69,7 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
         return referenced.Count == 0
             ? []
             : [.. cached
-                .Where(path => !referenced.Contains(path))
+                .Where(path => !referenced.Contains(Normalize(path)))
                 .Select(path => new CleanupPath(path, DeleteMode.DeleteFile, "orphaned package"))];
     }
 
@@ -91,6 +91,13 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
     private static bool IsPackage(string extension) =>
         extension.Equals(".msi", StringComparison.OrdinalIgnoreCase)
         || extension.Equals(".msp", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// A package path reduced to the form both sides can be compared in: separators unified, so a
+    /// registry value and an enumerated path differing only in slash direction still match.
+    /// </summary>
+    private static string Normalize(string path) =>
+        path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
 
     /// <summary>
     /// Every <c>LocalPackage</c> path recorded under the Installer's <c>UserData</c> key. Compared
@@ -120,7 +127,7 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
             var value = line[(marker + "REG_SZ".Length)..].Trim();
             if (value.Length > 0)
             {
-                referenced.Add(value);
+                referenced.Add(Normalize(value));
             }
         }
 
