@@ -27,6 +27,4 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
 
     protected override IReadOnlyList<string> CleanArguments =>
         ["/Online", "/Cleanup-Image", "/StartComponentCleanup"];
-
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
 }

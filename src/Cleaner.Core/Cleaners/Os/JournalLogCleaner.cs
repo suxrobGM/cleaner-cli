@@ -19,6 +19,4 @@ public sealed class JournalLogCleaner : ProcessCleanerBase
     protected override string Executable => "journalctl";
 
     protected override IReadOnlyList<string> CleanArguments => ["--vacuum-size=100M"];
-
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
 }
