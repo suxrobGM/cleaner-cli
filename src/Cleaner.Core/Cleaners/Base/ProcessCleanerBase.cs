@@ -20,6 +20,12 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
     /// <summary>Commands to run in order. Override to issue several or to vary them by context.</summary>
     protected virtual IEnumerable<IReadOnlyList<string>> CommandSequence(CleanupContext context) => [CleanArguments];
 
+    /// <summary>
+    /// How long each command may run before it is killed and reported as a failure. Null waits for
+    /// as long as the tool takes; override wherever a wedged tool would otherwise hang the run.
+    /// </summary>
+    protected virtual TimeSpan? CommandTimeout => null;
+
     public override bool IsAvailable(CleanupContext context) =>
         context.ProcessRunner.Exists(Executable) || base.IsAvailable(context);
 
@@ -37,7 +43,7 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
         foreach (var arguments in CommandSequence(context))
         {
             var result = await context.ProcessRunner
-                .RunAsync(Executable, arguments, cancellationToken: cancellationToken)
+                .RunAsync(Executable, arguments, CommandTimeout, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!result.Success)

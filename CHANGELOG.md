@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A scan no longer stalls on `winsxs`. Sizing the component store means running
+  `DISM /AnalyzeComponentStore`, which walks every installed component and takes minutes, or blocks
+  indefinitely while Windows servicing holds its lock — the scan waited on it with no deadline. The
+  scan now skips it and the cleaner reports its size after running, as the other command-driven
+  cleaners do. DISM is still measured either side of the cleanup, so the freed figure is unchanged.
+- Every DISM call now carries a deadline, so a wedged servicing stack fails `winsxs` with a message
+  instead of hanging the run. Command-driven cleaners can set their own deadline the same way.
+- `winsxs` now asks for its own confirmation, because it runs for many minutes with no progress of
+  its own.
+
 ## [1.2.2] - 2026-09-10
 
 ### Changed

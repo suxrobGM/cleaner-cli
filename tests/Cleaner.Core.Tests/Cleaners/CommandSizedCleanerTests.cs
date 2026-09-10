@@ -104,35 +104,26 @@ public sealed class CommandSizedCleanerTests
     }
 
     [Fact]
-    public async Task WinSxSCleaner_estimates_the_removable_part_of_the_component_store()
+    public async Task WinSxSCleaner_does_not_analyze_while_scanning()
     {
         var environment = FakeEnvironment.Windows();
         environment.IsElevated = true;
         var runner = new FakeProcessRunner().WithAvailable("dism");
         runner.Result = new ProcessResult(0, DismReport, string.Empty);
+        var context = TestContext.Create(environment: environment, processRunner: runner);
+        var cleaner = new WinSxSCleaner();
 
-        var scan = await new WinSxSCleaner().ScanAsync(TestContext.Create(environment: environment, processRunner: runner));
+        var scan = await cleaner.ScanAsync(context);
 
-        // Shared components are not reclaimable.
-        Assert.Equal((2L * 1024 * 1024 * 1024) + (500L * 1024 * 1024), scan.TotalBytes);
-        Assert.Contains("/AnalyzeComponentStore", runner.Invocations[0].Arguments);
-    }
-
-    [Fact]
-    public async Task WinSxSCleaner_does_not_analyze_without_elevation()
-    {
-        var runner = new FakeProcessRunner().WithAvailable("dism");
-        runner.Result = new ProcessResult(0, DismReport, string.Empty);
-
-        var scan = await new WinSxSCleaner().ScanAsync(
-            TestContext.Create(environment: FakeEnvironment.Windows(), processRunner: runner));
-
+        // The report costs a full walk of the component store, so a scan must never wait on it.
         Assert.Equal(0, scan.TotalBytes);
         Assert.Empty(runner.Invocations);
+        Assert.False(cleaner.SupportsSizeEstimate);
+        Assert.True(cleaner.IsAvailable(context));
     }
 
     [Fact]
-    public async Task WinSxSCleaner_reuses_the_scan_to_report_freed_bytes()
+    public async Task WinSxSCleaner_measures_around_the_cleanup_to_report_freed_bytes()
     {
         var environment = FakeEnvironment.Windows();
         environment.IsElevated = true;
@@ -155,25 +146,36 @@ public sealed class CommandSizedCleanerTests
         var result = await cleaner.CleanAsync(context);
 
         Assert.Equal(2L * 1024 * 1024 * 1024, result.BytesFreed);
-        Assert.Contains(runner.Invocations, i => i.Arguments.Contains("/StartComponentCleanup"));
         Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("/AnalyzeComponentStore")));
+        Assert.Contains(runner.Invocations, i => i.Arguments.Contains("/StartComponentCleanup"));
         Assert.Empty(result.Errors);
     }
 
     [Fact]
-    public async Task WinSxSCleaner_measures_afresh_when_the_scan_belonged_to_an_earlier_run()
+    public async Task WinSxSCleaner_does_not_measure_without_elevation()
+    {
+        var runner = new FakeProcessRunner().WithAvailable("dism");
+        runner.Result = new ProcessResult(0, DismReport, string.Empty);
+        var context = TestContext.Create(environment: FakeEnvironment.Windows(), processRunner: runner);
+
+        var result = await new WinSxSCleaner().CleanAsync(context);
+
+        Assert.Equal(0, result.BytesFreed);
+        Assert.DoesNotContain(runner.Invocations, i => i.Arguments.Contains("/AnalyzeComponentStore"));
+    }
+
+    [Fact]
+    public async Task WinSxSCleaner_bounds_every_dism_call()
     {
         var environment = FakeEnvironment.Windows();
         environment.IsElevated = true;
         var runner = new FakeProcessRunner().WithAvailable("dism");
         runner.Result = new ProcessResult(0, DismReport, string.Empty);
 
-        var fileSystem = new FakeFileSystem();
-        var cleaner = new WinSxSCleaner();
-        await cleaner.ScanAsync(TestContext.Create(fileSystem, environment, runner));
-        await cleaner.CleanAsync(TestContext.Create(fileSystem, environment, runner));
+        await new WinSxSCleaner().CleanAsync(TestContext.Create(environment: environment, processRunner: runner));
 
-        // Each run must measure its own before/after sizes.
-        Assert.Equal(3, runner.Invocations.Count(i => i.Arguments.Contains("/AnalyzeComponentStore")));
+        // A busy servicing stack makes DISM block rather than fail, so nothing may wait forever.
+        Assert.NotEmpty(runner.Invocations);
+        Assert.All(runner.Invocations, i => Assert.NotNull(i.Timeout));
     }
 }

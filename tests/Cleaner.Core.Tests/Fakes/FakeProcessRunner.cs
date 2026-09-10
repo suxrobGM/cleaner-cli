@@ -6,7 +6,7 @@ public sealed class FakeProcessRunner : IProcessRunner
 {
     private readonly HashSet<string> _available = new(StringComparer.OrdinalIgnoreCase);
 
-    public List<(string Executable, IReadOnlyList<string> Arguments)> Invocations { get; } = [];
+    public List<(string Executable, IReadOnlyList<string> Arguments, TimeSpan? Timeout)> Invocations { get; } = [];
 
     public ProcessResult Result { get; set; } = new(0, string.Empty, string.Empty);
 
@@ -34,7 +34,7 @@ public sealed class FakeProcessRunner : IProcessRunner
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
-        Invocations.Add((executable, arguments));
+        Invocations.Add((executable, arguments, timeout));
         OnRun?.Invoke();
         return Task.FromResult(Respond?.Invoke(executable, arguments) ?? Result);
     }
