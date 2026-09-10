@@ -1,4 +1,4 @@
-using Cleaner.Cli.Rendering;
+﻿using Cleaner.Cli.Rendering;
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners;
 using Cleaner.Core.Services;
@@ -23,7 +23,8 @@ public sealed partial class CleanerApp(
     {
         var context = contextFactory.Create(new RunOptions());
         var entries = registry.All.Select(c => new CleanerListEntry(c, StatusOf(c, context))).ToList();
-        renderer.CleanerList(entries, registry.Categories.Count);
+        renderer.CleanerList(entries);
+        renderer.Pause("[grey]Press any key to return to the menu.[/]");
         return 0;
     }
 

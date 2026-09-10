@@ -1,4 +1,5 @@
-using Cleaner.Core.Abstractions;
+﻿using Cleaner.Core.Abstractions;
+using Cleaner.Core.Cleaners;
 using Cleaner.Core.Utils;
 using Spectre.Console;
 
@@ -18,33 +19,57 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         console.WriteLine();
     }
 
-    public void CleanerList(IReadOnlyList<CleanerListEntry> entries, int categoryCount)
+    public void CleanerList(IReadOnlyList<CleanerListEntry> entries)
     {
-        var table = new Table().Border(TableBorder.Rounded).Expand();
-        table.AddColumn("[bold]Cleaner[/]");
-        table.AddColumn("Id");
-        table.AddColumn("Category");
-        table.AddColumn("Status");
-
-        string? lastCategory = null;
-        foreach (var entry in entries)
+        // One table per group, categories as section rows inside it. With a hundred-odd cleaners a
+        // flat table is a wall of text; the grouping is what makes it scannable.
+        foreach (var group in entries.GroupBy(e => Categories.GroupOf(e.Cleaner.Category)).OrderBy(g => Categories.RankOfGroup(g.Key)))
         {
-            var cleaner = entry.Cleaner;
-            if (lastCategory is not null && !string.Equals(lastCategory, cleaner.Category, StringComparison.Ordinal))
+            var table = new Table()
+                .Border(TableBorder.Rounded)
+                .Expand()
+                .Title($"[bold teal]{group.Key.EscapeMarkup()}[/]");
+            table.AddColumn("[bold]Cleaner[/]");
+            table.AddColumn("Id");
+            table.AddColumn("Status");
+
+            var first = true;
+            foreach (var category in group.GroupBy(e => e.Cleaner.Category, StringComparer.Ordinal).OrderBy(c => Categories.RankOf(c.Key)))
             {
-                table.AddEmptyRow();
+                if (!first)
+                {
+                    table.AddEmptyRow();
+                }
+
+                first = false;
+                table.AddRow($"[bold]{category.Key.EscapeMarkup()}[/]", string.Empty, string.Empty);
+
+                foreach (var entry in category)
+                {
+                    table.AddRow(
+                        $"  {entry.Cleaner.Name.EscapeMarkup()}",
+                        $"[grey]{entry.Cleaner.Id.EscapeMarkup()}[/]",
+                        StatusMarkup(entry.Status));
+                }
             }
 
-            lastCategory = cleaner.Category;
-            table.AddRow(
-                cleaner.Name.EscapeMarkup(),
-                $"[grey]{cleaner.Id.EscapeMarkup()}[/]",
-                cleaner.Category.EscapeMarkup(),
-                StatusMarkup(entry.Status));
+            console.Write(table);
         }
 
-        console.Write(table);
-        console.MarkupLine($"[grey]{entries.Count} cleaners across {categoryCount} categories.[/]");
+        var categories = entries.Select(e => e.Cleaner.Category).Distinct(StringComparer.Ordinal).Count();
+        var groups = entries.Select(e => Categories.GroupOf(e.Cleaner.Category)).Distinct(StringComparer.Ordinal).Count();
+        console.MarkupLine($"[grey]{entries.Count} cleaners across {categories} categories in {groups} groups.[/]");
+    }
+
+    public void Pause(string markup)
+    {
+        if (!IsInteractive)
+        {
+            return;
+        }
+
+        console.MarkupLine(markup);
+        console.Input.ReadKey(intercept: true);
     }
 
     public void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false)
@@ -146,23 +171,27 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             .Title("Select what to [green]clean[/]:")
             .PageSize(20)
             .MoreChoicesText("[grey](move up/down to reveal more)[/]")
-            .InstructionsText("[grey](space to toggle, enter to confirm — toggle [bold]All cleaners[/] to select everything)[/]");
+            .InstructionsText("[grey](space to toggle, enter to confirm — toggle a group or [bold]All cleaners[/] to take everything under it)[/]");
 
-        // Nest every category under a single "All cleaners" node. In the default Leaf selection mode,
-        // toggling a parent cascades to its descendants while only leaf cleaners are returned, so this
-        // gives the user a one-keystroke "select all" (and per-category) shortcut for free.
+        // Nest categories under their group, and every group under a single "All cleaners" node. In
+        // the default Leaf selection mode, toggling a parent cascades to its descendants while only
+        // leaf cleaners are returned, so each tier is a one-keystroke bulk select for free.
         // Labels embed the unique Id so two cleaners sharing a display name can never mismap.
         var labels = new Dictionary<string, ICleaner>(StringComparer.Ordinal);
         var all = prompt.AddChoice("All cleaners");
 
-        foreach (var category in choosable.Select(c => c.Category).Distinct(StringComparer.Ordinal))
+        foreach (var group in choosable.GroupBy(c => Categories.GroupOf(c.Category)).OrderBy(g => Categories.RankOfGroup(g.Key)))
         {
-            var group = all.AddChild(category);
-            foreach (var cleaner in choosable.Where(c => string.Equals(c.Category, category, StringComparison.Ordinal)))
+            var groupNode = all.AddChild($"[bold]{group.Key}[/]");
+            foreach (var category in group.GroupBy(c => c.Category, StringComparer.Ordinal).OrderBy(c => Categories.RankOf(c.Key)))
             {
-                var label = $"{cleaner.Name} [grey]({cleaner.Id})[/]";
-                labels[label] = cleaner;
-                group.AddChild(label);
+                var categoryNode = groupNode.AddChild(category.Key);
+                foreach (var cleaner in category)
+                {
+                    var label = $"{cleaner.Name} [grey]({cleaner.Id})[/]";
+                    labels[label] = cleaner;
+                    categoryNode.AddChild(label);
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-using Cleaner.Core.Abstractions;
+﻿using Cleaner.Core.Abstractions;
 
 namespace Cleaner.Cli.Rendering;
 
@@ -18,8 +18,15 @@ public interface IConsoleRenderer
     /// <summary>The figlet banner, version, and tagline shown when the interactive menu opens.</summary>
     void InteractiveHeader(string version);
 
-    /// <summary>Render the <c>list</c> table of cleaners, grouped by category, plus the footer count.</summary>
-    void CleanerList(IReadOnlyList<CleanerListEntry> entries, int categoryCount);
+    /// <summary>Render the cleaner list, one table per group and a section per category.</summary>
+    void CleanerList(IReadOnlyList<CleanerListEntry> entries);
+
+    /// <summary>
+    /// Hold the output on screen until a key is pressed. Without it a long table scrolls away the
+    /// moment the menu redraws, which reads as the menu having ignored the choice. No-op when not
+    /// interactive.
+    /// </summary>
+    void Pause(string markup);
 
     /// <summary>
     /// Render a name/size table for scan results under the given size-column header; with
