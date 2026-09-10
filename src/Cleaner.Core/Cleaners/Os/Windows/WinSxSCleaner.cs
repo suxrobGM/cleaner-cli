@@ -52,27 +52,13 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
     }
 
     /// <summary>
-    /// Run the cleanup, bracketed by the store measurement so the summary reports what the store
-    /// actually gave back rather than the estimate. The second analysis adds about a minute to an
-    /// operation that already takes several.
+    /// Size the store from DISM itself, so the summary reports what the store actually gave back
+    /// rather than the estimate. Each measurement adds about a minute to an already slow operation.
     /// </summary>
-    public override async Task<CleanResult> CleanAsync(
-        CleanupContext context,
-        IProgress<CleanProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+    protected override async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken)
     {
-        if (context.DryRun || !context.ProcessRunner.Exists(Executable))
-        {
-            return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
-        }
-
-        var before = Measure(await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false), ActualSizeLabel);
-        var result = await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
-        var after = Measure(await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false), ActualSizeLabel);
-
-        var freed = before > 0 && after > 0 ? Math.Max(0, before - after) : 0;
-        progress?.Report(new CleanProgress(Name, freed));
-        return result with { BytesFreed = freed, ItemsRemoved = freed > 0 ? 1 : result.ItemsRemoved };
+        var size = Measure(await AnalyzeAsync(context, cancellationToken).ConfigureAwait(false), ActualSizeLabel);
+        return size > 0 ? size : null;
     }
 
     /// <summary>DISM's component store report, or null when it can't be produced.</summary>

@@ -43,22 +43,10 @@ public sealed class DockerCleaner : ProcessCleanerBase
             : ScanResult.Empty;
     }
 
-    public override async Task<CleanResult> CleanAsync(
-        CleanupContext context,
-        IProgress<CleanProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+    /// <summary>The daemon's own accounting is the only thing that can size a prune.</summary>
+    protected override async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken)
     {
-        if (context.DryRun || !context.ProcessRunner.Exists(Executable))
-        {
-            return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
-        }
-
-        var before = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
-        var result = await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
-        var after = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
-
-        var freed = Math.Max(0, before.Used - after.Used);
-        progress?.Report(new CleanProgress(Name, freed));
-        return result with { BytesFreed = freed, ItemsRemoved = freed > 0 ? 1 : result.ItemsRemoved };
+        var usage = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
+        return usage.Used;
     }
 }

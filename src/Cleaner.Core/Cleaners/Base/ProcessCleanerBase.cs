@@ -32,7 +32,7 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
             return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
         }
 
-        var before = await TotalSizeAsync(context, cancellationToken).ConfigureAwait(false);
+        var before = await MeasureAsync(context, cancellationToken).ConfigureAwait(false);
         foreach (var arguments in CommandSequence(context))
         {
             var result = await context.ProcessRunner
@@ -50,13 +50,19 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
             }
         }
 
-        var after = await TotalSizeAsync(context, cancellationToken).ConfigureAwait(false);
-        var freed = Math.Max(0, before - after);
+        var after = await MeasureAsync(context, cancellationToken).ConfigureAwait(false);
+        var freed = before is { } start && after is { } end ? Math.Max(0, start - end) : 0;
         progress?.Report(new CleanProgress(Name, freed));
         return new CleanResult(freed, 1, []);
     }
 
-    private async ValueTask<long> TotalSizeAsync(CleanupContext context, CancellationToken cancellationToken)
+    /// <summary>
+    /// Bytes the cleanup is accountable for, measured before and after the command so the summary
+    /// reports what was really given back. Defaults to the declared directories; override when only
+    /// the tool itself can say (<c>docker system df</c>, DISM's component store report). Return
+    /// null when the number cannot be had — the run then reports nothing freed rather than a guess.
+    /// </summary>
+    protected virtual async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken)
     {
         long total = 0;
         foreach (var path in await ExistingTargetsAsync(context, cancellationToken).ConfigureAwait(false))
