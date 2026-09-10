@@ -1,7 +1,4 @@
-using Cleaner.Core.Abstractions;
-using Cleaner.Core.Cleaners.Applications;
 using Cleaner.Core.Cleaners.DevTools;
-using Cleaner.Core.Cleaners.Os;
 using Cleaner.Core.Services;
 using Cleaner.Core.Tests.Fakes;
 using Xunit;
@@ -14,14 +11,7 @@ public sealed class ContainerCleanerTests
     public async Task DockerCleaner_prunes_images_volumes_and_build_cache()
     {
         var runner = new FakeProcessRunner().WithAvailable("docker");
-        var context = new CleanupContext
-        {
-            FileSystem = new FakeFileSystem(),
-            Environment = new FakeEnvironment(),
-            ProcessRunner = runner,
-        };
-
-        await new DockerCleaner().CleanAsync(context);
+        await new DockerCleaner().CleanAsync(TestContext.Create(processRunner: runner));
 
         var pruned = runner.Invocations.Where(i => i.Arguments.Contains("prune")).ToList();
         Assert.Equal(2, pruned.Count);
@@ -33,14 +23,7 @@ public sealed class ContainerCleanerTests
     public async Task PodmanCleaner_prunes_images_and_volumes()
     {
         var runner = new FakeProcessRunner().WithAvailable("podman");
-        var context = new CleanupContext
-        {
-            FileSystem = new FakeFileSystem(),
-            Environment = new FakeEnvironment(),
-            ProcessRunner = runner,
-        };
-
-        await new PodmanCleaner().CleanAsync(context);
+        await new PodmanCleaner().CleanAsync(TestContext.Create(processRunner: runner));
 
         Assert.Single(runner.Invocations);
         Assert.Equal(["system", "prune", "-a", "--volumes", "--force"], runner.Invocations[0].Arguments);

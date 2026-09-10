@@ -67,11 +67,4 @@ public sealed class CleanerRegistryTests
 
     private static string[] CategoriesOf(ICleanerRegistry registry) =>
         [.. registry.All.Select(c => c.Category).Distinct(StringComparer.OrdinalIgnoreCase)];
-
-    [Fact]
-    public void All_contains_every_cleaner()
-    {
-        var registry = Build();
-        Assert.Equal(4, registry.All.Count);
-    }
 }

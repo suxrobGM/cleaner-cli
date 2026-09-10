@@ -1,6 +1,3 @@
-using Cleaner.Core.Abstractions;
-using Cleaner.Core.Cleaners.Applications;
-using Cleaner.Core.Cleaners.DevTools;
 using Cleaner.Core.Cleaners.Os;
 using Cleaner.Core.Services;
 using Cleaner.Core.Tests.Fakes;
@@ -147,7 +144,7 @@ public sealed class WindowsCleanerTests
         var env = new FakeEnvironment { Os = OsPlatform.Windows, WindowsDirectory = @"C:\Windows" };
 
         var cleaner = new WinSxSCleaner();
-        await cleaner.CleanAsync(TestContext.Create(new FakeFileSystem(), env, runner));
+        await cleaner.CleanAsync(TestContext.Create(environment: env, processRunner: runner));
 
         Assert.True(cleaner.RequiresElevation);
         Assert.False(cleaner.SupportsSizeEstimate);

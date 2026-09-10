@@ -5,16 +5,18 @@ namespace Cleaner.Core.Tests.Fakes;
 public static class TestContext
 {
     public static CleanupContext Create(
-        FakeFileSystem fileSystem,
+        FakeFileSystem? fileSystem = null,
         FakeEnvironment? environment = null,
         FakeProcessRunner? processRunner = null,
         bool dryRun = false,
-        string? workingDirectory = null) => new()
+        string? workingDirectory = null,
+        IReadOnlyList<string>? scanRoots = null) => new()
         {
-            FileSystem = fileSystem,
+            FileSystem = fileSystem ?? new FakeFileSystem(),
             Environment = environment ?? new FakeEnvironment(),
             ProcessRunner = processRunner ?? new FakeProcessRunner(),
             DryRun = dryRun,
             WorkingDirectory = workingDirectory ?? "/work",
+            ScanRoots = scanRoots ?? [],
         };
 }

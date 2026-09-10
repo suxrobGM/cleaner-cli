@@ -1,7 +1,4 @@
-using Cleaner.Core.Abstractions;
-using Cleaner.Core.Cleaners.Applications;
 using Cleaner.Core.Cleaners.DevTools;
-using Cleaner.Core.Cleaners.Os;
 using Cleaner.Core.Services;
 using Cleaner.Core.Tests.Fakes;
 using Xunit;
@@ -22,13 +19,7 @@ public sealed class GameDevCleanerTests
             // A Library outside a Unity project is not a target.
             .AddFile("/projects/NotUnity/Library/big.bin", 9_999);
         var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
-        var context = new CleanupContext
-        {
-            FileSystem = fs,
-            Environment = env,
-            ProcessRunner = new FakeProcessRunner(),
-            ScanRoots = ["/projects"],
-        };
+        var context = TestContext.Create(fs, env, scanRoots: ["/projects"]);
 
         var result = await new UnityCleaner().CleanAsync(context);
 
@@ -43,13 +34,7 @@ public sealed class GameDevCleanerTests
         const string local = @"C:\Users\test\AppData\Local";
         var fs = new FakeFileSystem().AddFile($@"{local}\Unity\cache\GiCache\x.bin", 4_000);
         var env = new FakeEnvironment { Os = OsPlatform.Windows, LocalAppDataDirectory = local, HomeDirectory = @"C:\Users\test" };
-        var context = new CleanupContext
-        {
-            FileSystem = fs,
-            Environment = env,
-            ProcessRunner = new FakeProcessRunner(),
-            ScanRoots = [@"C:\does-not-exist"],
-        };
+        var context = TestContext.Create(fs, env, scanRoots: [@"C:\does-not-exist"]);
 
         var result = await new UnityCleaner().ScanAsync(context);
 

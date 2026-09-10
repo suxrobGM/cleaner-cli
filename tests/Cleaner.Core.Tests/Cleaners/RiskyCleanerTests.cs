@@ -1,4 +1,3 @@
-using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.DevTools;
 using Cleaner.Core.Cleaners.Os;
 using Cleaner.Core.Services;
@@ -56,13 +55,7 @@ public sealed class RiskyCleanerTests
     {
         var fs = Disks();
         var runner = new FakeProcessRunner().WithAvailable("wsl", "diskpart");
-        var context = new CleanupContext
-        {
-            FileSystem = fs,
-            Environment = FakeEnvironment.Windows(),
-            ProcessRunner = runner,
-            DryRun = true,
-        };
+        var context = TestContext.Create(fs, FakeEnvironment.Windows(), runner, dryRun: true);
 
         var scan = await new DockerVhdxCleaner().ScanAsync(context);
         var result = await new DockerVhdxCleaner().CleanAsync(context);

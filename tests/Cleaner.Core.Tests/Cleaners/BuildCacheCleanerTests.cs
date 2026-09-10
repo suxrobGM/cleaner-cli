@@ -1,8 +1,4 @@
-using Cleaner.Core.Abstractions;
-using Cleaner.Core.Cleaners.Applications;
 using Cleaner.Core.Cleaners.DevTools;
-using Cleaner.Core.Cleaners.Os;
-using Cleaner.Core.Services;
 using Cleaner.Core.Tests.Fakes;
 using Xunit;
 
@@ -67,13 +63,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/r1/proj/node_modules/pkg/index.js", 100)
             .AddFile("/r2/app/dist/bundle.js", 200)
             .AddFile("/r2/app/keep.txt", 1);
-        var context = new CleanupContext
-        {
-            FileSystem = fs,
-            Environment = new FakeEnvironment(),
-            ProcessRunner = new FakeProcessRunner(),
-            ScanRoots = ["/r1", "/r2"],
-        };
+        var context = TestContext.Create(fs, scanRoots: ["/r1", "/r2"]);
 
         var result = await new BuildArtifactCleaner().ScanAsync(context);
 

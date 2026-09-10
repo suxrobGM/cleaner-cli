@@ -32,7 +32,7 @@ public sealed class CommandSizedCleanerTests
         var runner = new FakeProcessRunner().WithAvailable("docker");
         runner.Result = new ProcessResult(0, DockerDf, string.Empty);
 
-        var scan = await new DockerCleaner().ScanAsync(TestContext.Create(new FakeFileSystem(), processRunner: runner));
+        var scan = await new DockerCleaner().ScanAsync(TestContext.Create(processRunner: runner));
 
         Assert.Equal(800_000_000L + 150_000_000L + 1_500_000_000L, scan.TotalBytes);
         Assert.Equal(["system", "df", "--format", "{{.Size}}|{{.Reclaimable}}"], runner.Invocations[0].Arguments);
@@ -44,13 +44,13 @@ public sealed class CommandSizedCleanerTests
         var runner = new FakeProcessRunner().WithAvailable("docker");
         runner.Result = new ProcessResult(1, string.Empty, "cannot connect to the Docker daemon");
 
-        var scan = await new DockerCleaner().ScanAsync(TestContext.Create(new FakeFileSystem(), processRunner: runner));
+        var scan = await new DockerCleaner().ScanAsync(TestContext.Create(processRunner: runner));
 
         Assert.Equal(0, scan.TotalBytes);
     }
 
     [Fact]
-    public async Task DockerCleaner_reports_the_drop_in_held_bytes_as_freed()
+    public async Task DockerCleaner_reuses_the_scan_to_report_freed_bytes()
     {
         var runner = new FakeProcessRunner().WithAvailable("docker");
         var pruned = false;
@@ -65,10 +65,14 @@ public sealed class CommandSizedCleanerTests
             return new ProcessResult(0, pruned ? "400MB|0B (0%)" : "1.2GB|800MB (66%)", string.Empty);
         };
 
-        var result = await new DockerCleaner().CleanAsync(TestContext.Create(new FakeFileSystem(), processRunner: runner));
+        var context = TestContext.Create(processRunner: runner);
+        var cleaner = new DockerCleaner();
+        await cleaner.ScanAsync(context);
+        var result = await cleaner.CleanAsync(context);
 
         Assert.Equal(800_000_000, result.BytesFreed);
         Assert.Contains(runner.Invocations, i => i.Arguments.Contains("prune"));
+        Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("df")));
         Assert.Empty(result.Errors);
     }
 
@@ -104,7 +108,7 @@ public sealed class CommandSizedCleanerTests
         var runner = new FakeProcessRunner().WithAvailable("dism");
         runner.Result = new ProcessResult(0, DismReport, string.Empty);
 
-        var scan = await new WinSxSCleaner().ScanAsync(TestContext.Create(new FakeFileSystem(), environment, runner));
+        var scan = await new WinSxSCleaner().ScanAsync(TestContext.Create(environment: environment, processRunner: runner));
 
         // Shared components are not reclaimable.
         Assert.Equal((2L * 1024 * 1024 * 1024) + (500L * 1024 * 1024), scan.TotalBytes);
@@ -117,67 +121,15 @@ public sealed class CommandSizedCleanerTests
         var runner = new FakeProcessRunner().WithAvailable("dism");
         runner.Result = new ProcessResult(0, DismReport, string.Empty);
 
-        var scan = await new WinSxSCleaner().ScanAsync(TestContext.Create(new FakeFileSystem(), FakeEnvironment.Windows(), runner));
+        var scan = await new WinSxSCleaner().ScanAsync(
+            TestContext.Create(environment: FakeEnvironment.Windows(), processRunner: runner));
 
         Assert.Equal(0, scan.TotalBytes);
         Assert.Empty(runner.Invocations);
     }
 
     [Fact]
-    public async Task WinSxSCleaner_reports_the_drop_in_store_size_as_freed()
-    {
-        var environment = FakeEnvironment.Windows();
-        environment.IsElevated = true;
-        var runner = new FakeProcessRunner().WithAvailable("dism");
-        var cleaned = false;
-        runner.Respond = (_, arguments) =>
-        {
-            if (arguments.Contains("/StartComponentCleanup"))
-            {
-                cleaned = true;
-                return new ProcessResult(0, string.Empty, string.Empty);
-            }
-
-            return new ProcessResult(
-                0,
-                cleaned ? "Actual Size of Component Store : 4.50 GB" : "Actual Size of Component Store : 6.50 GB",
-                string.Empty);
-        };
-
-        var result = await new WinSxSCleaner().CleanAsync(TestContext.Create(new FakeFileSystem(), environment, runner));
-
-        Assert.Equal(2L * 1024 * 1024 * 1024, result.BytesFreed);
-        Assert.Empty(result.Errors);
-    }
-
-    [Fact]
-    public async Task DockerCleaner_sizes_the_prune_against_what_its_own_scan_measured()
-    {
-        var runner = new FakeProcessRunner().WithAvailable("docker");
-        var pruned = false;
-        runner.Respond = (_, arguments) =>
-        {
-            if (arguments[0] != "system" || arguments[1] != "df")
-            {
-                pruned = true;
-                return new ProcessResult(0, string.Empty, string.Empty);
-            }
-
-            return new ProcessResult(0, pruned ? "400MB|0B (0%)" : "1.2GB|800MB (66%)", string.Empty);
-        };
-
-        var context = TestContext.Create(new FakeFileSystem(), processRunner: runner);
-        var cleaner = new DockerCleaner();
-        await cleaner.ScanAsync(context);
-        var result = await cleaner.CleanAsync(context);
-
-        // The cleanup measures the daemon before and after pruning.
-        Assert.Equal(800_000_000, result.BytesFreed);
-        Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("df")));
-    }
-
-    [Fact]
-    public async Task WinSxSCleaner_sizes_the_cleanup_against_the_report_its_scan_already_produced()
+    public async Task WinSxSCleaner_reuses_the_scan_to_report_freed_bytes()
     {
         var environment = FakeEnvironment.Windows();
         environment.IsElevated = true;
@@ -194,14 +146,15 @@ public sealed class CommandSizedCleanerTests
             return new ProcessResult(0, cleaned ? DismReport.Replace("6.50 GB", "4.50 GB") : DismReport, string.Empty);
         };
 
-        var context = TestContext.Create(new FakeFileSystem(), environment, runner);
+        var context = TestContext.Create(environment: environment, processRunner: runner);
         var cleaner = new WinSxSCleaner();
         await cleaner.ScanAsync(context);
         var result = await cleaner.CleanAsync(context);
 
-        // Reuse the scan result instead of performing a third analysis.
         Assert.Equal(2L * 1024 * 1024 * 1024, result.BytesFreed);
+        Assert.Contains(runner.Invocations, i => i.Arguments.Contains("/StartComponentCleanup"));
         Assert.Equal(2, runner.Invocations.Count(i => i.Arguments.Contains("/AnalyzeComponentStore")));
+        Assert.Empty(result.Errors);
     }
 
     [Fact]
