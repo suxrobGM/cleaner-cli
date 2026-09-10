@@ -40,4 +40,16 @@ public sealed class FakeEnvironment : IEnvironmentService
     }
 
     public string HomePath(params string[] segments) => Path.Combine([HomeDirectory, .. segments]);
+
+    /// <summary>The same fake with a complete Windows layout, for tests of Windows-only cleaners.</summary>
+    public static FakeEnvironment Windows() => new()
+    {
+        Os = OsPlatform.Windows,
+        HomeDirectory = @"C:\Users\test",
+        LocalAppDataDirectory = @"C:\Users\test\AppData\Local",
+        AppDataDirectory = @"C:\Users\test\AppData\Roaming",
+        CacheDirectory = @"C:\Users\test\AppData\Local",
+        TempDirectory = @"C:\Users\test\AppData\Local\Temp",
+        WindowsDirectory = @"C:\Windows",
+    };
 }

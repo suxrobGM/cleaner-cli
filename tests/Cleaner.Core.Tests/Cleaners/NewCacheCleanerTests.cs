@@ -17,7 +17,7 @@ public sealed class NewCacheCleanerTests
             .AddFile(@"C:\Users\test\AppData\Local\Microsoft\vscode-cpptools\ipch\big.ipch", 8_000)
             .AddFile(@"C:\Users\test\AppData\Local\Microsoft\vscode-cpptools\abc123\db.db", 2_000);
 
-        var result = await new VsCppToolsCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new VsCppToolsCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(10_000, result.BytesFreed);
         Assert.True(fs.DirectoryExists(@"C:\Users\test\AppData\Local\Microsoft\vscode-cpptools"));
@@ -34,7 +34,7 @@ public sealed class NewCacheCleanerTests
             .AddFile($@"{google}\AndroidStudio2025.3.4\plugins\p.jar", 9_999)
             .AddFile($@"{google}\Chrome\User Data\Default\Cache\x", 500);
 
-        var result = await new AndroidStudioCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new AndroidStudioCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(5_000, result.BytesFreed);
         Assert.True(fs.FileExists($@"{google}\AndroidStudio2025.3.4\plugins\p.jar"));
@@ -51,7 +51,7 @@ public sealed class NewCacheCleanerTests
             .AddFile($@"{ppc}\config.csv", 249)
             .AddFile($@"{ppc}\upload\queued.zip", 500);
 
-        var result = await new AmdTelemetryCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new AmdTelemetryCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(10_500, result.BytesFreed);
         Assert.True(fs.FileExists($@"{ppc}\config.csv"));
@@ -68,7 +68,7 @@ public sealed class NewCacheCleanerTests
             .AddFile($@"{cortex}\AppConfig.xml", 120)
             .AddFile($@"{cortex}\Config\profile.json", 80);
 
-        var result = await new RazerCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new RazerCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(7_300, result.BytesFreed);
         Assert.True(fs.FileExists($@"{cortex}\AppConfig.xml"));
@@ -79,7 +79,7 @@ public sealed class NewCacheCleanerTests
     public async Task WinReAgentCleaner_removes_the_setup_scratch_folder()
     {
         var fs = new FakeFileSystem().AddFile(@"C:\$WinREAgent\Scratch\x.tmp", 4_000);
-        var env = Windows();
+        var env = FakeEnvironment.Windows();
 
         var cleaner = new WinReAgentCleaner();
         var result = await cleaner.CleanAsync(TestContext.Create(fs, env));
@@ -98,7 +98,7 @@ public sealed class NewCacheCleanerTests
             .AddFile($@"{root}\Local Storage\leveldb\000001.log", 500)
             .AddFile($@"{root}\config.json", 100);
 
-        var result = await new ClaudeDesktopCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new ClaudeDesktopCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(9_000, result.BytesFreed);
         Assert.True(fs.FileExists($@"{root}\config.json"));
@@ -137,7 +137,7 @@ public sealed class NewCacheCleanerTests
             .AddFile($@"{chrome}\Default\Cookies", 900)
             .AddFile($@"{chrome}\Default\History", 800);
 
-        var result = await new BrowserCacheCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new BrowserCacheCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(5_000, result.BytesFreed);
         Assert.True(fs.FileExists($@"{chrome}\Default\Cookies"));
@@ -152,7 +152,7 @@ public sealed class NewCacheCleanerTests
             .AddFile(@"C:\ProgramData\NVIDIA\NGX\models\dlss.bin", 4_000)
             .AddFile(@"C:\Windows\System32\DriverStore\FileRepository\nv.inf", 9_999);
 
-        var result = await new GpuInstallerLeftoverCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new GpuInstallerLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(9_000, result.BytesFreed);
         Assert.True(fs.FileExists(@"C:\Windows\System32\DriverStore\FileRepository\nv.inf"));
@@ -167,18 +167,9 @@ public sealed class NewCacheCleanerTests
             .AddFile($@"{code}\Crashpad\reports\r.dmp", 1_000)
             .AddFile($@"{code}\User\settings.json", 200);
 
-        var result = await new VsCodeCleaner().CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await new VsCodeCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(7_000, result.BytesFreed);
         Assert.True(fs.FileExists($@"{code}\User\settings.json"));
     }
-
-    private static FakeEnvironment Windows() => new()
-    {
-        Os = OsPlatform.Windows,
-        HomeDirectory = @"C:\Users\test",
-        LocalAppDataDirectory = @"C:\Users\test\AppData\Local",
-        AppDataDirectory = @"C:\Users\test\AppData\Roaming",
-        WindowsDirectory = @"C:\Windows",
-    };
 }

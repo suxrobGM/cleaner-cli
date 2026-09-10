@@ -26,7 +26,7 @@ public sealed class RiskyCleanerTests
         };
 
         var cleaner = new DockerVhdxCleaner();
-        var result = await cleaner.CleanAsync(TestContext.Create(fs, Windows(), runner));
+        var result = await cleaner.CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
 
         Assert.True(cleaner.RequiresElevation);
         Assert.Equal(["--shutdown"], runner.Invocations[0].Arguments);
@@ -43,7 +43,7 @@ public sealed class RiskyCleanerTests
         var runner = new FakeProcessRunner().WithAvailable("wsl", "diskpart");
         runner.Result = new ProcessResult(1, string.Empty, "denied");
 
-        var result = await new DockerVhdxCleaner().CleanAsync(TestContext.Create(fs, Windows(), runner));
+        var result = await new DockerVhdxCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
 
         // Compacting an attached disk corrupts it, so a failed shutdown must stop the run.
         Assert.DoesNotContain(runner.Invocations, i => i.Executable == "diskpart");
@@ -59,7 +59,7 @@ public sealed class RiskyCleanerTests
         var context = new CleanupContext
         {
             FileSystem = fs,
-            Environment = Windows(),
+            Environment = FakeEnvironment.Windows(),
             ProcessRunner = runner,
             DryRun = true,
         };
@@ -83,7 +83,7 @@ public sealed class RiskyCleanerTests
             .AddFile(@"C:\Windows\assembly\GAC_64\Foo\foo.dll", 500);
 
         var cleaner = new NativeImageCacheCleaner();
-        var result = await cleaner.CleanAsync(TestContext.Create(fs, Windows()));
+        var result = await cleaner.CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.True(cleaner.RequiresElevation);
         Assert.False(string.IsNullOrEmpty(cleaner.ConfirmationWarning));
@@ -106,7 +106,7 @@ public sealed class RiskyCleanerTests
             """,
             string.Empty);
 
-        var result = await new WindowsInstallerOrphanCleaner().CleanAsync(TestContext.Create(fs, Windows(), runner));
+        var result = await new WindowsInstallerOrphanCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
 
         Assert.Equal(3_000, result.BytesFreed);
         Assert.True(fs.FileExists(@"C:\Windows\Installer\live.msi"));
@@ -123,8 +123,8 @@ public sealed class RiskyCleanerTests
         var runner = new FakeProcessRunner().WithAvailable("reg");
         runner.Result = new ProcessResult(1, string.Empty, "access denied");
 
-        var scan = await new WindowsInstallerOrphanCleaner().ScanAsync(TestContext.Create(fs, Windows(), runner));
-        var result = await new WindowsInstallerOrphanCleaner().CleanAsync(TestContext.Create(fs, Windows(), runner));
+        var scan = await new WindowsInstallerOrphanCleaner().ScanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
+        var result = await new WindowsInstallerOrphanCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
 
         Assert.Equal(0, scan.TotalBytes);
         Assert.Equal(0, result.BytesFreed);
@@ -144,14 +144,4 @@ public sealed class RiskyCleanerTests
         new FakeFileSystem()
             .AddFile(DataDisk, 80_000)
             .AddFile(@"C:\Users\test\AppData\Local\Docker\wsl\disk\notes.txt", 10);
-
-    private static FakeEnvironment Windows() => new()
-    {
-        Os = OsPlatform.Windows,
-        HomeDirectory = @"C:\Users\test",
-        LocalAppDataDirectory = @"C:\Users\test\AppData\Local",
-        AppDataDirectory = @"C:\Users\test\AppData\Roaming",
-        WindowsDirectory = @"C:\Windows",
-        TempDirectory = @"C:\Users\test\AppData\Local\Temp",
-    };
 }

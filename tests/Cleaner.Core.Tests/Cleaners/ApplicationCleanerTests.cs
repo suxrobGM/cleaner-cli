@@ -18,7 +18,7 @@ public sealed class ApplicationCleanerTests
             .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000)
             .AddFile(@"C:\Users\test\AppData\Roaming\Claude-3p\claude_desktop_config.json", 100);
 
-        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, WindowsEnvironment()));
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(9_100, result.BytesFreed);
         Assert.False(fs.DirectoryExists(@"C:\Users\test\AppData\Roaming\Claude"));
@@ -31,7 +31,7 @@ public sealed class ApplicationCleanerTests
             .AddFile(@"C:\Users\test\AppData\Local\AnthropicClaude\app-1.0\claude.exe", 500)
             .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000);
 
-        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, WindowsEnvironment()));
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(0, result.BytesFreed);
         Assert.True(fs.FileExists(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx"));
@@ -48,7 +48,7 @@ public sealed class ApplicationCleanerTests
             .AddFile(@"C:\Users\test\AppData\Local\claude-cli-nodejs\cache.bin", 2_000)
             .AddFile(@"C:\Users\test\AppData\Local\ClaudeCodeExtension\bin.exe", 1_000);
 
-        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, WindowsEnvironment()));
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
 
         Assert.Equal(400, result.BytesFreed);
         Assert.True(fs.FileExists(@"C:\Users\test\.claude\projects\session.jsonl"));
@@ -62,14 +62,6 @@ public sealed class ApplicationCleanerTests
         // It removes settings and history rather than cache, so it never runs on the blanket yes.
         Assert.False(string.IsNullOrEmpty(new UninstalledAppLeftoverCleaner().ConfirmationWarning));
     }
-
-    private static FakeEnvironment WindowsEnvironment() => new()
-    {
-        Os = OsPlatform.Windows,
-        HomeDirectory = @"C:\Users\test",
-        LocalAppDataDirectory = @"C:\Users\test\AppData\Local",
-        AppDataDirectory = @"C:\Users\test\AppData\Roaming",
-    };
 
     [Fact]
     public async Task SteamCleaner_clears_caches_but_never_installed_games()
