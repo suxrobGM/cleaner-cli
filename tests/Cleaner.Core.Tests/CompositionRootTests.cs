@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Cleaner.Cli.Infrastructure;
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners;
@@ -14,15 +14,6 @@ namespace Cleaner.Core.Tests;
 /// </summary>
 public sealed class CompositionRootTests
 {
-    private static readonly string[] KnownCategories =
-    [
-        Categories.PackageManagers, Categories.JavaScript, Categories.Python, Categories.Rust,
-        Categories.Go, Categories.Jvm, Categories.MachineLearning, Categories.GameDev,
-        Categories.Mobile, Categories.Languages, Categories.BuildCaches, Categories.Containers,
-        Categories.Ides, Categories.ToolingDownloads, Categories.ProjectLocal,
-        Categories.OperatingSystem, Categories.SystemPackageManagers, Categories.Applications,
-    ];
-
     private static ICleanerRegistry BuildRegistry()
     {
         var services = new ServiceCollection();
@@ -46,7 +37,9 @@ public sealed class CompositionRootTests
     {
         var registry = BuildRegistry();
 
-        Assert.All(registry.All, c => Assert.Contains(c.Category, KnownCategories));
+        // Ordered is the layout the UI groups by: a category missing from it would render ungrouped.
+        Assert.All(registry.All, c => Assert.Contains(c.Category, Categories.Ordered));
+        Assert.All(registry.All, c => Assert.NotEqual(CategoryGroups.Other, Categories.GroupOf(c.Category)));
         Assert.All(registry.All, c => Assert.False(string.IsNullOrWhiteSpace(c.Name)));
     }
 

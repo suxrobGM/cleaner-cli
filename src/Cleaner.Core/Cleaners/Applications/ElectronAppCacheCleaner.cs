@@ -33,7 +33,7 @@ public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
 
     public override string Name => "Electron app caches (Discord/Slack/Teams/Claude/…)";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

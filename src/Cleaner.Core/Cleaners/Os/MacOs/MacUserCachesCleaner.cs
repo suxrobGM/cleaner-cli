@@ -10,7 +10,7 @@ public sealed class MacUserCachesCleaner : DirectoryCleanerBase
 
     public override string Name => "macOS user caches & logs";
 
-    public override string Category => Categories.OperatingSystem;
+    public override string Category => Categories.SystemCaches;
 
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsMacOs;
 

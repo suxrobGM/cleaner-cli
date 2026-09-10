@@ -15,7 +15,7 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
 
     public override string Name => "Windows component store (WinSxS)";
 
-    public override string Category => Categories.OperatingSystem;
+    public override string Category => Categories.SystemCaches;
 
     public override bool RequiresElevation => true;
 

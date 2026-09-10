@@ -10,7 +10,7 @@ public sealed class OneDriveCleaner : DirectoryCleanerBase
 
     public override string Name => "OneDrive logs";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
 

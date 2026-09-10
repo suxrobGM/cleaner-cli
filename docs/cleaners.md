@@ -3,6 +3,10 @@
 Cleaner ships with 131 cleaners. Pick **List all cleaners** in the menu to see which apply to your
 machine; the **id** below is what each one is listed under.
 
+Every category belongs to one of three groups — **Operating system**, **Development tools**, and
+**Applications** — which is how the list and the selection menu are laid out. Toggling a group in
+the selection menu takes everything under it.
+
 > Cleaners only ever remove caches, temp files, and rebuildable artifacts — never source, configs,
 > credentials, installed games, or save data.
 
@@ -20,7 +24,7 @@ the preview shows them as *n/a (runs command)* and reports the space after they 
 **asks again** have a real trade-off beyond "cache is re-downloaded", so they print that trade-off
 and take their own yes/no before the run-wide confirmation.
 
-## Package managers (.NET)
+## .NET
 
 | Id | Removes |
 | --- | --- |
@@ -174,7 +178,7 @@ and take their own yes/no before the run-wide confirmation.
 | --- | --- |
 | `build-artifacts` | `bin`, `obj`, `node_modules`, `target`, `dist`, `.next`, `.nuxt`, `.svelte-kit`, `.astro`, `.turbo`, `.parcel-cache`, `.vite`, `.gradle`, Python virtualenvs (`.venv`, `venv`, `.tox`, `.nox`) and tool caches (`__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.terragrunt-cache`) under each `--path` root. `build` is taken too, but only beside a Gradle, Maven, CMake, or Meson project file — the name is far too common to sweep on sight. Matches are not descended into. |
 
-## Operating system
+## System caches & temp
 
 | Id | Removes | Notes |
 | --- | --- | --- |
@@ -225,7 +229,7 @@ and take their own yes/no before the run-wide confirmation.
 | `unity` | Unity global editor cache plus regenerable per-project `Library`/`Temp`/`Logs`/`obj` for Unity projects found under each `--path`. Detection-gated (needs `Assets` + `ProjectSettings`); keeps `Assets`, player builds, and the Asset Store cache. |
 | `unreal` | Unreal Engine's shared DerivedDataCache (shaders/asset derivations; rebuilt on demand). Projects and engine installs are never touched. |
 
-## Applications
+## Desktop apps
 
 | Id | Removes |
 | --- | --- |

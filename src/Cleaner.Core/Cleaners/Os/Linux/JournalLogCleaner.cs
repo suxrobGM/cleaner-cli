@@ -10,7 +10,7 @@ public sealed class JournalLogCleaner : ProcessCleanerBase
 
     public override string Name => "systemd journal logs";
 
-    public override string Category => Categories.OperatingSystem;
+    public override string Category => Categories.SystemCaches;
 
     public override bool RequiresElevation => true;
 

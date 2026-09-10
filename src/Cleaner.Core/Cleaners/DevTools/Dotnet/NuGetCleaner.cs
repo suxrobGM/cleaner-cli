@@ -13,7 +13,7 @@ public sealed class NuGetCleaner : ProcessCleanerBase
 
     public override string Name => "NuGet caches";
 
-    public override string Category => Categories.PackageManagers;
+    public override string Category => Categories.Dotnet;
 
     protected override string Executable => "dotnet";
 

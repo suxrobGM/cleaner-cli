@@ -10,7 +10,7 @@ public sealed class DotnetCleaner : DirectoryCleanerBase
 
     public override string Name => ".NET SDK caches";
 
-    public override string Category => Categories.PackageManagers;
+    public override string Category => Categories.Dotnet;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

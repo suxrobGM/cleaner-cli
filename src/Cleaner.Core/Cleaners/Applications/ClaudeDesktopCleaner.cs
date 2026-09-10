@@ -15,7 +15,7 @@ public sealed class ClaudeDesktopCleaner : DirectoryCleanerBase
 
     public override string Name => "Claude Desktop VM images";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

@@ -1,4 +1,5 @@
-using Cleaner.Core.Abstractions;
+﻿using Cleaner.Core.Abstractions;
+using Cleaner.Core.Cleaners;
 using Cleaner.Core.Services;
 using Xunit;
 
@@ -29,10 +30,10 @@ public sealed class CleanerRegistryTests
 
     private static CleanerRegistry Build() => new(
     [
-        new StubCleaner("npm", "JavaScript"),
-        new StubCleaner("nuget", "Package managers"),
-        new StubCleaner("pip", "Python"),
-        new StubCleaner("poetry", "Python"),
+        new StubCleaner("npm", Categories.JavaScript),
+        new StubCleaner("nuget", Categories.Dotnet),
+        new StubCleaner("pip", Categories.Python),
+        new StubCleaner("poetry", Categories.Python),
     ]);
 
     [Fact]
@@ -45,10 +46,24 @@ public sealed class CleanerRegistryTests
     }
 
     [Fact]
-    public void Categories_are_distinct_and_sorted()
+    public void Categories_are_distinct_and_follow_the_display_order()
     {
+        // The curated order, not the alphabetical one: package managers precede the languages.
         var registry = Build();
-        Assert.Equal(["JavaScript", "Package managers", "Python"], registry.Categories);
+        Assert.Equal([Categories.Dotnet, Categories.JavaScript, Categories.Python], registry.Categories);
+    }
+
+    [Fact]
+    public void Categories_outside_the_layout_sort_last_alphabetically()
+    {
+        var registry = new CleanerRegistry(
+        [
+            new StubCleaner("zzz", "Zebra tooling"),
+            new StubCleaner("aaa", "Alien tooling"),
+            new StubCleaner("nuget", Categories.Dotnet),
+        ]);
+
+        Assert.Equal([Categories.Dotnet, "Alien tooling", "Zebra tooling"], registry.Categories);
     }
 
     [Fact]

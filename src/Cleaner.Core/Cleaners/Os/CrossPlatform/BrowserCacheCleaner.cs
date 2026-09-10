@@ -25,7 +25,7 @@ public sealed class BrowserCacheCleaner : DirectoryCleanerBase
 
     public override string Name => "Browser caches (Chrome/Edge/Brave/Firefox/…)";
 
-    public override string Category => Categories.OperatingSystem;
+    public override string Category => Categories.SystemCaches;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

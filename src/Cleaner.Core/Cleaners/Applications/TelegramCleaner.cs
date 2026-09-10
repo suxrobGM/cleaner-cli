@@ -14,7 +14,7 @@ public sealed class TelegramCleaner : DirectoryCleanerBase
 
     public override string Name => "Telegram media cache";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

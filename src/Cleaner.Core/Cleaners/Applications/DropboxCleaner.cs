@@ -13,7 +13,7 @@ public sealed class DropboxCleaner : DirectoryCleanerBase
 
     public override string Name => "Dropbox internal cache";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
         [new CleanupPath(context.Environment.HomePath("Dropbox", ".dropbox.cache"), DeleteMode.ClearContents)];

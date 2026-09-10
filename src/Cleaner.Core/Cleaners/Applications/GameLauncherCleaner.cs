@@ -13,7 +13,7 @@ public sealed class GameLauncherCleaner : DirectoryCleanerBase
 
     public override string Name => "Game launcher caches (Epic/Battle.net/GOG/EA/Riot)";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

@@ -10,7 +10,7 @@ public sealed class TrashCleaner : DirectoryCleanerBase
 
     public override string Name => "Recycle Bin / Trash";
 
-    public override string Category => Categories.OperatingSystem;
+    public override string Category => Categories.SystemCaches;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

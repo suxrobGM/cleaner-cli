@@ -23,7 +23,7 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
 
     public override string Name => "Uninstalled app leftovers";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     public override string ConfirmationWarning =>
         "these are settings, logs and history from apps that appear to be uninstalled, not caches — " +

@@ -10,7 +10,7 @@ public sealed class UserTempCleaner : DirectoryCleanerBase
 
     public override string Name => "User temp files";
 
-    public override string Category => Categories.OperatingSystem;
+    public override string Category => Categories.SystemCaches;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
         [new CleanupPath(context.Environment.TempDirectory, DeleteMode.ClearContents, "temp directory")];

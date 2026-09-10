@@ -15,7 +15,7 @@ public sealed class SteamCleaner : DirectoryCleanerBase
 
     public override string Name => "Steam caches";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

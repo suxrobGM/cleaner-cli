@@ -13,7 +13,7 @@ public sealed class SpotifyCleaner : DirectoryCleanerBase
 
     public override string Name => "Spotify cache";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

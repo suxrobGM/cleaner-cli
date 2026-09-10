@@ -14,7 +14,7 @@ public sealed class RazerCleaner : DirectoryCleanerBase
 
     public override string Name => "Razer Cortex caches";
 
-    public override string Category => Categories.Applications;
+    public override string Category => Categories.DesktopApps;
 
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
 

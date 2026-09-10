@@ -10,7 +10,7 @@ public sealed class XdgCacheCleaner : DirectoryCleanerBase
 
     public override string Name => "User cache (~/.cache)";
 
-    public override string Category => Categories.OperatingSystem;
+    public override string Category => Categories.SystemCaches;
 
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsLinux;
 
