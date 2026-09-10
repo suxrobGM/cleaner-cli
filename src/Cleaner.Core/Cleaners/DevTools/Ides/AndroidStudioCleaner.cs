@@ -10,10 +10,6 @@ namespace Cleaner.Core.Cleaners.DevTools;
 /// </summary>
 public sealed class AndroidStudioCleaner : DirectoryCleanerBase
 {
-    /// <summary>Derived data under a per-version dir; everything else may be settings or plugins.</summary>
-    private static readonly string[] CacheSubdirectories =
-        ["caches", "index", "log", "tmp", "compile-server", "compiler"];
-
     public override string Id => "android-studio";
 
     public override string Name => "Android Studio caches";
@@ -24,10 +20,11 @@ public sealed class AndroidStudioCleaner : DirectoryCleanerBase
     {
         foreach (var root in VersionRoots(context))
         {
-            var version = DirectorySweep.LeafName(root);
-            foreach (var sub in CacheSubdirectories)
+            // Android Studio adds the JPS build-server caches on top of the shared layout.
+            foreach (var path in JetBrainsCache.Under(
+                root, DirectorySweep.LeafName(root), "compile-server", "compiler"))
             {
-                yield return new CleanupPath(Path.Combine(root, sub), Description: $"{version} {sub}");
+                yield return path;
             }
         }
     }
@@ -36,12 +33,11 @@ public sealed class AndroidStudioCleaner : DirectoryCleanerBase
     private static IEnumerable<string> VersionRoots(CleanupContext context)
     {
         var env = context.Environment;
-        string[] roots = env.IsWindows
-            ? [Path.Combine(env.LocalAppDataDirectory, "Google"), Path.Combine(env.AppDataDirectory, "Google")]
-            : env.IsMacOs
-                ? [Path.Combine(env.HomeDirectory, "Library", "Caches", "Google"),
-                   Path.Combine(env.HomeDirectory, "Library", "Application Support", "Google")]
-                : [Path.Combine(env.CacheDirectory, "Google"), env.HomePath(".config", "Google")];
+        string[] roots =
+        [
+            OsPaths.AppCache(env, "Google", "Google", "Google"),
+            OsPaths.AppData(env, "Google", "Google", "Google"),
+        ];
 
         return roots
             .SelectMany(context.FileSystem.EnumerateDirectories)

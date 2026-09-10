@@ -6,9 +6,6 @@ namespace Cleaner.Core.Cleaners.DevTools;
 /// <summary>JetBrains IDE caches and logs (IntelliJ, Rider, PyCharm, ...).</summary>
 public sealed class JetBrainsCleaner : DirectoryCleanerBase
 {
-    /// <summary>Derived-data subdirectories of a per-product dir; everything else may be state.</summary>
-    private static readonly string[] ProductCacheSubdirectories = ["caches", "index", "log", "tmp"];
-
     public override string Id => "jetbrains";
 
     public override string Name => "JetBrains IDE caches";
@@ -35,11 +32,9 @@ public sealed class JetBrainsCleaner : DirectoryCleanerBase
                 continue;
             }
 
-            foreach (var sub in ProductCacheSubdirectories)
+            foreach (var path in JetBrainsCache.Under(productDir, DirectorySweep.LeafName(productDir)))
             {
-                yield return new CleanupPath(
-                    Path.Combine(productDir, sub),
-                    Description: $"{DirectorySweep.LeafName(productDir)} {sub}");
+                yield return path;
             }
         }
     }
