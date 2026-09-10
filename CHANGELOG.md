@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-10
+
+### Added
+
+- The cleaner list is grouped into three areas — operating system, development, and application —
+  so a long list is easier to scan.
+- Docker, its WSL2 virtual disk, and the Windows component store (WinSxS) now report how much they
+  hold before you run them, instead of only reporting what they freed afterwards.
+
+### Changed
+
+- Cleanups reuse the size measured during the scan as their baseline, so a clean no longer re-walks
+  directories it has already sized.
+
+### Fixed
+
+- The cleaner list stays on screen instead of scrolling away as soon as it is printed.
+- `windows-installer-orphans` normalizes cached package paths before comparing them, so packages
+  that are still referenced are no longer treated as orphans because of path casing or separators.
+
 ## [1.2.0] - 2026-09-10
 
 ### Added
@@ -202,7 +222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `list`, `scan`, `clean`, `update`, and interactive menu commands.
 - Self-update command with version reporting in the interactive banner.
 
-[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/suxrobGM/cleaner-cli/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/suxrobGM/cleaner-cli/compare/v1.0.4...v1.1.0
