@@ -20,17 +20,9 @@ public sealed class CleanerRegistry : ICleanerRegistry
             .ToArray();
 
         _byId = All.ToDictionary(c => c.Id, StringComparer.OrdinalIgnoreCase);
-
-        // All is already in display order, so distinct preserves it.
-        Categories = All
-            .Select(c => c.Category)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
     }
 
     public IReadOnlyList<ICleaner> All { get; }
-
-    public IReadOnlyList<string> Categories { get; }
 
     public ICleaner? Find(string id) =>
         _byId.GetValueOrDefault(id.Trim());

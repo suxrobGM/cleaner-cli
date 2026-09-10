@@ -50,7 +50,7 @@ public sealed class CleanerRegistryTests
     {
         // The curated order, not the alphabetical one: package managers precede the languages.
         var registry = Build();
-        Assert.Equal([Categories.Dotnet, Categories.JavaScript, Categories.Python], registry.Categories);
+        Assert.Equal([Categories.Dotnet, Categories.JavaScript, Categories.Python], CategoriesOf(registry));
     }
 
     [Fact]
@@ -63,8 +63,12 @@ public sealed class CleanerRegistryTests
             new StubCleaner("nuget", Categories.Dotnet),
         ]);
 
-        Assert.Equal([Categories.Dotnet, "Alien tooling", "Zebra tooling"], registry.Categories);
+        Assert.Equal([Categories.Dotnet, "Alien tooling", "Zebra tooling"], CategoriesOf(registry));
     }
+
+    /// <summary>The categories in the order the registry hands its cleaners out.</summary>
+    private static string[] CategoriesOf(ICleanerRegistry registry) =>
+        [.. registry.All.Select(c => c.Category).Distinct(StringComparer.OrdinalIgnoreCase)];
 
     [Fact]
     public void All_contains_every_cleaner()
