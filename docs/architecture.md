@@ -31,9 +31,10 @@ public interface ICleaner
 
 Most cleaners don't implement this directly. They derive from a base class:
 
-- **`DirectoryCleanerBase`** — declare candidate cache directories (`GetTargets`); the base handles
-  existence checks, recursive sizing, dry-run accounting, deletion (whole-directory or
-  clear-contents), and per-target error capture.
+- **`DirectoryCleanerBase`** — declare candidate cache directories (`GetTargets`, or
+  `GetTargetsAsync` when discovery itself needs a registry read or an external command); the base
+  handles existence checks, recursive sizing, dry-run accounting, deletion (whole-directory,
+  clear-contents, or single file), and per-target error capture.
 - **`ProcessCleanerBase`** — for tools where a native command is authoritative (e.g.
   `docker system prune`). Runs the command when the tool is on `PATH`, otherwise falls back to
   deleting the declared directories. Sizing always comes from those directories so scans and

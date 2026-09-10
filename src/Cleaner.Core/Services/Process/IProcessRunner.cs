@@ -3,6 +3,12 @@ namespace Cleaner.Core.Services;
 public sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError)
 {
     public bool Success => ExitCode == 0;
+
+    /// <summary>Why the command failed: its stderr, or the exit code when it printed nothing.</summary>
+    public string FailureMessage(string executable) =>
+        string.IsNullOrWhiteSpace(StandardError)
+            ? $"{executable} exited with code {ExitCode}"
+            : StandardError.Trim();
 }
 
 /// <summary>

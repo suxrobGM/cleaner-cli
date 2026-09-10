@@ -17,11 +17,4 @@ public sealed class PodmanCleaner : ProcessCleanerBase
     protected override string Executable => "podman";
 
     protected override IReadOnlyList<string> CleanArguments => ["system", "prune", "-a", "--volumes", "--force"];
-
-    protected override IEnumerable<IReadOnlyList<string>> CommandSequence(CleanupContext context)
-    {
-        yield return CleanArguments;
-    }
-
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
 }

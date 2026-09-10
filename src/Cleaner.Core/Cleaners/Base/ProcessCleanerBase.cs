@@ -32,7 +32,7 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
             return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
         }
 
-        var before = TotalSize(context);
+        var before = await TotalSizeAsync(context, cancellationToken).ConfigureAwait(false);
         foreach (var arguments in CommandSequence(context))
         {
             var result = await context.ProcessRunner
@@ -43,25 +43,25 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
             {
                 // A command failed — fall back to direct deletion so the user still gets results.
                 var fallback = await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
-                var error = string.IsNullOrWhiteSpace(result.StandardError)
-                    ? $"{Executable} exited with code {result.ExitCode}"
-                    : result.StandardError.Trim();
-                return fallback with { Errors = [.. fallback.Errors, $"{Executable}: {error}"] };
+                return fallback with
+                {
+                    Errors = [.. fallback.Errors, $"{Executable}: {result.FailureMessage(Executable)}"],
+                };
             }
         }
 
-        var after = TotalSize(context);
+        var after = await TotalSizeAsync(context, cancellationToken).ConfigureAwait(false);
         var freed = Math.Max(0, before - after);
         progress?.Report(new CleanProgress(Name, freed));
         return new CleanResult(freed, 1, []);
     }
 
-    private long TotalSize(CleanupContext context)
+    private async ValueTask<long> TotalSizeAsync(CleanupContext context, CancellationToken cancellationToken)
     {
         long total = 0;
-        foreach (var path in ExistingTargets(context))
+        foreach (var path in await ExistingTargetsAsync(context, cancellationToken).ConfigureAwait(false))
         {
-            total += context.FileSystem.GetDirectorySize(path.Path);
+            total += SizeOf(context, path);
         }
 
         return total;

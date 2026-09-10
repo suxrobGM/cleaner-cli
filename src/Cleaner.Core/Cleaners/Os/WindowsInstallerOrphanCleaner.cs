@@ -18,6 +18,13 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
 {
     private const string UserDataKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData";
 
+    /// <summary>
+    /// The orphan set for one run. Discovery costs a full directory enumeration and a recursive
+    /// registry query, and the cleaner is a singleton scanned then cleaned against the same context,
+    /// so the answer is kept until a different context asks.
+    /// </summary>
+    private (CleanupContext Context, IReadOnlyList<CleanupPath> Targets)? _orphans;
+
     public override string Id => "windows-installer-orphans";
 
     public override string Name => "Orphaned Windows Installer packages";
@@ -28,54 +35,27 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
         "if a package is still needed by a product this can't see, that product loses repair, " +
         "patch, and uninstall — a fresh Windows update run beforehand keeps the registry accurate";
 
+    /// <summary>Relevant wherever the package cache exists; whether any package is orphaned costs a scan.</summary>
     public override bool IsAvailable(CleanupContext context) => CachedPackages(context).Any();
 
-    public override async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
-    {
-        var orphans = await OrphansAsync(context, cancellationToken).ConfigureAwait(false);
-        return new ScanResult(
-            [.. orphans.Select(path => new CleanupTarget(path, context.FileSystem.GetFileSize(path), "orphaned package"))]);
-    }
-
-    public override async Task<CleanResult> CleanAsync(
+    protected override async ValueTask<IEnumerable<CleanupPath>> GetTargetsAsync(
         CleanupContext context,
-        IProgress<CleanProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
-        var orphans = await OrphansAsync(context, cancellationToken).ConfigureAwait(false);
-        long freed = 0;
-        var removed = 0;
-        var errors = new List<string>();
-
-        foreach (var path in orphans)
+        if (_orphans is { } cached && ReferenceEquals(cached.Context, context))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var size = context.FileSystem.GetFileSize(path);
-
-            try
-            {
-                if (!context.DryRun)
-                {
-                    context.FileSystem.DeleteFile(path);
-                }
-
-                freed += size;
-                removed++;
-                progress?.Report(new CleanProgress(path, size));
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"{path}: {ex.Message}");
-            }
+            return cached.Targets;
         }
 
-        return new CleanResult(freed, removed, errors);
+        var targets = await OrphansAsync(context, cancellationToken).ConfigureAwait(false);
+        _orphans = (context, targets);
+        return targets;
     }
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
-
     /// <summary>Cached packages that no installed product or patch still references.</summary>
-    private static async Task<IReadOnlyList<string>> OrphansAsync(CleanupContext context, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<CleanupPath>> OrphansAsync(
+        CleanupContext context,
+        CancellationToken cancellationToken)
     {
         var cached = CachedPackages(context).ToList();
         if (cached.Count == 0)
@@ -86,7 +66,11 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
         var referenced = await ReferencedPackagesAsync(context, cancellationToken).ConfigureAwait(false);
 
         // No answer from the registry means "unknown", never "nothing is referenced".
-        return referenced.Count == 0 ? [] : [.. cached.Where(path => !referenced.Contains(path))];
+        return referenced.Count == 0
+            ? []
+            : [.. cached
+                .Where(path => !referenced.Contains(path))
+                .Select(path => new CleanupPath(path, DeleteMode.DeleteFile, "orphaned package"))];
     }
 
     private static IEnumerable<string> CachedPackages(CleanupContext context)

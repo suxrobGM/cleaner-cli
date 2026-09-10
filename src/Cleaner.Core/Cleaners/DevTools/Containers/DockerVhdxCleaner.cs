@@ -23,8 +23,8 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
     public override bool RequiresElevation => true;
 
-    // The reclaimable amount is the disk's internal free space, which can't be read from the host.
-    // Report it after compacting instead of guessing.
+    // The reclaimable amount is the disk's internal free space, which can't be read from the host,
+    // so no targets are declared and nothing is reported until after compacting.
     public override bool SupportsSizeEstimate => false;
 
     public override string ConfirmationWarning =>
@@ -32,10 +32,6 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
         "'docker system prune' beforehand so the space being compacted away is actually free";
 
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
-
-    /// <summary>Report nothing up front: the file's size is not the amount that can be reclaimed.</summary>
-    public override Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new ScanResult([]));
 
     public override async Task<CleanResult> CleanAsync(
         CleanupContext context,
@@ -68,7 +64,7 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
             var result = await CompactAsync(context, disk, cancellationToken).ConfigureAwait(false);
             if (!result.Success)
             {
-                errors.Add($"{disk}: {Describe(result.StandardError, result.ExitCode)}");
+                errors.Add($"{disk}: {result.FailureMessage("diskpart")}");
                 continue;
             }
 
@@ -83,8 +79,6 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
     /// <summary>Available once Docker Desktop has created at least one WSL disk.</summary>
     public override bool IsAvailable(CleanupContext context) => VirtualDisks(context).Any();
-
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
 
     private static IEnumerable<string> VirtualDisks(CleanupContext context)
     {
@@ -125,7 +119,4 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
             context.FileSystem.DeleteFile(script);
         }
     }
-
-    private static string Describe(string standardError, int exitCode) =>
-        string.IsNullOrWhiteSpace(standardError) ? $"diskpart exited with code {exitCode}" : standardError.Trim();
 }

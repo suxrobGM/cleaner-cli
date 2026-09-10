@@ -29,8 +29,4 @@ public sealed class DockerCleaner : ProcessCleanerBase
         yield return CleanArguments;
         yield return ["builder", "prune", "--all", "--force"];
     }
-
-    // Docker's storage lives in the daemon's data root, which isn't a user-accessible directory we
-    // can size or delete — the prune commands are the only safe interface.
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
 }
