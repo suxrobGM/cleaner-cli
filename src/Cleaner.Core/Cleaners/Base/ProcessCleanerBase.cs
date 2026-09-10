@@ -37,7 +37,7 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
         foreach (var arguments in CommandSequence(context))
         {
             var result = await context.ProcessRunner
-                .RunAsync(Executable, arguments, cancellationToken)
+                .RunAsync(Executable, arguments, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             if (!result.Success)

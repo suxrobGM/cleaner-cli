@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and cancelled child processes are terminated instead of being left behind. The final pending
   cleaner names are shown in the scan status to make slow scans identifiable.
 
+### Performance
+
+- Executable lookups on PATH are resolved once per session instead of on every availability check,
+  removing roughly a thousand file probes per absent tool per check.
+
 ## [1.2.1] - 2026-09-10
 
 ### Added

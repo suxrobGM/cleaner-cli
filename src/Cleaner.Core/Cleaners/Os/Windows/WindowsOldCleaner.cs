@@ -41,10 +41,10 @@ public sealed class WindowsOldCleaner : WindowsCleanerBase
             foreach (var path in ExistingTargets(context))
             {
                 await context.ProcessRunner
-                    .RunAsync("takeown", ["/F", path.Path, "/R", "/A", "/D", "Y"], cancellationToken)
+                    .RunAsync("takeown", ["/F", path.Path, "/R", "/A", "/D", "Y"], cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
                 await context.ProcessRunner
-                    .RunAsync("icacls", [path.Path, "/grant", "Administrators:F", "/T", "/C"], cancellationToken)
+                    .RunAsync("icacls", [path.Path, "/grant", "Administrators:F", "/T", "/C"], cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }
         }

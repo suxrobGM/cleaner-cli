@@ -1,5 +1,4 @@
 using Cleaner.Core.Abstractions;
-using Cleaner.Core.Services;
 using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
@@ -25,7 +24,7 @@ internal readonly record struct DockerDiskUsage(long Used, long Reclaimable)
 
         // One line per resource type, e.g. "5.1GB|3.2GB (62%)". Docker prints decimal units.
         var result = await context.ProcessRunner
-            .RunWithTimeoutAsync(
+            .RunAsync(
                 "docker",
                 ["system", "df", "--format", "{{.Size}}|{{.Reclaimable}}"],
                 QueryTimeout,

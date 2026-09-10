@@ -74,7 +74,7 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
         }
 
         var result = await context.ProcessRunner
-            .RunAsync("dism", AnalyzeArguments, cancellationToken)
+            .RunAsync("dism", AnalyzeArguments, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Success ? result.StandardOutput : null;

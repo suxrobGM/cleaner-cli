@@ -28,7 +28,11 @@ public sealed class FakeProcessRunner : IProcessRunner
 
     public bool Exists(string executable) => _available.Contains(executable);
 
-    public Task<ProcessResult> RunAsync(string executable, IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
+    public Task<ProcessResult> RunAsync(
+        string executable,
+        IReadOnlyList<string> arguments,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
     {
         Invocations.Add((executable, arguments));
         OnRun?.Invoke();

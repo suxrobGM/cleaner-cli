@@ -65,7 +65,7 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
         var errors = new List<string>();
         var shutdown = await context.ProcessRunner
-            .RunAsync("wsl", ["--shutdown"], cancellationToken)
+            .RunAsync("wsl", ["--shutdown"], cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         if (!shutdown.Success)
@@ -129,7 +129,7 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
         try
         {
             return await context.ProcessRunner
-                .RunAsync("diskpart", ["/s", script], cancellationToken)
+                .RunAsync("diskpart", ["/s", script], cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
         finally

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -6,12 +7,40 @@ namespace Cleaner.Core.Services;
 /// <inheritdoc cref="IProcessRunner"/>
 public sealed class ProcessRunner : IProcessRunner
 {
+    // PATH lookups miss for most tools and cost ~1000 file probes each; the answer cannot
+    // usefully change within a session, so resolve every executable at most once.
+    private readonly ConcurrentDictionary<string, string?> resolvedPaths = new(StringComparer.Ordinal);
+
     public bool Exists(string executable) => TryResolve(executable, out _);
 
     public async Task<ProcessResult> RunAsync(
         string executable,
         IReadOnlyList<string> arguments,
+        TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
+    {
+        if (timeout is not { } deadline)
+        {
+            return await RunCoreAsync(executable, arguments, cancellationToken).ConfigureAwait(false);
+        }
+
+        using var expiry = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        expiry.CancelAfter(deadline);
+
+        try
+        {
+            return await RunCoreAsync(executable, arguments, expiry.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return new ProcessResult(-1, string.Empty, $"{executable} timed out after {deadline.TotalSeconds:0} seconds");
+        }
+    }
+
+    private async Task<ProcessResult> RunCoreAsync(
+        string executable,
+        IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -95,7 +124,14 @@ public sealed class ProcessRunner : IProcessRunner
     /// <summary>
     /// Resolves <paramref name="executable"/> to a concrete file path, honoring Windows PATHEXT.
     /// </summary>
-    private static bool TryResolve(string executable, out string resolvedPath)
+    private bool TryResolve(string executable, out string resolvedPath)
+    {
+        var hit = resolvedPaths.GetOrAdd(executable, static name => Probe(name, out var path) ? path : null);
+        resolvedPath = hit ?? executable;
+        return hit is not null;
+    }
+
+    private static bool Probe(string executable, out string resolvedPath)
     {
         resolvedPath = executable;
 

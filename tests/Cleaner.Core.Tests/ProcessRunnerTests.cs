@@ -14,28 +14,25 @@ public sealed class ProcessRunnerTests
     }
 
     [Fact]
-    public async Task RunWithTimeoutAsync_ReturnsFailure_WhenCommandDoesNotFinish()
+    public async Task RunAsync_ReturnsFailure_WhenTimeoutExpires()
     {
-        var runner = new HangingProcessRunner();
+        var (executable, arguments) = SlowCommand();
 
-        var result = await runner.RunWithTimeoutAsync(
-            "stuck-tool",
-            [],
-            TimeSpan.FromMilliseconds(50));
+        var result = await _runner.RunAsync(executable, arguments, TimeSpan.FromMilliseconds(200));
 
         Assert.False(result.Success);
         Assert.Contains("timed out", result.StandardError, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task RunWithTimeoutAsync_PropagatesCallerCancellation()
+    public async Task RunAsync_PropagatesCallerCancellation()
     {
-        var runner = new HangingProcessRunner();
+        var (executable, arguments) = SlowCommand();
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            runner.RunWithTimeoutAsync("stuck-tool", [], TimeSpan.FromMinutes(1), cancellation.Token));
+            _runner.RunAsync(executable, arguments, TimeSpan.FromMinutes(1), cancellation.Token));
     }
 
     [Fact]
@@ -58,17 +55,9 @@ public sealed class ProcessRunnerTests
         Assert.False(string.IsNullOrWhiteSpace(result.StandardOutput));
     }
 
-    private sealed class HangingProcessRunner : IProcessRunner
-    {
-        public bool Exists(string executable) => true;
-
-        public async Task<ProcessResult> RunAsync(
-            string executable,
-            IReadOnlyList<string> arguments,
-            CancellationToken cancellationToken = default)
-        {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-            return new ProcessResult(0, string.Empty, string.Empty);
-        }
-    }
+    /// <summary>A command that outlives any test deadline, on either platform.</summary>
+    private static (string Executable, string[] Arguments) SlowCommand() =>
+        OperatingSystem.IsWindows()
+            ? ("ping", ["-n", "30", "127.0.0.1"])
+            : ("sleep", ["30"]);
 }

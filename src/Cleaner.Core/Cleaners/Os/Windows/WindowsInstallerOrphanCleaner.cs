@@ -100,7 +100,7 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
     {
         var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = await context.ProcessRunner
-            .RunAsync("reg", ["query", UserDataKey, "/s", "/v", "LocalPackage"], cancellationToken)
+            .RunAsync("reg", ["query", UserDataKey, "/s", "/v", "LocalPackage"], cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         if (!result.Success)
