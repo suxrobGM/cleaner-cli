@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-09-10
+
 ### Changed
 
 - The interactive menu now has one cache action: it always scans and previews the selected caches,
@@ -238,7 +240,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `list`, `scan`, `clean`, `update`, and interactive menu commands.
 - Self-update command with version reporting in the interactive banner.
 
-[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/suxrobGM/cleaner-cli/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/suxrobGM/cleaner-cli/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/suxrobGM/cleaner-cli/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/suxrobGM/cleaner-cli/compare/v1.1.0...v1.1.1
