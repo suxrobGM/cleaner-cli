@@ -56,7 +56,35 @@ public sealed class ProcessRunner : IProcessRunner
         var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // WaitForExitAsync does not stop the child. A timed-out scan (or Ctrl+C) must not
+            // leave docker or another redirected console process alive in the background.
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // The process may already have exited, or access may be denied.
+            }
+
+            // Observe the redirected reads, which use the same cancelled token.
+            try
+            {
+                await Task.WhenAll(stdOutTask, stdErrTask).ConfigureAwait(false);
+            }
+            catch
+            {
+                // The original cancellation is rethrown below.
+            }
+
+            throw;
+        }
 
         var stdOut = await stdOutTask.ConfigureAwait(false);
         var stdErr = await stdErrTask.ConfigureAwait(false);

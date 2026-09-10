@@ -13,18 +13,15 @@ subcommand is also available for updating before opening the menu.
 
 ```text
 What would you like to do?
-> Clean caches
-  Preview only (nothing is deleted)
+> Preview and clean caches
   List all cleaners
   Check for updates
   Exit
 ```
 
-**Clean caches** opens a grouped multi-select of cleaners applicable to your OS. Toggle entries with
-the spacebar (or **All cleaners** / a category heading for bulk selection), press Enter, review the
-reclaimable-space table, and confirm. Nothing is removed before confirmation.
-
-**Preview only** runs the same scan and table, then stops without deleting anything.
+**Preview and clean caches** opens a grouped multi-select of cleaners applicable to your OS. Toggle
+entries with the spacebar (or **All cleaners** / a category heading for bulk selection), press
+Enter, review the reclaimable-space table, and confirm. Nothing is removed before confirmation.
 
 **List all cleaners** shows every cleaner with its id, category, and status:
 

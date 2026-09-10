@@ -3,9 +3,6 @@ namespace Cleaner.Cli.Application;
 /// <summary>Per-invocation options shared by the interactive flows.</summary>
 public sealed record RunOptions
 {
-    /// <summary>When true, measure and report but never delete. Set by the menu's preview action.</summary>
-    public bool DryRun { get; init; }
-
     /// <summary>Show the per-target path breakdown in size tables.</summary>
     public bool Verbose { get; init; }
 

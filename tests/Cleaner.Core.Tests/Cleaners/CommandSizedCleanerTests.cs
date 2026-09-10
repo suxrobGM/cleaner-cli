@@ -43,10 +43,13 @@ public sealed class CommandSizedCleanerTests
     {
         var runner = new FakeProcessRunner().WithAvailable("docker");
         runner.Result = new ProcessResult(1, string.Empty, "cannot connect to the Docker daemon");
+        var context = TestContext.Create(processRunner: runner);
+        var cleaner = new DockerCleaner();
 
-        var scan = await new DockerCleaner().ScanAsync(TestContext.Create(processRunner: runner));
+        var scan = await cleaner.ScanAsync(context);
 
         Assert.Equal(0, scan.TotalBytes);
+        Assert.True(scan.ToolUnavailable);
     }
 
     [Fact]

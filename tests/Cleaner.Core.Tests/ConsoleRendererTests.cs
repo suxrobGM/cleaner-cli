@@ -31,6 +31,15 @@ public sealed class ConsoleRendererTests
     }
 
     [Fact]
+    public void Main_menu_has_one_preview_then_confirm_cache_action()
+    {
+        var choices = ConsoleRenderer.MainMenuChoices;
+
+        Assert.Equal(("Preview and clean caches", MainMenuChoice.Clean), choices[0]);
+        Assert.Single(choices, choice => choice.Choice == MainMenuChoice.Clean);
+    }
+
+    [Fact]
     public void CleanerList_renders_a_section_per_group_and_category()
     {
         var writer = new StringWriter();

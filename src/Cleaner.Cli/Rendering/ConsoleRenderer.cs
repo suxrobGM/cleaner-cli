@@ -8,6 +8,14 @@ namespace Cleaner.Cli.Rendering;
 /// <summary>The Spectre.Console implementation of <see cref="IConsoleRenderer"/>.</summary>
 public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 {
+    internal static IReadOnlyList<(string Label, MainMenuChoice Choice)> MainMenuChoices { get; } =
+    [
+        ("Preview and clean caches", MainMenuChoice.Clean),
+        ("List all cleaners", MainMenuChoice.List),
+        ("Check for updates", MainMenuChoice.Update),
+        ("Exit", MainMenuChoice.Exit),
+    ];
+
     public bool IsInteractive => console.Profile.Capabilities.Interactive;
 
     public void Line(string markup) => console.MarkupLine(markup);
@@ -147,21 +155,12 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
     public MainMenuChoice PromptMainMenu()
     {
         // SelectionPrompt returns strings, so keep the label-to-choice mapping explicit.
-        var choices = new (string Label, MainMenuChoice Choice)[]
-        {
-            ("Clean caches", MainMenuChoice.Clean),
-            ("Preview only (nothing is deleted)", MainMenuChoice.Preview),
-            ("List all cleaners", MainMenuChoice.List),
-            ("Check for updates", MainMenuChoice.Update),
-            ("Exit", MainMenuChoice.Exit),
-        };
-
         var prompt = new SelectionPrompt<string>()
             .Title("What would you like to do?")
-            .AddChoices(choices.Select(c => c.Label));
+            .AddChoices(MainMenuChoices.Select(c => c.Label));
 
         var picked = console.Prompt(prompt);
-        return choices.First(c => string.Equals(c.Label, picked, StringComparison.Ordinal)).Choice;
+        return MainMenuChoices.First(c => string.Equals(c.Label, picked, StringComparison.Ordinal)).Choice;
     }
 
     public IReadOnlyList<ICleaner> PromptSelection(IReadOnlyList<ICleaner> choosable)
@@ -233,7 +232,14 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         await console.Status()
             .Spinner(Spinner.Known.Dots)
             .StartAsync($"Scanning… [green]0/{cleaners.Count}[/]", ctx =>
-                ScanAllAsync(done => ctx.Status($"Scanning… [green]{done}/{cleaners.Count}[/]")));
+                ScanAllAsync(done =>
+                {
+                    // A row is published only once its scan completes, so the gaps are still running.
+                    var waiting = cleaners.Count - done is > 0 and <= 3
+                        ? $" [grey](waiting: {string.Join(", ", cleaners.Where((_, i) => rows[i] is null).Select(c => c.Name)).EscapeMarkup()})[/]"
+                        : string.Empty;
+                    ctx.Status($"Scanning… [green]{done}/{cleaners.Count}[/]{waiting}");
+                }));
 
         return rows;
     }

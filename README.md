@@ -70,15 +70,14 @@ cleaner
 
 ```text
 What would you like to do?
-> Clean caches
-  Preview only (nothing is deleted)
+> Preview and clean caches
   List all cleaners
   Check for updates
   Exit
 ```
 
-Pick **Clean caches**, select entries with the spacebar (toggle **All cleaners** for everything), and
-press Enter. The `--path` flag points project-local cleaners at your code; `--verbose` shows a
+Pick **Preview and clean caches**, select entries with the spacebar (toggle **All cleaners** for
+everything), and press Enter. The `--path` flag points project-local cleaners at your code; `--verbose` shows a
 per-directory breakdown.
 
 A run looks like this:

@@ -34,10 +34,14 @@ public sealed class DockerCleaner : ProcessCleanerBase
     public override async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
     {
         var usage = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
+        if (usage is not { } known)
+        {
+            return ScanResult.Unavailable;
+        }
 
-        RememberMeasurement(context, usage.Used);
-        return usage.Reclaimable > 0
-            ? new ScanResult([new CleanupTarget("docker", usage.Reclaimable, "unused images, containers, volumes, and build cache")])
+        RememberMeasurement(context, known.Used);
+        return known.Reclaimable > 0
+            ? new ScanResult([new CleanupTarget("docker", known.Reclaimable, "unused images, containers, volumes, and build cache")])
             : ScanResult.Empty;
     }
 
@@ -45,6 +49,6 @@ public sealed class DockerCleaner : ProcessCleanerBase
     protected override async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken)
     {
         var usage = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
-        return usage.Used;
+        return usage?.Used;
     }
 }

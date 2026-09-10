@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The interactive menu now has one cache action: it always scans and previews the selected caches,
+  then asks for confirmation before deleting anything.
+
+### Fixed
+
+- Docker usage scans stop waiting after 15 seconds when an installed CLI cannot reach its daemon,
+  and cancelled child processes are terminated instead of being left behind. The final pending
+  cleaner names are shown in the scan status to make slow scans identifiable.
+
 ## [1.2.1] - 2026-09-10
 
 ### Added

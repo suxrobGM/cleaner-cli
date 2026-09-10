@@ -14,6 +14,31 @@ public sealed class ProcessRunnerTests
     }
 
     [Fact]
+    public async Task RunWithTimeoutAsync_ReturnsFailure_WhenCommandDoesNotFinish()
+    {
+        var runner = new HangingProcessRunner();
+
+        var result = await runner.RunWithTimeoutAsync(
+            "stuck-tool",
+            [],
+            TimeSpan.FromMilliseconds(50));
+
+        Assert.False(result.Success);
+        Assert.Contains("timed out", result.StandardError, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RunWithTimeoutAsync_PropagatesCallerCancellation()
+    {
+        var runner = new HangingProcessRunner();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            runner.RunWithTimeoutAsync("stuck-tool", [], TimeSpan.FromMinutes(1), cancellation.Token));
+    }
+
+    [Fact]
     public async Task RunAsync_ReturnsFailure_WhenExecutableMissing()
     {
         // Missing tools must return failure rather than throw and crash the app.
@@ -31,5 +56,19 @@ public sealed class ProcessRunnerTests
 
         Assert.True(result.Success);
         Assert.False(string.IsNullOrWhiteSpace(result.StandardOutput));
+    }
+
+    private sealed class HangingProcessRunner : IProcessRunner
+    {
+        public bool Exists(string executable) => true;
+
+        public async Task<ProcessResult> RunAsync(
+            string executable,
+            IReadOnlyList<string> arguments,
+            CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return new ProcessResult(0, string.Empty, string.Empty);
+        }
     }
 }

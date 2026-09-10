@@ -40,13 +40,13 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
         }
 
         var usage = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
-        if (usage.Used == 0)
+        if (usage is not { Used: > 0 } known)
         {
             return ScanResult.Empty;
         }
 
         var onHost = disks.Sum(context.FileSystem.GetFileSize);
-        var slack = Math.Max(0, onHost - usage.Used);
+        var slack = Math.Max(0, onHost - known.Used);
         return slack > 0
             ? new ScanResult([new CleanupTarget(disks[0], slack, "estimated slack in the Docker virtual disk")])
             : ScanResult.Empty;

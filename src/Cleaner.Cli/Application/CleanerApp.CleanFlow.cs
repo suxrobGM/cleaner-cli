@@ -25,11 +25,7 @@ public sealed partial class CleanerApp
             switch (renderer.PromptMainMenu())
             {
                 case MainMenuChoice.Clean:
-                    exitCode = await SelectAndRunAsync(options with { DryRun = false }, cancellationToken);
-                    break;
-
-                case MainMenuChoice.Preview:
-                    exitCode = await SelectAndRunAsync(options with { DryRun = true }, cancellationToken);
+                    exitCode = await SelectAndRunAsync(options, cancellationToken);
                     break;
 
                 case MainMenuChoice.List:
@@ -82,34 +78,25 @@ public sealed partial class CleanerApp
         var (runnable, blocked) = Partition(cleaners);
 
         logger.Info(
-            $"Clean run starting - {runnable.Count} cleaner(s): {string.Join(", ", runnable.Select(c => c.Id))}" +
-            $" (dry-run: {options.DryRun}).");
+            $"Clean run starting - {runnable.Count} cleaner(s): {string.Join(", ", runnable.Select(c => c.Id))}.");
 
         var rows = MarkCommandBased(
             await renderer.ScanAsync(runnable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken),
             context);
-        renderer.SizeTable(rows, options.DryRun ? "Would free" : "Reclaimable", options.Verbose);
+        renderer.SizeTable(rows, "Reclaimable", options.Verbose);
         ReportSkipped(blocked);
 
         // Command-backed cleaners may be actionable even when their size is unknown. A scan with
         // targets already proves availability and avoids walking the same directories twice.
         var scanned = rows.Where(r => r.Result.Targets.Count > 0).Select(r => r.Cleaner).ToHashSet();
-        var available = runnable.Where(c => scanned.Contains(c) || c.IsAvailable(context)).ToList();
+        var unavailable = rows.Where(r => r.Result.ToolUnavailable).Select(r => r.Cleaner).ToHashSet();
+        var available = runnable
+            .Where(c => !unavailable.Contains(c) && (scanned.Contains(c) || c.IsAvailable(context)))
+            .ToList();
         var scannedTotal = rows.Sum(r => r.Result.TotalBytes);
         if (scannedTotal == 0 && available.Count == 0)
         {
             renderer.Line("[green]Nothing to reclaim — already clean.[/]");
-            return 0;
-        }
-
-        if (options.DryRun)
-        {
-            var commandBased = rows.Count(r => r.CommandBased);
-            var note = commandBased > 0
-                ? $" {commandBased} cleaner(s) could not be measured up front and report their size after running."
-                : string.Empty;
-            renderer.Line(
-                $"[grey]Preview only — would free [bold]{SizeFormatter.Humanize(scannedTotal)}[/]. Nothing was deleted.{note}[/]");
             return 0;
         }
 

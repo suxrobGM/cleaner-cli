@@ -28,9 +28,6 @@ public enum MainMenuChoice
     /// <summary>Pick cleaners, preview the total, confirm, and delete.</summary>
     Clean,
 
-    /// <summary>Pick cleaners and report what would be freed, deleting nothing.</summary>
-    Preview,
-
     /// <summary>Show every cleaner and whether it applies to this machine.</summary>
     List,
 
