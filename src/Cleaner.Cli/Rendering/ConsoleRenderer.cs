@@ -13,11 +13,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 
     public void InteractiveHeader(string version)
     {
-        if (IsInteractive)
-        {
-            console.Write(new FigletText("Cleaner").Color(Color.Teal));
-        }
-
+        console.Write(new FigletText("Cleaner").Color(Color.Teal));
         console.MarkupLine($"[grey]Reclaim disk space from dev, OS, and app caches.[/] [dim]v{version.EscapeMarkup()}[/]");
         console.WriteLine();
     }
@@ -201,17 +197,10 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
                 onScanned?.Invoke(Interlocked.Increment(ref scanned));
             });
 
-        if (IsInteractive)
-        {
-            await console.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync($"Scanning… [green]0/{cleaners.Count}[/]", ctx =>
-                    ScanAllAsync(done => ctx.Status($"Scanning… [green]{done}/{cleaners.Count}[/]")));
-        }
-        else
-        {
-            await ScanAllAsync(onScanned: null);
-        }
+        await console.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync($"Scanning… [green]0/{cleaners.Count}[/]", ctx =>
+                ScanAllAsync(done => ctx.Status($"Scanning… [green]{done}/{cleaners.Count}[/]")));
 
         return rows;
     }
@@ -222,17 +211,6 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         CancellationToken cancellationToken)
     {
         var results = new List<CleanRow>(cleaners.Count);
-        if (!IsInteractive)
-        {
-            foreach (var cleaner in cleaners)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                results.Add(new CleanRow(cleaner, await clean(cleaner)));
-            }
-
-            return results;
-        }
-
         await BarProgress()
             .StartAsync(async ctx =>
             {

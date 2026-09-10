@@ -45,15 +45,6 @@ public sealed class CleanerRegistryTests
     }
 
     [Fact]
-    public void InCategory_returns_matching_cleaners()
-    {
-        var registry = Build();
-        var python = registry.InCategory("Python");
-        Assert.Equal(2, python.Count);
-        Assert.All(python, c => Assert.Equal("Python", c.Category));
-    }
-
-    [Fact]
     public void Categories_are_distinct_and_sorted()
     {
         var registry = Build();

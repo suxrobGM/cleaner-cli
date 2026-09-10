@@ -29,7 +29,4 @@ public sealed class CleanerRegistry : ICleanerRegistry
 
     public ICleaner? Find(string id) =>
         _byId.GetValueOrDefault(id.Trim());
-
-    public IReadOnlyList<ICleaner> InCategory(string category) =>
-        All.Where(c => string.Equals(c.Category, category, StringComparison.OrdinalIgnoreCase)).ToArray();
 }

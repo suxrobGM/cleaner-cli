@@ -12,6 +12,4 @@ public interface ICleanerRegistry
 
     /// <summary>Find a cleaner by its <see cref="ICleaner.Id"/> (case-insensitive), or null.</summary>
     ICleaner? Find(string id);
-
-    IReadOnlyList<ICleaner> InCategory(string category);
 }

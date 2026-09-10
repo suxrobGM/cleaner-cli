@@ -69,23 +69,20 @@ public sealed partial class CleanerApp
             return 0;
         }
 
-        return await RunCleanFlowAsync(selected, options, cancellationToken);
+        return await RunCleanFlowAsync(selected, context, options, cancellationToken);
     }
 
+    /// <summary>
+    /// Scan, report, confirm, and delete. <paramref name="cleaners"/> is already filtered to what
+    /// applies on this OS, against the same <paramref name="context"/> the run uses throughout.
+    /// </summary>
     private async Task<int> RunCleanFlowAsync(
         IReadOnlyList<ICleaner> cleaners,
+        CleanupContext context,
         RunOptions options,
         CancellationToken cancellationToken)
     {
-        var context = contextFactory.Create(options);
-        var applicable = cleaners.Where(c => c.IsApplicable(context)).ToList();
-        if (applicable.Count == 0)
-        {
-            renderer.Line("[yellow]No applicable cleaners selected for this OS.[/]");
-            return 0;
-        }
-
-        var (runnable, blocked) = Partition(applicable);
+        var (runnable, blocked) = Partition(cleaners);
 
         logger.Info(
             $"Clean run starting - {runnable.Count} cleaner(s): {string.Join(", ", runnable.Select(c => c.Id))}" +
@@ -99,7 +96,10 @@ public sealed partial class CleanerApp
 
         // Process-backed cleaners (e.g. docker, conda) can't be pre-measured but are still actionable
         // when their tool is present. Keep them in the run set even when the measured total is 0.
-        var available = runnable.Where(c => c.IsAvailable(context)).ToList();
+        // A cleaner the scan already found targets for is available by definition — asking again
+        // would re-walk every one of those directory trees.
+        var scanned = rows.Where(r => r.Result.Targets.Count > 0).Select(r => r.Cleaner).ToHashSet();
+        var available = runnable.Where(c => scanned.Contains(c) || c.IsAvailable(context)).ToList();
         var scannedTotal = rows.Sum(r => r.Result.TotalBytes);
         if (scannedTotal == 0 && available.Count == 0)
         {
