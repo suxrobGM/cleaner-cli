@@ -7,10 +7,7 @@ namespace Cleaner.Cli.Application;
 
 public sealed partial class CleanerApp
 {
-    /// <summary>
-    /// The whole user interface: a menu that loops until the user exits. Cleaner has no unattended
-    /// mode, so this is the single entry point for every action.
-    /// </summary>
+    /// <summary>The whole user interface: a menu looping until the user exits.</summary>
     public async Task<int> InteractiveAsync(RunOptions options, CancellationToken cancellationToken)
     {
         if (!renderer.IsInteractive)
@@ -121,8 +118,7 @@ public sealed partial class CleanerApp
             return 0;
         }
 
-        // Cleaners with a real trade-off get their own yes/no before the run-wide confirmation, so
-        // the warning is read next to the single cleaner it applies to.
+        // Ask per cleaner first, so each warning is read next to the cleaner it applies to.
         var actionable = ConfirmGuarded(available);
         if (actionable.Count == 0)
         {
@@ -156,9 +152,8 @@ public sealed partial class CleanerApp
     }
 
     /// <summary>
-    /// Drop any cleaner carrying an <see cref="ICleaner.ConfirmationWarning"/> that the user declines.
-    /// These are the ones whose cost is more than "the cache gets re-fetched" — deleting Windows.old
-    /// removes the ability to roll a Windows upgrade back, for instance.
+    /// Drop any cleaner whose <see cref="ICleaner.ConfirmationWarning"/> the user declines, so
+    /// refusing one leaves the rest of the run intact.
     /// </summary>
     private List<ICleaner> ConfirmGuarded(IReadOnlyList<ICleaner> available)
     {

@@ -4,16 +4,10 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// The .NET Framework native image cache: the <c>NativeImages_v*</c> trees under
-/// <c>C:\Windows\assembly</c>, where NGEN stores ahead-of-time compiled copies of managed
-/// assemblies. They are derived from the assemblies in the GAC and Windows rebuilds the ones it
-/// still wants through its own NGEN maintenance task.
+/// The <c>NativeImages_v*</c> trees under <c>C:\Windows\assembly</c>, where NGEN keeps
+/// ahead-of-time compiled copies of GAC assemblies. Windows rebuilds the ones it still wants
+/// through its own maintenance task. The GAC itself is never touched, and .NET 5+ has no NGEN.
 /// </summary>
-/// <remarks>
-/// Only the <c>NativeImages_v*</c> directories are touched. The GAC itself (<c>GAC</c>,
-/// <c>GAC_32</c>, <c>GAC_64</c>, <c>GAC_MSIL</c>) holds the actual assemblies and is never removed.
-/// This applies to .NET Framework only; .NET 5+ does not use NGEN.
-/// </remarks>
 public sealed class NativeImageCacheCleaner : WindowsCleanerBase
 {
     public override string Id => "ngen-cache";

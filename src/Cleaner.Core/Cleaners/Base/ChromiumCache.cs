@@ -1,14 +1,10 @@
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Every Chromium-based app — desktop browsers and Electron apps alike — stores its HTTP, GPU, and
-/// shader caches under the same well-known subdirectory names. This centralizes those names and the
-/// "clear the cache dirs under a root" shape so browser and app cleaners don't duplicate it.
+/// The cache subdirectory names every Chromium app shares, browsers and Electron apps alike, so
+/// their cleaners don't each repeat the list. Only re-fetchable data: cookies, history, passwords,
+/// Local/Session Storage, and IndexedDB are user data and stay out.
 /// </summary>
-/// <remarks>
-/// Only re-fetchable or re-derived caches are listed. Cookies, history, passwords, "Local Storage",
-/// "Session Storage", and IndexedDB are deliberately excluded — those are user data.
-/// </remarks>
 internal static class ChromiumCache
 {
     public static readonly string[] Directories =

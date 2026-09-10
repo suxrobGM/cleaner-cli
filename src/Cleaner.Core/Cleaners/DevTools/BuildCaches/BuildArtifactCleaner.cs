@@ -22,9 +22,8 @@ public sealed class BuildArtifactCleaner : DirectoryCleanerBase
     };
 
     /// <summary>
-    /// Files that identify a directory as the root of a project whose build system writes to
-    /// <c>build/</c>. "build" is too common a name to sweep on sight — plenty of repos keep source
-    /// or scripts there — so it is only taken when one of these sits beside it.
+    /// Marks a directory as a project whose build system writes to <c>build/</c>. That name is too
+    /// common to sweep on sight, so it is only taken when one of these sits beside it.
     /// </summary>
     private static readonly string[] BuildSystemMarkers =
     [

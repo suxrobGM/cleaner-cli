@@ -7,12 +7,9 @@ namespace Cleaner.Cli.Commands;
 /// Builds the System.CommandLine root and hands control to the interactive menu.
 /// </summary>
 /// <remarks>
-/// Cleaner is a tool a person drives at a terminal, so nothing is ever deleted unattended: running
-/// <c>cleaner</c> opens a menu where every action is chosen, previewed, and confirmed. The only
-/// flags are the ones the menu can't reasonably ask for — where to look (<c>--path</c>) and how much
-/// detail to show (<c>--verbose</c>) — plus the built-in <c>--help</c> and <c>--version</c>.
-/// <c>update</c> stays a subcommand because it's the one thing you may need to run before the menu
-/// works; it is also reachable from the menu.
+/// Nothing is ever deleted unattended, so the only flags are the ones a menu can't ask for: where
+/// to look and how much detail to show. <c>update</c> stays a subcommand because you may need it
+/// before the menu is useful; it is on the menu too.
 /// </remarks>
 public sealed class CommandLineBuilder(CleanerApp app)
 {

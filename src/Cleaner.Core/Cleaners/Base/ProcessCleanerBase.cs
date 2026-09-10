@@ -3,10 +3,9 @@ using Cleaner.Core.Abstractions;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Base class for cleaners where an external command is the authoritative way to clear the cache
-/// (e.g. <c>dotnet nuget locals all --clear</c>, <c>pnpm store prune</c>). When the tool is present
-/// the command runs; otherwise it falls back to deleting the declared cache directories. Sizing is
-/// always done from those directories so scans and progress still report reclaimable space.
+/// For cleaners where an external command is authoritative (<c>pnpm store prune</c>). Runs the
+/// command when the tool is present, else deletes the declared directories. Sizing always comes
+/// from those directories, so scans report reclaimable space either way.
 /// </summary>
 public abstract class ProcessCleanerBase : DirectoryCleanerBase
 {
@@ -16,10 +15,7 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
     /// <summary>Arguments passed to <see cref="Executable"/> to perform the cleanup.</summary>
     protected abstract IReadOnlyList<string> CleanArguments { get; }
 
-    /// <summary>
-    /// The command(s) to run, in order. Defaults to a single invocation with <see cref="CleanArguments"/>;
-    /// override to issue several commands or to vary them by context (e.g. honoring <c>--force</c>).
-    /// </summary>
+    /// <summary>Commands to run in order. Override to issue several or to vary them by context.</summary>
     protected virtual IEnumerable<IReadOnlyList<string>> CommandSequence(CleanupContext context) => [CleanArguments];
 
     public override bool IsAvailable(CleanupContext context) =>

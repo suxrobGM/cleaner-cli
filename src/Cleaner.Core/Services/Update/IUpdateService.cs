@@ -1,9 +1,8 @@
 namespace Cleaner.Core.Services;
 
 /// <summary>
-/// Orchestrates self-update: reports the running version, checks GitHub for a newer release, and
-/// (on request) downloads it, swaps the running binary, and relaunches. Networking and JSON live in
-/// <see cref="IGitHubReleaseClient"/>; this service is the policy on top.
+/// Self-update policy: report the running version, check GitHub, and on request download, swap the
+/// binary, and relaunch. Networking and JSON live in <see cref="IGitHubReleaseClient"/>.
 /// </summary>
 public interface IUpdateService
 {
@@ -14,15 +13,14 @@ public interface IUpdateService
     Task<UpdateCheckResult> CheckAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Download the asset from <paramref name="check"/>, replace the running executable, and relaunch
-    /// it. Throws <see cref="InvalidOperationException"/> with an actionable message on failure (no
-    /// matching asset, insufficient permissions, etc.).
+    /// Download the asset, replace the running executable, and relaunch. Throws
+    /// <see cref="InvalidOperationException"/> with an actionable message on failure.
     /// </summary>
     Task ApplyAsync(UpdateCheckResult check, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Best-effort removal of the <c>*.old</c> backup left next to the running binary by a previous
-    /// update on Windows. Safe to call on every startup; errors are swallowed.
+    /// Remove the <c>*.old</c> backup a previous Windows update left beside the binary. Best-effort,
+    /// safe on every startup.
     /// </summary>
     void CleanupStaleBackup();
 }

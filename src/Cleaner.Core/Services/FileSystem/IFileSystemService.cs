@@ -1,9 +1,8 @@
 namespace Cleaner.Core.Services;
 
 /// <summary>
-/// All filesystem access goes through this abstraction so cleaners can be unit-tested against an
-/// in-memory fake. Implementations are best-effort: enumeration and sizing skip entries that throw
-/// (e.g. access denied) rather than failing the whole operation.
+/// All filesystem access, so cleaners can be tested against an in-memory fake. Best-effort:
+/// enumeration and sizing skip entries that throw rather than failing the whole operation.
 /// </summary>
 public interface IFileSystemService
 {

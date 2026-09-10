@@ -4,15 +4,14 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Compacts the virtual disks Docker Desktop keeps for its WSL2 backend. <c>docker system prune</c>
-/// frees space <em>inside</em> the disk, but the host <c>.vhdx</c> only ever grows — it is routinely
-/// the largest single file on a developer's machine long after the images it held were deleted.
+/// Compacts Docker Desktop's WSL2 virtual disks. Pruning frees space inside the disk, but the host
+/// <c>.vhdx</c> only ever grows, so it stays the largest file on the machine long after the images
+/// are gone.
 /// </summary>
 /// <remarks>
-/// Nothing is deleted here. WSL is shut down and each disk is compacted in place with
-/// <c>diskpart</c>, which is present on every Windows install (unlike the Hyper-V
-/// <c>Optimize-VHD</c> cmdlet). Compacting a disk that is still attached would corrupt it, hence
-/// the shutdown, the elevation requirement, and the confirmation.
+/// Nothing is deleted: WSL is shut down, then each disk is compacted with <c>diskpart</c>, which
+/// every Windows install has (unlike the Hyper-V <c>Optimize-VHD</c> cmdlet). Compacting an
+/// attached disk would corrupt it, hence the shutdown, the elevation, and the confirmation.
 /// </remarks>
 public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 {

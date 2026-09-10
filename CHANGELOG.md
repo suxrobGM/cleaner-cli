@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **11 new cleaners**, aimed at the caches that actually dominate a loaded dev machine:
+  - `vscode-cpptools` — the C/C++ extension's IntelliSense store (`ipch` plus a symbol database
+    per workspace); usually the largest cache VS Code produces.
+  - `android-studio` — uses the JetBrains layout under a `Google` root, so `jetbrains` never saw
+    it, and every upgrade leaves the previous version's caches behind.
+  - `amd-telemetry` — `ProgramData\AMD\PPC` logs are append-only and never rotated, so
+    `sdkusage.csv` alone reaches several GB.
+  - `winre-agent` — the `C:\$WinREAgent` scratch folder Windows Setup leaves behind.
+  - `razer` — Cortex caches plus `CortexFPSData.db3`, an FPS history that is never pruned.
+  - `claude-desktop` — the local-agent VM rootfs, re-downloaded on demand.
+  - `codex` — `~/.codex` scratch and rotated sandbox logs; sessions and auth are kept.
+  - `docker-vhdx` — compacts Docker Desktop's WSL2 virtual disks. Pruning frees space *inside*
+    the disk; the host `.vhdx` only ever grows. Shuts WSL down, then compacts with `diskpart`.
+    Deletes nothing, and aborts rather than compact an attached disk.
+  - `ngen-cache` — the .NET Framework native image cache, never the GAC.
+  - `windows-installer-orphans` — cached `.msi`/`.msp` packages that no installed product or patch
+    references. The live set is read from the Installer's `UserData` registry key in one
+    `reg query`; if that read fails or comes back empty the cleaner does nothing, rather than
+    treat the whole cache as garbage.
+  - `app-leftovers` — see below.
+- `build-artifacts` now sweeps Python virtualenvs (`.venv`, `venv`, `.tox`, `.nox`) and the
+  `.turbo`/`.parcel-cache`/`.vite` caches. It also takes `build`, but only beside a Gradle, Maven,
+  CMake, or Meson project file — the name is far too common to sweep on sight.
+- Extended: `gpu-installers` covers the NVIDIA app's update staging and the NGX (DLSS) model store;
+  `browser-cache` the on-device AI model stores Chrome and Edge keep beside their profiles;
+  `vscode` its `WebStorage` and `Crashpad` directories; `browser-automation` the Playwright MCP
+  profile directory.
+- `DeleteMode.DeleteFile`, for cleaners whose target is a single large file rather than a directory,
+  and `IFileSystemService.WriteAllText`, used by `docker-vhdx` for its `diskpart` script.
+
 - **`app-leftovers`** — removes the per-user profile directories that uninstalled applications leave
   behind. Uninstallers routinely drop the program but keep its data, which for an Electron app that
   bundles a runtime or a VM image runs to gigabytes. Seeded with Claude Desktop, Docker Desktop

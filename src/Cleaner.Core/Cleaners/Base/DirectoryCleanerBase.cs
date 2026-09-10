@@ -3,9 +3,9 @@ using Cleaner.Core.Abstractions;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Base class for the common cleaner shape: declare a set of cache directories and let the base
-/// handle existence checks, size measurement, dry-run accounting, deletion, and error capture.
-/// Subclasses implement <see cref="GetTargets"/> (and usually only that).
+/// The common cleaner shape: declare the cache directories, and the base handles existence checks,
+/// sizing, dry-run accounting, deletion, and error capture. Subclasses usually override only
+/// <see cref="GetTargets"/>.
 /// </summary>
 public abstract class DirectoryCleanerBase : ICleaner
 {

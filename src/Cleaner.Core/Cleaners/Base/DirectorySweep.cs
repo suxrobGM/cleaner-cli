@@ -3,8 +3,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Shared directory traversal for workspace-sweeping cleaners (build artifacts, Unity projects): walk
-/// the scan roots, yield each directory a predicate matches, and never descend into a match.
+/// Traversal for workspace-sweeping cleaners: walk the scan roots, yield each directory the
+/// predicate matches, and never descend into a match.
 /// </summary>
 internal static class DirectorySweep
 {
@@ -14,9 +14,8 @@ internal static class DirectorySweep
     public static string LeafName(string path) => Path.GetFileName(path.TrimEnd(Separators));
 
     /// <summary>
-    /// Depth-first walks every existing root in <paramref name="roots"/> and yields each directory for
-    /// which <paramref name="isMatch"/> is true; matched directories are not descended into. Optionally
-    /// <paramref name="skipDescentInto"/> prunes whole branches (e.g. known artifact folders) from the walk.
+    /// Depth-first walk of every existing root, yielding each match without descending into it.
+    /// <paramref name="skipDescentInto"/> prunes whole branches from the walk.
     /// </summary>
     public static IEnumerable<string> FindDirectories(
         IFileSystemService fileSystem,

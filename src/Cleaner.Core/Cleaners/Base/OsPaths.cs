@@ -2,16 +2,12 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Base;
 
-/// <summary>
-/// Helpers for the common "per-OS application cache" path shapes, so cleaners don't repeat the
-/// Windows/macOS/Linux branching.
-/// </summary>
+/// <summary>Per-OS cache path shapes, so cleaners don't repeat the platform branching.</summary>
 internal static class OsPaths
 {
     /// <summary>
-    /// Resolve an application's cache directory following the usual conventions:
-    /// <c>%LOCALAPPDATA%\{windows}</c>, <c>~/Library/Caches/{macOs}</c>, or
-    /// <c>$XDG_CACHE_HOME/{linux}</c> (i.e. <c>~/.cache/{linux}</c>).
+    /// An app's cache directory: <c>%LOCALAPPDATA%\{windows}</c>, <c>~/Library/Caches/{macOs}</c>,
+    /// or <c>$XDG_CACHE_HOME/{linux}</c>.
     /// </summary>
     public static string AppCache(IEnvironmentService env, string windows, string macOs, string linux)
     {
@@ -26,11 +22,9 @@ internal static class OsPaths
     }
 
     /// <summary>
-    /// Combine <paramref name="segments"/> onto the drive root of a Windows path (e.g.
-    /// <c>C:\Windows</c> → <c>C:\NVIDIA</c>). Deliberately avoids <see cref="Path.GetPathRoot"/> and
-    /// <see cref="Path.Combine"/> for the root: both only recognise <c>C:\</c> as rooted on Windows
-    /// hosts, so on Linux/macOS (CI, cross-platform builds) they mangle these paths. Joins with an
-    /// explicit backslash so the result is a valid Windows path regardless of the host OS.
+    /// Combine <paramref name="segments"/> onto a Windows path's drive root (<c>C:\Windows</c> →
+    /// <c>C:\NVIDIA</c>). Hand-joined rather than via <see cref="Path"/>, which only treats
+    /// <c>C:\</c> as rooted on Windows hosts and mangles these paths on a Linux/macOS build.
     /// </summary>
     public static string FromWindowsDriveRoot(string windowsPath, params string[] segments)
     {
@@ -39,8 +33,8 @@ internal static class OsPaths
     }
 
     /// <summary>
-    /// The value of the first set (non-blank) environment variable among <paramref name="names"/>,
-    /// or null. Used for cache-relocation overrides like <c>NUGET_PACKAGES</c> or <c>CARGO_HOME</c>.
+    /// First non-blank variable among <paramref name="names"/>, or null. For cache-relocation
+    /// overrides like <c>NUGET_PACKAGES</c>.
     /// </summary>
     public static string? Env(IEnvironmentService env, params string[] names)
     {

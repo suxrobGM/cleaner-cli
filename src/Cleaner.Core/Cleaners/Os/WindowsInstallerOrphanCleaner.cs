@@ -4,17 +4,15 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.Os;
 
 /// <summary>
-/// Orphaned installer packages in <c>C:\Windows\Installer</c>. Windows caches the <c>.msi</c> and
-/// <c>.msp</c> for every installed product so it can repair, patch, or uninstall it later, but the
-/// cache is not pruned when a product goes away — on a machine that has seen a few Visual Studio or
-/// Office upgrades the strays outweigh the live ones.
+/// Cached <c>.msi</c>/<c>.msp</c> packages in <c>C:\Windows\Installer</c> that no installed
+/// product or patch still references. Windows caches one per product for repair and uninstall but
+/// never prunes them, so after a few Visual Studio or Office upgrades the strays dominate.
 /// </summary>
 /// <remarks>
-/// A package is orphaned only if no installed product or patch points at it. The set of live
-/// packages comes from the <c>LocalPackage</c> values under the Installer's <c>UserData</c> registry
-/// key, read in one <c>reg query</c> so the cleaner needs no registry API and stays testable. If
-/// that query fails or yields nothing the cleaner does nothing at all: an empty reference set would
-/// otherwise classify the entire cache as garbage and break repair for everything installed.
+/// The live set comes from the <c>LocalPackage</c> values under the Installer's <c>UserData</c>
+/// registry key, read in a single <c>reg query</c> so no registry API is needed. If that read fails
+/// or comes back empty the cleaner does nothing: treating an empty set as "nothing is referenced"
+/// would wipe the cache and break repair for everything installed.
 /// </remarks>
 public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
 {

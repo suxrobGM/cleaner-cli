@@ -1,13 +1,12 @@
 namespace Cleaner.Core.Abstractions;
 
 /// <summary>
-/// The extension point of Cleaner. Every cache target — dev tool, OS area, or application — is an
-/// <see cref="ICleaner"/>. Add a new one by implementing this (usually via a base class) and
-/// registering it once in the composition root.
+/// Cleaner's extension point: every cache target is one of these. Add one by deriving from a base
+/// class and registering it once in the composition root.
 /// </summary>
 public interface ICleaner
 {
-    /// <summary>Stable, kebab-case identifier used on the command line (e.g. "nuget", "npm").</summary>
+    /// <summary>Stable, kebab-case identifier (e.g. "nuget", "npm").</summary>
     string Id { get; }
 
     /// <summary>Human-friendly name shown in lists and prompts (e.g. "NuGet package cache").</summary>
@@ -20,15 +19,14 @@ public interface ICleaner
     bool RequiresElevation { get; }
 
     /// <summary>
-    /// False when reclaimable space can't be measured up front because an external command does the
-    /// work (e.g. <c>docker system prune</c>); the UI labels these rows instead of showing 0 B.
+    /// False when an external command does the work, so size is unknown until it runs. The UI
+    /// labels those rows instead of showing 0 B.
     /// </summary>
     bool SupportsSizeEstimate => true;
 
     /// <summary>
-    /// Non-null for cleaners with a real trade-off beyond "the cache gets re-fetched" (e.g. deleting
-    /// Windows.old removes the ability to roll a Windows upgrade back). The text states that
-    /// trade-off and is confirmed on its own, per cleaner, before the run-wide confirmation.
+    /// States the trade-off for cleaners that cost more than a re-fetch (deleting Windows.old gives
+    /// up upgrade rollback). Non-null earns its own yes/no before the run-wide confirmation.
     /// </summary>
     string? ConfirmationWarning => null;
 
