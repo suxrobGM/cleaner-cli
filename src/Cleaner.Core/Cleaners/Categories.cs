@@ -70,40 +70,25 @@ public static class Categories
     /// <summary>The group a category belongs to, or <see cref="CategoryGroups.Other"/> if unknown.</summary>
     public static string GroupOf(string category)
     {
-        foreach (var (group, known) in Layout)
-        {
-            if (string.Equals(known, category, StringComparison.OrdinalIgnoreCase))
-            {
-                return group;
-            }
-        }
-
-        return CategoryGroups.Other;
+        var rank = RankOf(category);
+        return rank < Layout.Length ? Layout[rank].Group : CategoryGroups.Other;
     }
 
     /// <summary>
     /// Sort key placing a category at its spot in <see cref="Ordered"/>. Unknown categories sort
     /// last as a block, where an alphabetical tie-break keeps them stable.
     /// </summary>
-    public static int RankOf(string category)
-    {
-        for (var i = 0; i < Layout.Length; i++)
-        {
-            if (string.Equals(Layout[i].Category, category, StringComparison.OrdinalIgnoreCase))
-            {
-                return i;
-            }
-        }
-
-        return int.MaxValue;
-    }
+    public static int RankOf(string category) => IndexOf(Ordered, category);
 
     /// <summary>Sort key for a group, matching the order groups first appear in the layout.</summary>
-    public static int RankOfGroup(string group)
+    public static int RankOfGroup(string group) => IndexOf(Groups, group);
+
+    /// <summary>Position of a name in a display-order list, or last when it is not in there.</summary>
+    private static int IndexOf(IReadOnlyList<string> names, string name)
     {
-        for (var i = 0; i < Groups.Count; i++)
+        for (var i = 0; i < names.Count; i++)
         {
-            if (string.Equals(Groups[i], group, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(names[i], name, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }

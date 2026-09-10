@@ -23,8 +23,11 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
     {
         // One table per group, categories as section rows inside it. With a hundred-odd cleaners a
         // flat table is a wall of text; the grouping is what makes it scannable.
-        foreach (var group in entries.GroupBy(e => Categories.GroupOf(e.Cleaner.Category)).OrderBy(g => Categories.RankOfGroup(g.Key)))
+        var categories = 0;
+        var groups = 0;
+        foreach (var group in ByLayout(entries, e => e.Cleaner.Category))
         {
+            groups++;
             var table = new Table()
                 .Border(TableBorder.Rounded)
                 .Expand()
@@ -34,8 +37,9 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             table.AddColumn("Status");
 
             var first = true;
-            foreach (var category in group.GroupBy(e => e.Cleaner.Category, StringComparer.Ordinal).OrderBy(c => Categories.RankOf(c.Key)))
+            foreach (var category in group)
             {
+                categories++;
                 if (!first)
                 {
                     table.AddEmptyRow();
@@ -56,8 +60,6 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
             console.Write(table);
         }
 
-        var categories = entries.Select(e => e.Cleaner.Category).Distinct(StringComparer.Ordinal).Count();
-        var groups = entries.Select(e => Categories.GroupOf(e.Cleaner.Category)).Distinct(StringComparer.Ordinal).Count();
         console.MarkupLine($"[grey]{entries.Count} cleaners across {categories} categories in {groups} groups.[/]");
     }
 
@@ -180,10 +182,10 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         var labels = new Dictionary<string, ICleaner>(StringComparer.Ordinal);
         var all = prompt.AddChoice("All cleaners");
 
-        foreach (var group in choosable.GroupBy(c => Categories.GroupOf(c.Category)).OrderBy(g => Categories.RankOfGroup(g.Key)))
+        foreach (var group in ByLayout(choosable, c => c.Category))
         {
             var groupNode = all.AddChild($"[bold]{group.Key}[/]");
-            foreach (var category in group.GroupBy(c => c.Category, StringComparer.Ordinal).OrderBy(c => Categories.RankOf(c.Key)))
+            foreach (var category in group)
             {
                 var categoryNode = groupNode.AddChild(category.Key);
                 foreach (var cleaner in category)
@@ -198,6 +200,18 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         var picked = console.Prompt(prompt);
         return picked.Where(labels.ContainsKey).Select(p => labels[p]).ToList();
     }
+
+    /// <summary>
+    /// Items nested group over category, both in display order. The list and the selection prompt
+    /// walk the same shape, so the layout is expressed once.
+    /// </summary>
+    private static IEnumerable<IGrouping<string, IGrouping<string, T>>> ByLayout<T>(
+        IEnumerable<T> items,
+        Func<T, string> categoryOf) =>
+        items.GroupBy(categoryOf, StringComparer.Ordinal)
+            .OrderBy(c => Categories.RankOf(c.Key))
+            .GroupBy(c => Categories.GroupOf(c.Key), StringComparer.Ordinal)
+            .OrderBy(g => Categories.RankOfGroup(g.Key));
 
     public Task<T> StatusAsync<T>(string status, Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken) =>
         console.Status()
