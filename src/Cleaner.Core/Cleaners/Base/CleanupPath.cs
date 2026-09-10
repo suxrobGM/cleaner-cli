@@ -8,9 +8,12 @@ public enum DeleteMode
 
     /// <summary>Delete everything inside the directory but keep the directory itself.</summary>
     ClearContents,
+
+    /// <summary>Delete a single file rather than a directory (e.g. a multi-GB telemetry database).</summary>
+    DeleteFile,
 }
 
-/// <summary>A single directory a cleaner targets, and how to remove it.</summary>
+/// <summary>A single file or directory a cleaner targets, and how to remove it.</summary>
 public readonly record struct CleanupPath(
     string Path,
     DeleteMode Mode = DeleteMode.DeleteDirectory,

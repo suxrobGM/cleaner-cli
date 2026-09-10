@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Tests.Fakes;
@@ -70,11 +71,26 @@ public sealed class FakeFileSystem : IFileSystemService
         var p = Norm(path);
         foreach (var key in _files.Keys)
         {
-            if (Under(key, p) && (recursive || ParentOf(key) == p))
+            if (Under(key, p) && (recursive || ParentOf(key) == p) && MatchesPattern(key, searchPattern))
             {
                 yield return key;
             }
         }
+    }
+
+    /// <summary>
+    /// Mirrors the wildcard matching the real <c>Directory.EnumerateFiles</c> does, so a cleaner that
+    /// narrows by pattern (e.g. rotated <c>*.log</c> files) is actually exercised by its test.
+    /// </summary>
+    private static bool MatchesPattern(string path, string searchPattern)
+    {
+        if (searchPattern is "*" or "*.*")
+        {
+            return true;
+        }
+
+        var expression = "^" + Regex.Escape(searchPattern).Replace(@"\*", ".*").Replace(@"\?", ".") + "$";
+        return Regex.IsMatch(Path.GetFileName(path), expression, RegexOptions.IgnoreCase);
     }
 
     public void DeleteDirectory(string path)

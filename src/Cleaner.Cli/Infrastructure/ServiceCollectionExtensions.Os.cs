@@ -28,6 +28,8 @@ internal static partial class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, XdgCacheCleaner>();
         services.AddSingleton<ICleaner, JournalLogCleaner>();
         services.AddSingleton<ICleaner, GpuInstallerLeftoverCleaner>();
+        services.AddSingleton<ICleaner, AmdTelemetryCleaner>();
+        services.AddSingleton<ICleaner, WinReAgentCleaner>();
         services.AddSingleton<ICleaner, WinSxSCleaner>();
         services.AddSingleton<ICleaner, WindowsOldCleaner>();
     }

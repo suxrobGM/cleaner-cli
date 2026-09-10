@@ -16,6 +16,7 @@ public sealed class BrowserAutomationCleaner : DirectoryCleanerBase
     {
         var env = context.Environment;
         yield return new CleanupPath(OsPaths.AppCache(env, "ms-playwright", "ms-playwright", "ms-playwright"), Description: "Playwright browsers");
+        yield return new CleanupPath(OsPaths.AppCache(env, "ms-playwright-mcp", "ms-playwright-mcp", "ms-playwright-mcp"), Description: "Playwright MCP profiles");
         yield return new CleanupPath(OsPaths.AppCache(env, "puppeteer", "puppeteer", "puppeteer"), Description: "Puppeteer browsers");
         yield return new CleanupPath(OsPaths.AppCache(env, Path.Combine("Cypress", "Cache"), "Cypress", "Cypress"), Description: "Cypress binaries");
 

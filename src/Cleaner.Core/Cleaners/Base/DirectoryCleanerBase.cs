@@ -23,7 +23,7 @@ public abstract class DirectoryCleanerBase : ICleaner
     /// <inheritdoc cref="ICleaner.ConfirmationWarning"/>
     public virtual string? ConfirmationWarning => null;
 
-    /// <summary>The candidate directories this cleaner targets. May include paths that don't exist.</summary>
+    /// <summary>Candidate targets, which may not exist and may be files (<see cref="DeleteMode.DeleteFile"/>).</summary>
     protected abstract IEnumerable<CleanupPath> GetTargets(CleanupContext context);
 
     public virtual bool IsApplicable(CleanupContext context) => true;
@@ -37,8 +37,7 @@ public abstract class DirectoryCleanerBase : ICleaner
         foreach (var path in ExistingTargets(context))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var size = context.FileSystem.GetDirectorySize(path.Path);
-            targets.Add(new CleanupTarget(path.Path, size, path.Description));
+            targets.Add(new CleanupTarget(path.Path, SizeOf(context, path), path.Description));
         }
 
         return Task.FromResult(new ScanResult(targets));
@@ -56,7 +55,7 @@ public abstract class DirectoryCleanerBase : ICleaner
         foreach (var path in ExistingTargets(context))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var size = context.FileSystem.GetDirectorySize(path.Path);
+            var size = SizeOf(context, path);
 
             try
             {
@@ -85,13 +84,26 @@ public abstract class DirectoryCleanerBase : ICleaner
             case DeleteMode.ClearContents:
                 context.FileSystem.DeleteContents(path.Path);
                 break;
+            case DeleteMode.DeleteFile:
+                context.FileSystem.DeleteFile(path.Path);
+                break;
             default:
                 context.FileSystem.DeleteDirectory(path.Path);
                 break;
         }
     }
 
-    /// <summary>Targets that actually exist on disk, de-duplicated by path.</summary>
+    private static long SizeOf(CleanupContext context, CleanupPath path) =>
+        path.Mode == DeleteMode.DeleteFile
+            ? context.FileSystem.GetFileSize(path.Path)
+            : context.FileSystem.GetDirectorySize(path.Path);
+
+    private static bool Exists(CleanupContext context, CleanupPath path) =>
+        path.Mode == DeleteMode.DeleteFile
+            ? context.FileSystem.FileExists(path.Path)
+            : context.FileSystem.DirectoryExists(path.Path);
+
+    /// <summary>Targets that actually exist on disk (file or directory), de-duplicated by path.</summary>
     protected IEnumerable<CleanupPath> ExistingTargets(CleanupContext context)
     {
         // Linux paths are case-sensitive; Windows and (default) macOS volumes are not.
@@ -107,7 +119,7 @@ public abstract class DirectoryCleanerBase : ICleaner
             // Normalize separators so the same directory spelled two ways de-dupes, and check
             // existence first so a nonexistent candidate doesn't shadow a real one it aliases.
             var key = path.Path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-            if (context.FileSystem.DirectoryExists(path.Path) && seen.Add(key))
+            if (Exists(context, path) && seen.Add(key))
             {
                 yield return path;
             }

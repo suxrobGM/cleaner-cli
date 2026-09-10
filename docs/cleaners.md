@@ -1,6 +1,6 @@
 # Cleaners
 
-Cleaner ships with 121 cleaners. Pick **List all cleaners** in the menu to see which apply to your
+Cleaner ships with 128 cleaners. Pick **List all cleaners** in the menu to see which apply to your
 machine; the **id** below is what each one is listed under.
 
 > Cleaners only ever remove caches, temp files, and rebuildable artifacts — never source, configs,
@@ -141,7 +141,9 @@ and take their own yes/no before the run-wide confirmation.
 | Id | Removes |
 | --- | --- |
 | `jetbrains` | JetBrains IDE caches/logs. On Windows only the per-product `caches`/`index`/`log`/`tmp` dirs — Toolbox-installed IDEs and LocalHistory are never touched. |
-| `vscode` | VS Code cache directories, plus the same for Cursor, VSCodium, and Windsurf (keeps settings and extensions). |
+| `vscode` | VS Code cache directories, including `WebStorage` and `Crashpad`, plus the same for Cursor, VSCodium, and Windsurf (keeps settings and extensions). |
+| `vscode-cpptools` | The C/C++ extension's IntelliSense store: precompiled headers (`ipch`) and the per-workspace symbol databases. Regenerated on the next parse, and usually the largest cache VS Code produces. |
+| `android-studio` | Android Studio `caches`/`index`/`log`/`tmp`/`compile-server`/`compiler`, for every installed version. It uses the JetBrains layout under a `Google` root, so `jetbrains` never sees it. Plugins and settings are kept. |
 | `visualstudio` | Project `.vs` and ComponentModelCache (Windows). |
 | `xcode` | Xcode DerivedData, iOS/watchOS DeviceSupport symbol caches, and simulator caches (macOS). Archives are never touched. |
 | `zed` | Zed editor cache. |
@@ -151,7 +153,7 @@ and take their own yes/no before the run-wide confirmation.
 
 | Id | Removes |
 | --- | --- |
-| `browser-automation` | Playwright, Puppeteer, and Cypress browser downloads (incl. the `~/.cache` locations they use even on Windows/macOS). |
+| `browser-automation` | Playwright (including Playwright MCP profiles), Puppeteer, and Cypress browser downloads (incl. the `~/.cache` locations they use even on Windows/macOS). |
 | `electron` | Electron and electron-builder download caches. |
 | `azure-functions` | Azure Functions Core Tools downloaded runtime feeds. |
 | `dotslash` | DotSlash fetched-executable cache. |
@@ -163,6 +165,7 @@ and take their own yes/no before the run-wide confirmation.
 | `node-gyp` | node-gyp downloaded Node headers/import libraries. |
 | `gcloud` | Google Cloud CLI logs and surface caches. Config/credentials untouched. |
 | `sonar` | SonarLint / sonar-scanner plugin and analyzer cache. |
+| `codex` | Codex CLI scratch under `~/.codex` (`cache`, `.tmp`, `tmp`, rotated `sandbox.*.log`). Sessions, memories, skills, auth, and config are kept, as is the installed CLI. Honors `CODEX_HOME`. |
 
 ## Project-local
 
@@ -176,7 +179,7 @@ and take their own yes/no before the run-wide confirmation.
 | --- | --- | --- |
 | `temp` | The per-user temp directory. | |
 | `trash` | Recycle Bin / Trash for the current user. | |
-| `browser-cache` | Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Arc, and Firefox HTTP/code caches. | Keeps history/cookies/profiles. |
+| `browser-cache` | Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Arc, and Firefox HTTP/code caches, plus the on-device AI model stores Chrome and Edge download beside their profiles. | Keeps history/cookies/profiles. |
 | `windows-update` | `SoftwareDistribution\Download`. | Windows · needs admin |
 | `windows-temp` | The machine-wide `Windows\Temp`. | Windows · needs admin |
 | `windows-logs` | `Windows\Logs` (CBS, DISM, WindowsUpdate servicing logs). | Windows · needs admin |
@@ -189,7 +192,9 @@ and take their own yes/no before the run-wide confirmation.
 | `thumbnails` | Explorer thumbnail/icon cache. | Windows |
 | `crash-dumps` | Crash dumps and Windows Error Reporting queues. | Windows |
 | `delivery-optimization` | Delivery Optimization download cache. | Windows · needs admin |
-| `gpu-installers` | GPU driver installer leftovers: `C:\NVIDIA`, `C:\AMD`, `C:\Intel` extraction folders and NVIDIA's download cache. Never touches DriverStore, `Installer2`, or installed drivers. | Windows · needs admin |
+| `gpu-installers` | GPU driver installer leftovers: `C:\NVIDIA`, `C:\AMD`, `C:\Intel` extraction folders, NVIDIA's download cache, the NVIDIA app's update staging and logs, and the NGX (DLSS) model store. Never touches DriverStore, `Installer2`, or installed drivers. | Windows · needs admin |
+| `amd-telemetry` | AMD driver usage logs under `ProgramData\AMD\PPC` (`sdkusage.csv` and friends, plus the upload staging folders). They are append-only and never rotated, so they reach several GB. `config.csv` is kept. | Windows |
+| `winre-agent` | `C:\$WinREAgent`, the scratch folder Windows Setup uses during a feature update and routinely leaves behind. | Windows · needs admin |
 | `winsxs` | Superseded Windows component-store versions (`DISM /StartComponentCleanup`; no `/ResetBase`, so updates stay uninstallable). Slow (minutes) but often the largest Windows reclaim. | Windows · needs admin |
 | `windows-old` | The previous Windows installation (`C:\Windows.old`). Deleting it removes the ability to roll back the last upgrade. | Windows · needs admin · **asks again** |
 | `mac-caches` | `~/Library/Caches` and `~/Library/Logs`. | macOS |
@@ -229,4 +234,6 @@ and take their own yes/no before the run-wide confirmation.
 | `adobe-media-cache` | Adobe shared media caches (Premiere/After Effects render, database, and audio peak files; regenerated). |
 | `onedrive` | OneDrive client and setup logs (Windows). Synced content is never touched. |
 | `dropbox` | Dropbox's internal `.dropbox.cache` staging folder (officially safe to purge). Synced files are never touched. |
+| `razer` | Razer Cortex caches, logs, downloaded updates, and `CortexFPSData.db3` — an FPS-counter history that is never pruned and grows without bound. Game config, macros, and Synapse device profiles are untouched. |
+| `claude-desktop` | Claude Desktop's local-agent VM images (`vm_bundles`, `claude-code-vm`): a multi-GB rootfs re-downloaded on demand. Chat history and settings are kept. |
 | `app-leftovers` | Profile directories left behind by apps that are **no longer installed** — Claude Desktop, Docker Desktop (including its multi-GB WSL2 virtual disk), Discord, Slack, Unity Hub, and the Epic Games Launcher. Each app is listed with the markers that exist only while it is installed, so an installed app is never touched. This is settings and history rather than cache, so it **asks again** before running. Windows and macOS. |

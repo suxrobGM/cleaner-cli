@@ -10,7 +10,12 @@ namespace Cleaner.Core.Cleaners.DevTools;
 public sealed class VsCodeCleaner : DirectoryCleanerBase
 {
     private static readonly string[] CacheSubdirectories =
-        ["Cache", "CachedData", "Code Cache", "GPUCache", "logs", "CachedExtensionVSIXs"];
+    [
+        "Cache", "CachedData", "Code Cache", "GPUCache", "logs", "CachedExtensionVSIXs",
+        // Webview localStorage and crash reports: both regenerate, and WebStorage is usually the
+        // largest of them because nothing prunes it as extensions come and go.
+        "WebStorage", "Crashpad",
+    ];
 
     /// <summary>App-data folder names of VS Code and its forks.</summary>
     private static readonly string[] AppFolders = ["Code", "Cursor", "VSCodium", "Windsurf"];

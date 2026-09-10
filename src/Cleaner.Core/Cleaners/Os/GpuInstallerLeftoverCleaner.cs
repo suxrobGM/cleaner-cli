@@ -38,5 +38,21 @@ public sealed class GpuInstallerLeftoverCleaner : WindowsCleanerBase
             Path.Combine(programData, "NVIDIA Corporation", "Downloader"),
             DeleteMode.ClearContents,
             "NVIDIA driver downloads");
+
+        // The NVIDIA app stages every driver package it downloads here and keeps the old ones.
+        yield return new CleanupPath(
+            Path.Combine(programData, "NVIDIA Corporation", "NVIDIA app", "UpdateFramework"),
+            DeleteMode.ClearContents,
+            "NVIDIA app update staging");
+        yield return new CleanupPath(
+            Path.Combine(programData, "NVIDIA Corporation", "NVIDIA app", "Logs"),
+            DeleteMode.ClearContents,
+            "NVIDIA app logs");
+
+        // NGX holds the DLSS/Broadcast model files, re-downloaded by the driver when next needed.
+        yield return new CleanupPath(
+            Path.Combine(programData, "NVIDIA", "NGX", "models"),
+            DeleteMode.ClearContents,
+            "NVIDIA NGX models");
     }
 }

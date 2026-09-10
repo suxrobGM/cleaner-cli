@@ -20,7 +20,7 @@ Cleaner finds the caches that quietly eat your disk — package managers, build 
 browsers, system junk, even Steam — shows you exactly how much you'd get back, and clears them
 only after you say yes.
 
-- **121 built-in cleaners** across dev tools, the operating system, and applications.
+- **128 built-in cleaners** across dev tools, the operating system, and applications.
 - **Safe by default** — every run scans and previews first; nothing is deleted without confirmation,
   and the few cleaners with a real trade-off ask again on their own.
 - **Cross-platform** — a single native binary for Windows, macOS, and Linux (no runtime required).

@@ -74,12 +74,25 @@ public sealed class BrowserCacheCleaner : DirectoryCleanerBase
         yield return new CleanupPath(Path.Combine(cache, "mozilla", "firefox"), DeleteMode.ClearContents, "Firefox");
     }
 
+    /// <summary>
+    /// On-device model stores, which sit beside the profiles rather than inside one. Chrome and Edge
+    /// download these for their built-in AI features and they dwarf the HTTP cache; the browser
+    /// re-fetches whatever it still needs.
+    /// </summary>
+    private static readonly string[] ModelStores =
+        ["OptGuideOnDeviceModel", "OptGuideOnDeviceClassifierModel", "optimization_guide_model_store"];
+
     private static IEnumerable<CleanupPath> ChromiumProfiles(CleanupContext context, string userDataRoot, string browser)
     {
         // Some browsers (e.g. Opera) keep the cache dirs directly in the root instead of per-profile.
         foreach (var path in ChromiumCache.Under(userDataRoot, browser))
         {
             yield return path;
+        }
+
+        foreach (var store in ModelStores)
+        {
+            yield return new CleanupPath(Path.Combine(userDataRoot, store), DeleteMode.ClearContents, $"{browser} on-device models");
         }
 
         foreach (var profile in context.FileSystem.EnumerateDirectories(userDataRoot))

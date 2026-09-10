@@ -95,6 +95,8 @@ internal static partial class ServiceCollectionExtensions
         // IDEs / editors
         services.AddSingleton<ICleaner, JetBrainsCleaner>();
         services.AddSingleton<ICleaner, VsCodeCleaner>();
+        services.AddSingleton<ICleaner, VsCppToolsCleaner>();
+        services.AddSingleton<ICleaner, AndroidStudioCleaner>();
         services.AddSingleton<ICleaner, VisualStudioCleaner>();
         services.AddSingleton<ICleaner, XcodeCleaner>();
         services.AddSingleton<ICleaner, ZedCleaner>();
@@ -113,6 +115,7 @@ internal static partial class ServiceCollectionExtensions
         services.AddSingleton<ICleaner, NodeGypCleaner>();
         services.AddSingleton<ICleaner, GcloudCleaner>();
         services.AddSingleton<ICleaner, SonarCleaner>();
+        services.AddSingleton<ICleaner, CodexCleaner>();
 
         // Project-local
         services.AddSingleton<ICleaner, BuildArtifactCleaner>();
