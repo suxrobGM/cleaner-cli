@@ -1,4 +1,4 @@
-namespace Cleaner.Core.Abstractions;
+﻿namespace Cleaner.Core.Abstractions;
 
 /// <summary>
 /// Cleaner's extension point: every cache target is one of these. Add one by deriving from a base
@@ -19,8 +19,9 @@ public interface ICleaner
     bool RequiresElevation { get; }
 
     /// <summary>
-    /// False when an external command does the work, so size is unknown until it runs. The UI
-    /// labels those rows instead of showing 0 B.
+    /// False when nothing on disk can be measured directly, so a size may only be knowable after the
+    /// cleaner runs. Such a cleaner can still estimate — several ask their own tool — and the UI
+    /// shows the number when there is one, labelling the row instead of showing 0 B when there isn't.
     /// </summary>
     bool SupportsSizeEstimate => true;
 

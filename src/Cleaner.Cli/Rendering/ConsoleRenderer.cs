@@ -74,8 +74,8 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 
     public void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false)
     {
-        // Command-based cleaners can't be pre-measured; keep their rows visible with a label
-        // instead of dropping them as 0 B. Sorting by size puts them last naturally.
+        // Cleaners that could not measure themselves keep their row, with a label instead of a
+        // misleading 0 B. Sorting by size puts them last naturally.
         var visible = rows
             .Where(r => r.Result.TotalBytes > 0 || r.CommandBased)
             .OrderByDescending(r => r.Result.TotalBytes)
@@ -94,7 +94,7 @@ public sealed class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
         {
             var size = row.Result.TotalBytes > 0
                 ? $"[yellow]{SizeFormatter.Humanize(row.Result.TotalBytes)}[/]"
-                : "[grey]n/a (runs command)[/]";
+                : "[grey]n/a (unknown until it runs)[/]";
             table.AddRow(row.Cleaner.Name.EscapeMarkup(), size);
 
             if (verbose)

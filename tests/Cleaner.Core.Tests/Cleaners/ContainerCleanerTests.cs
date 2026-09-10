@@ -1,4 +1,4 @@
-using Cleaner.Core.Abstractions;
+﻿using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Applications;
 using Cleaner.Core.Cleaners.DevTools;
 using Cleaner.Core.Cleaners.Os;
@@ -23,9 +23,11 @@ public sealed class ContainerCleanerTests
 
         await new DockerCleaner().CleanAsync(context);
 
-        Assert.Equal(2, runner.Invocations.Count);
-        Assert.Equal(["system", "prune", "-a", "--volumes", "--force"], runner.Invocations[0].Arguments);
-        Assert.Equal(["builder", "prune", "--all", "--force"], runner.Invocations[1].Arguments);
+        // The prune pair, bracketed by the disk-usage queries the freed total is measured with.
+        var pruned = runner.Invocations.Where(i => i.Arguments.Contains("prune")).ToList();
+        Assert.Equal(2, pruned.Count);
+        Assert.Equal(["system", "prune", "-a", "--volumes", "--force"], pruned[0].Arguments);
+        Assert.Equal(["builder", "prune", "--all", "--force"], pruned[1].Arguments);
     }
 
     [Fact]

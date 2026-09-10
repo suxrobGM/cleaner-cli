@@ -1,4 +1,4 @@
-using Cleaner.Cli.Rendering;
+﻿using Cleaner.Cli.Rendering;
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Utils;
 using Spectre.Console;
@@ -111,7 +111,7 @@ public sealed partial class CleanerApp
         {
             var commandBased = rows.Count(r => r.CommandBased);
             var note = commandBased > 0
-                ? $" {commandBased} command-based cleaner(s) report their size only after running."
+                ? $" {commandBased} cleaner(s) could not be measured up front and report their size after running."
                 : string.Empty;
             renderer.Line(
                 $"[grey]Preview only — would free [bold]{SizeFormatter.Humanize(scannedTotal)}[/]. Nothing was deleted.{note}[/]");

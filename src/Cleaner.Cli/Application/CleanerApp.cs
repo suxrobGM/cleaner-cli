@@ -28,12 +28,21 @@ public sealed partial class CleanerApp(
         return 0;
     }
 
-    /// <summary>Flag rows whose cleaner can't pre-measure but would still run a command.</summary>
+    /// <summary>
+    /// Flag rows that came back without a size but would still act — a cleaner with no measurable
+    /// targets whose own tool could not tell it what it holds. Rows that did report a size are not
+    /// flagged, even when the number came from a command.
+    /// </summary>
     private static IReadOnlyList<ScanRow> MarkCommandBased(IReadOnlyList<ScanRow> rows, CleanupContext context) =>
         [.. rows.Select(r => MarkCommandBased(r, context))];
 
     private static ScanRow MarkCommandBased(ScanRow row, CleanupContext context) =>
-        row with { CommandBased = !row.Cleaner.SupportsSizeEstimate && row.Cleaner.IsAvailable(context) };
+        row with
+        {
+            CommandBased = !row.Cleaner.SupportsSizeEstimate
+                && row.Result.TotalBytes == 0
+                && row.Cleaner.IsAvailable(context),
+        };
 
     private Task<ScanResult> SafeScanAsync(ICleaner cleaner, CleanupContext context, CancellationToken cancellationToken) =>
         CleanerRunner.SafeScanAsync(cleaner, context, logger, cancellationToken);

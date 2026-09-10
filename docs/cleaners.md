@@ -19,8 +19,11 @@ Cleaners honor the usual cache-relocation environment variables (`NUGET_PACKAGES
 `UV_CACHE_DIR`, `CONAN_HOME`, `PUB_CACHE`, and friends) — a relocated cache is scanned and cleaned
 where the tool actually keeps it.
 
-Command-based cleaners (`docker`, `podman`, `winsxs`, `dnf`, …) can't estimate their size up front;
-the preview shows them as *n/a (runs command)* and reports the space after they run. Cleaners marked
+Some cleaners own nothing the host can measure, because an external tool holds the space. Where that
+tool can be asked, they ask it: `docker` and `docker-vhdx` read `docker system df`, and `winsxs` runs
+`DISM /AnalyzeComponentStore`, which is what makes a scan including it take about a minute longer.
+When the tool can't answer — the Docker daemon is down, DISM isn't elevated, the output isn't in
+English — the preview shows *n/a (unknown until it runs)* and the size is reported after the run. Cleaners marked
 **asks again** have a real trade-off beyond "cache is re-downloaded", so they print that trade-off
 and take their own yes/no before the run-wide confirmation.
 
@@ -130,7 +133,7 @@ and take their own yes/no before the run-wide confirmation.
 | Id | Removes |
 | --- | --- |
 | `docker` | Stopped containers, unused networks, every unreferenced image, all build cache, and unused **named volumes** (`docker system prune -a --volumes` + `docker builder prune -a`) — that can delete data such as database volumes. On Docker Desktop/WSL2 this frees space inside the virtual disk; compact the `.vhdx` separately to shrink the host file. |
-| `docker-vhdx` | Compacts Docker Desktop's WSL2 virtual disks in place. `docker` frees space *inside* the disk; the host `.vhdx` only ever grows, so it stays huge long after the images are gone. Shuts WSL down, then compacts with `diskpart`. Deletes nothing, and **asks again** first. | Windows · needs admin |
+| `docker-vhdx` | Compacts Docker Desktop's WSL2 virtual disks in place. `docker` frees space *inside* the disk; the host `.vhdx` only ever grows, so it stays huge long after the images are gone. Shuts WSL down, then compacts with `diskpart`. Deletes nothing, and **asks again** first. The preview estimates the gap between the disk on the host and the bytes Docker says it holds, so prune first for an accurate figure. | Windows · needs admin |
 | `terraform` | Terraform provider plugin cache. |
 | `podman` | `podman system prune -a --volumes` (same caveats as docker). |
 | `helm` | Helm chart repository cache (honors `HELM_REPOSITORY_CACHE`). |
@@ -200,7 +203,7 @@ and take their own yes/no before the run-wide confirmation.
 | `gpu-installers` | GPU driver installer leftovers: `C:\NVIDIA`, `C:\AMD`, `C:\Intel` extraction folders, NVIDIA's download cache, the NVIDIA app's update staging and logs, and the NGX (DLSS) model store. Never touches DriverStore, `Installer2`, or installed drivers. | Windows · needs admin |
 | `amd-telemetry` | AMD driver usage logs under `ProgramData\AMD\PPC` (`sdkusage.csv` and friends, plus the upload staging folders). They are append-only and never rotated, so they reach several GB. `config.csv` is kept. | Windows |
 | `winre-agent` | `C:\$WinREAgent`, the scratch folder Windows Setup uses during a feature update and routinely leaves behind. | Windows · needs admin |
-| `winsxs` | Superseded Windows component-store versions (`DISM /StartComponentCleanup`; no `/ResetBase`, so updates stay uninstallable). Slow (minutes) but often the largest Windows reclaim. | Windows · needs admin |
+| `winsxs` | Superseded Windows component-store versions (`DISM /StartComponentCleanup`; no `/ResetBase`, so updates stay uninstallable). Sized from `DISM /AnalyzeComponentStore`, counting backups, disabled features, and servicing scratch — never the components shared with the running system. Slow (minutes) but often the largest Windows reclaim. | Windows · needs admin |
 | `ngen-cache` | The .NET Framework native image cache (`NativeImages_v*` under `C:\Windows\assembly`). Rebuilt lazily by the NGEN maintenance task, so Framework apps start slower until it catches up — it **asks again**. The GAC itself is never touched. | Windows · needs admin |
 | `windows-installer-orphans` | Cached `.msi`/`.msp` packages in `C:\Windows\Installer` that no installed product or patch still references. The live set is read from the Installer's `UserData` registry key; if that read fails or comes back empty the cleaner does nothing, rather than treating the whole cache as garbage. **Asks again** before running. | Windows · needs admin |
 | `windows-old` | The previous Windows installation (`C:\Windows.old`). Deleting it removes the ability to roll back the last upgrade. | Windows · needs admin · **asks again** |

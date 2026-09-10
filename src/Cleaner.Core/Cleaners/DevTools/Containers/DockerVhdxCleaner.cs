@@ -1,4 +1,4 @@
-using Cleaner.Core.Abstractions;
+﻿using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
@@ -23,8 +23,8 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
     public override bool RequiresElevation => true;
 
-    // The reclaimable amount is the disk's internal free space, which can't be read from the host,
-    // so no targets are declared and nothing is reported until after compacting.
+    // The disk's internal free space can't be read from the host, so the estimate is inferred from
+    // what Docker says it is holding; without the daemon there is no number until the disk shrinks.
     public override bool SupportsSizeEstimate => false;
 
     public override string ConfirmationWarning =>
@@ -32,6 +32,33 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
         "'docker system prune' beforehand so the space being compacted away is actually free";
 
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
+
+    /// <summary>
+    /// Estimate the compaction as the gap between the disks on the host and the bytes Docker says it
+    /// is holding inside them: the disk file only ever grows, so that gap is the slack compacting
+    /// gives back. It is an estimate — filesystem overhead inside the disk is counted as slack — and
+    /// it needs the daemon, so without it the cleaner reports nothing rather than guessing.
+    /// </summary>
+    public override async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
+    {
+        var disks = VirtualDisks(context).ToList();
+        if (disks.Count == 0)
+        {
+            return ScanResult.Empty;
+        }
+
+        var usage = await DockerDiskUsage.QueryAsync(context, cancellationToken).ConfigureAwait(false);
+        if (usage.Used == 0)
+        {
+            return ScanResult.Empty;
+        }
+
+        var onHost = disks.Sum(context.FileSystem.GetFileSize);
+        var slack = Math.Max(0, onHost - usage.Used);
+        return slack > 0
+            ? new ScanResult([new CleanupTarget(disks[0], slack, "estimated slack in the Docker virtual disk")])
+            : ScanResult.Empty;
+    }
 
     public override async Task<CleanResult> CleanAsync(
         CleanupContext context,
