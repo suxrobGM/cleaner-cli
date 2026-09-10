@@ -38,7 +38,7 @@ public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        var root = AppDataRoot(env);
+        var root = OsPaths.AppDataRoot(env);
         foreach (var (label, segments) in Apps)
         {
             var appRoot = Path.Combine([root, .. segments]);
@@ -61,18 +61,5 @@ public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
                 yield return path;
             }
         }
-    }
-
-    /// <summary>Where Electron apps keep per-user data: %APPDATA% on Windows, the usual roots elsewhere.</summary>
-    private static string AppDataRoot(IEnvironmentService env)
-    {
-        if (env.IsWindows)
-        {
-            return env.AppDataDirectory;
-        }
-
-        return env.IsMacOs
-            ? Path.Combine(env.HomeDirectory, "Library", "Application Support")
-            : Path.Combine(env.HomeDirectory, ".config");
     }
 }

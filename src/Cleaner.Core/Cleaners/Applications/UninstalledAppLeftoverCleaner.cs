@@ -56,8 +56,14 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
     {
         var local = env.LocalAppDataDirectory;
         var roaming = env.AppDataDirectory;
-        var programFiles = OsPaths.Env(env, "ProgramFiles") ?? @"C:\Program Files";
-        var programFilesX86 = OsPaths.Env(env, "ProgramFiles(x86)") ?? @"C:\Program Files (x86)";
+        // Without the install roots there is no way to tell an uninstalled app from an installed
+        // one, and the markers would silently pass — offer nothing rather than guess.
+        if (OsPaths.ProgramFiles(env) is not { } programFiles
+            || OsPaths.ProgramFiles(env, x86: true) is not { } programFilesX86)
+        {
+            yield break;
+        }
+
 
         // Claude Desktop. Deliberately excludes ~/.claude, %LOCALAPPDATA%\claude-cli-nodejs and
         // %LOCALAPPDATA%\ClaudeCodeExtension: those belong to Claude Code (the CLI and the editor

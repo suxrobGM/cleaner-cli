@@ -19,12 +19,7 @@ public sealed class ClaudeDesktopCleaner : DirectoryCleanerBase
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
-        var env = context.Environment;
-        var root = env.IsWindows
-            ? Path.Combine(env.AppDataDirectory, "Claude")
-            : env.IsMacOs
-                ? Path.Combine(env.HomeDirectory, "Library", "Application Support", "Claude")
-                : env.HomePath(".config", "Claude");
+        var root = OsPaths.AppData(context.Environment, "Claude", "Claude", "Claude");
 
         yield return new CleanupPath(Path.Combine(root, "vm_bundles"), Description: "agent VM bundle");
         yield return new CleanupPath(Path.Combine(root, "claude-code-vm"), Description: "agent VM state");

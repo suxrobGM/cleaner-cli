@@ -21,7 +21,7 @@ public sealed class AmdTelemetryCleaner : WindowsCleanerBase
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
-        var root = ProgramDataPath(context, "AMD", "PPC");
+        var root = OsPaths.ProgramData(context.Environment, "AMD", "PPC");
         if (root is null)
         {
             yield break;

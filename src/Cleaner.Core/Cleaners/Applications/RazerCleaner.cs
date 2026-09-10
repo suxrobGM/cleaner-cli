@@ -1,6 +1,5 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
-using Cleaner.Core.Cleaners.Os;
 
 namespace Cleaner.Core.Cleaners.Applications;
 
@@ -9,7 +8,7 @@ namespace Cleaner.Core.Cleaners.Applications;
 /// session and is never pruned, so it grows without bound; Cortex recreates it empty. Game library
 /// config, macros, and Synapse device profiles are untouched.
 /// </summary>
-public sealed class RazerCleaner : WindowsCleanerBase
+public sealed class RazerCleaner : DirectoryCleanerBase
 {
     public override string Id => "razer";
 
@@ -17,9 +16,11 @@ public sealed class RazerCleaner : WindowsCleanerBase
 
     public override string Category => Categories.Applications;
 
+    public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
+
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
-        var cortex = ProgramDataPath(context, "Razer", "RazerCortex");
+        var cortex = OsPaths.ProgramData(context.Environment, "Razer", "RazerCortex");
         if (cortex is null)
         {
             yield break;

@@ -31,11 +31,7 @@ public sealed class VsCodeCleaner : DirectoryCleanerBase
         var env = context.Environment;
         foreach (var app in AppFolders)
         {
-            var userRoot = env.IsWindows
-                ? Path.Combine(env.AppDataDirectory, app)
-                : env.IsMacOs
-                    ? Path.Combine(env.HomeDirectory, "Library", "Application Support", app)
-                    : Path.Combine(env.HomeDirectory, ".config", app);
+            var userRoot = OsPaths.AppData(env, app, app, app);
 
             foreach (var sub in CacheSubdirectories)
             {

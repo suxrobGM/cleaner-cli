@@ -33,7 +33,12 @@ public sealed class GpuInstallerLeftoverCleaner : WindowsCleanerBase
         yield return new CleanupPath(
             OsPaths.FromWindowsDriveRoot(windows, "Intel"), Description: "Intel installer extraction");
 
-        var programData = OsPaths.Env(env, "ProgramData") ?? OsPaths.FromWindowsDriveRoot(windows, "ProgramData");
+        var programData = OsPaths.ProgramData(env);
+        if (programData is null)
+        {
+            yield break;
+        }
+
         yield return new CleanupPath(
             Path.Combine(programData, "NVIDIA Corporation", "Downloader"),
             DeleteMode.ClearContents,
