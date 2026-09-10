@@ -11,6 +11,27 @@ whole thing compiles cleanly to Native AOT.
   Spectre.Console rendering, and parses the handful of flags with System.CommandLine.
 - **`Cleaner.Core.Tests`** — xUnit tests that run cleaners against an in-memory filesystem fake.
 
+## Where cleaners live
+
+`Cleaner.Core/Cleaners` is split into three areas, each one namespace: `Applications` for desktop
+apps, `DevTools` for developer tooling, and `Os` for the operating system. Folders below an area
+group by domain and do not add namespace segments, so moving a cleaner between them is a file move
+and nothing else.
+
+```
+Cleaners/
+  Base/                 DirectoryCleanerBase, ProcessCleanerBase, and the shared path helpers
+  Applications/         Steam, Spotify, Electron apps, uninstalled-app leftovers
+  DevTools/             one folder per ecosystem: Python, Rust, JavaScript, Jvm, Cpp, Ruby, …
+                        plus Containers, Kubernetes, Infrastructure, Ides, BuildCaches,
+                        VersionManagers, ToolingDownloads, MachineLearning, Mobile, GameDev
+  Os/                   Windows, MacOs, Linux, and CrossPlatform
+```
+
+`Languages` is the home for ecosystems with a single cleaner; once a second one arrives it earns its
+own folder. The folder a cleaner sits in is for people reading the code — the `Category` it declares
+is what groups it in the menu, and the two are deliberately independent.
+
 ## The cleaner model
 
 Every cache target implements **`ICleaner`**:

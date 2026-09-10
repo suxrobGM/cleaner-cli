@@ -18,8 +18,9 @@ Most cleaners are a dozen lines. Say we want to clean a fictional tool `foo` who
 
 ### 1. Write the class
 
-Create it under `src/Cleaner.Core/Cleaners/` deriving from `DirectoryCleanerBase`. Resolve paths
-through the injected `IEnvironmentService` — never hard-code OS paths.
+Create it under `src/Cleaner.Core/Cleaners/` deriving from `DirectoryCleanerBase`, in the folder
+for its ecosystem (see [architecture.md](architecture.md) for the layout). Resolve paths through the
+injected `IEnvironmentService` — never hard-code OS paths.
 
 ```csharp
 using Cleaner.Core.Abstractions;
