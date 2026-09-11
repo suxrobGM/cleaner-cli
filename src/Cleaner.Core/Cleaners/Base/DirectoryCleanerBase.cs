@@ -1,4 +1,5 @@
 using Cleaner.Core.Abstractions;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.Base;
 
@@ -18,6 +19,13 @@ public abstract class DirectoryCleanerBase : ICleaner
 
     /// <inheritdoc cref="ICleaner.SupportsSizeEstimate"/>
     public virtual bool SupportsSizeEstimate => true;
+
+    /// <inheritdoc cref="ICleaner.SupportsPartialSelection"/>
+    /// <remarks>
+    /// True because <see cref="CleanAsync"/> deletes exactly what <see cref="ScanAsync"/> reported.
+    /// An override that reaches past those targets must say so by returning false.
+    /// </remarks>
+    public virtual bool SupportsPartialSelection => true;
 
     /// <inheritdoc cref="ICleaner.ConfirmationWarning"/>
     public virtual string? ConfirmationWarning => null;
@@ -126,9 +134,7 @@ public abstract class DirectoryCleanerBase : ICleaner
 
     private static IEnumerable<CleanupPath> Existing(CleanupContext context, IEnumerable<CleanupPath> candidates)
     {
-        // Linux paths are case-sensitive; Windows and (default) macOS volumes are not.
-        var comparer = context.Environment.IsLinux ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
-        var seen = new HashSet<string>(comparer);
+        var seen = new HashSet<string>(PathComparison.ComparerFor(context.Environment.IsLinux));
         foreach (var path in candidates)
         {
             if (string.IsNullOrWhiteSpace(path.Path))
@@ -136,9 +142,14 @@ public abstract class DirectoryCleanerBase : ICleaner
                 continue;
             }
 
+            if (!PathComparison.IsSelected(context.SelectedPaths, path.Path))
+            {
+                continue;
+            }
+
             // Normalize separators so the same directory spelled two ways de-dupes, and check
             // existence first so a nonexistent candidate doesn't shadow a real one it aliases.
-            var key = path.Path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            var key = PathComparison.Normalize(path.Path);
             if (Exists(context, path) && seen.Add(key))
             {
                 yield return path;

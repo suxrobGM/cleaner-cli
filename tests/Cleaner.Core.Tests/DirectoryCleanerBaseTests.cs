@@ -1,6 +1,7 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 using Cleaner.Core.Tests.Fakes;
+using Cleaner.Core.Utils;
 using Xunit;
 
 namespace Cleaner.Core.Tests;
@@ -72,6 +73,75 @@ public sealed class DirectoryCleanerBaseTests
     }
 
     [Fact]
+    public async Task Clean_without_a_selection_deletes_every_target()
+    {
+        var fs = ThreeCaches();
+        var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"), new CleanupPath("/c"));
+
+        var result = await cleaner.CleanAsync(TestContext.Create(fs));
+
+        Assert.Equal(3, result.ItemsRemoved);
+        Assert.Equal(60, result.BytesFreed);
+    }
+
+    [Fact]
+    public async Task Clean_deletes_only_the_selected_folders()
+    {
+        var fs = ThreeCaches();
+        var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"), new CleanupPath("/c"));
+        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet(["/b"], isLinux: false));
+
+        var result = await cleaner.CleanAsync(context);
+
+        Assert.Equal(1, result.ItemsRemoved);
+        Assert.Equal(20, result.BytesFreed);
+        Assert.True(fs.DirectoryExists("/a"));
+        Assert.False(fs.DirectoryExists("/b"));
+        Assert.True(fs.DirectoryExists("/c"));
+    }
+
+    [Fact]
+    public async Task Clean_with_an_empty_selection_deletes_nothing()
+    {
+        var fs = ThreeCaches();
+        var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"));
+        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet([], isLinux: false));
+
+        var result = await cleaner.CleanAsync(context);
+
+        Assert.Equal(0, result.ItemsRemoved);
+        Assert.False(result.HasErrors);
+        Assert.True(fs.DirectoryExists("/a"));
+    }
+
+    [Fact]
+    public async Task Selection_matches_a_folder_spelled_with_either_separator()
+    {
+        var fs = ThreeCaches();
+        var target = $"{Path.DirectorySeparatorChar}a";
+        var selected = $"{Path.AltDirectorySeparatorChar}a";
+        var cleaner = new TestCleaner(new CleanupPath(target));
+        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet([selected], isLinux: false));
+
+        var result = await cleaner.CleanAsync(context);
+
+        Assert.Equal(1, result.ItemsRemoved);
+    }
+
+    [Fact]
+    public async Task Scan_reports_only_the_selected_folders()
+    {
+        var fs = ThreeCaches();
+        var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"), new CleanupPath("/c"));
+        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet(["/a", "/c"], isLinux: false));
+
+        var result = await cleaner.ScanAsync(context);
+
+        Assert.Equal(2, result.ItemCount);
+        Assert.Equal(40, result.TotalBytes);
+    }
+
+    [Fact]
     public async Task Clean_captures_errors_and_continues()
     {
         var fs = new FakeFileSystem().AddFile("/bad/a.bin", 100).AddFile("/good/b.bin", 30);
@@ -85,4 +155,9 @@ public sealed class DirectoryCleanerBaseTests
         Assert.True(fs.DirectoryExists("/bad"));
         Assert.False(fs.DirectoryExists("/good"));
     }
+
+    private static FakeFileSystem ThreeCaches() => new FakeFileSystem()
+        .AddFile("/a/x.bin", 10)
+        .AddFile("/b/x.bin", 20)
+        .AddFile("/c/x.bin", 30);
 }

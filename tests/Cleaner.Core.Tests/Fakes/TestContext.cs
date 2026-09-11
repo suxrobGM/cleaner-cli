@@ -10,7 +10,8 @@ public static class TestContext
         FakeProcessRunner? processRunner = null,
         bool dryRun = false,
         string? workingDirectory = null,
-        IReadOnlyList<string>? scanRoots = null) => new()
+        IReadOnlyList<string>? scanRoots = null,
+        IReadOnlySet<string>? selectedPaths = null) => new()
         {
             FileSystem = fileSystem ?? new FakeFileSystem(),
             Environment = environment ?? new FakeEnvironment(),
@@ -18,5 +19,6 @@ public static class TestContext
             DryRun = dryRun,
             WorkingDirectory = workingDirectory ?? "/work",
             ScanRoots = scanRoots ?? [],
+            SelectedPaths = selectedPaths,
         };
 }

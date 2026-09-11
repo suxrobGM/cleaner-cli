@@ -20,6 +20,13 @@ public interface ICleaner
     /// </summary>
     bool SupportsSizeEstimate => true;
 
+    /// <summary>
+    /// Whether the cleanup acts on exactly the targets a scan reported, so the user can keep some
+    /// and drop the rest. False for cleaners that hand the whole job to a tool with no way to say
+    /// which folders to spare.
+    /// </summary>
+    bool SupportsPartialSelection => true;
+
     /// <summary>Optional warning shown before running a potentially costly cleanup.</summary>
     string? ConfirmationWarning => null;
 

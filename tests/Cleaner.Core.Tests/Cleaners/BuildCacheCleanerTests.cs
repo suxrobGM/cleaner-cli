@@ -1,11 +1,32 @@
 using Cleaner.Core.Cleaners.DevTools;
 using Cleaner.Core.Tests.Fakes;
+using Cleaner.Core.Utils;
 using Xunit;
 
 namespace Cleaner.Core.Tests;
 
 public sealed class BuildCacheCleanerTests
 {
+    [Fact]
+    public async Task BuildArtifactCleaner_sweeps_only_the_selected_folders()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/r/keep/node_modules/pkg/index.js", 100)
+            .AddFile("/r/drop/node_modules/pkg/index.js", 200)
+            .AddFile("/r/drop/dist/bundle.js", 40);
+        var selected = PathComparison.CreateSet(
+            ["/r/drop/node_modules", "/r/drop/dist"],
+            isLinux: false);
+        var context = TestContext.Create(fs, scanRoots: ["/r"], selectedPaths: selected);
+
+        var result = await new BuildArtifactCleaner().CleanAsync(context);
+
+        Assert.Equal(240, result.BytesFreed);
+        Assert.True(fs.DirectoryExists("/r/keep/node_modules"));
+        Assert.False(fs.DirectoryExists("/r/drop/node_modules"));
+        Assert.False(fs.DirectoryExists("/r/drop/dist"));
+    }
+
     [Fact]
     public async Task BuildArtifactCleaner_collects_matches_without_descending()
     {

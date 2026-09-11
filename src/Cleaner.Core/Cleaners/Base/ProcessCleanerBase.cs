@@ -29,12 +29,17 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
     public override bool IsAvailable(CleanupContext context) =>
         context.ProcessRunner.Exists(Executable) || base.IsAvailable(context);
 
+    /// <summary>The tool clears its own cache wholesale; it takes no list of folders to spare.</summary>
+    public override bool SupportsPartialSelection => false;
+
     public override async Task<CleanResult> CleanAsync(
         CleanupContext context,
         IProgress<CleanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        if (context.DryRun || !context.ProcessRunner.Exists(Executable))
+        // A partial selection makes the bulk command the wrong tool: it clears the whole cache,
+        // including the folders the user kept. Direct deletion is what honors the picks.
+        if (context.DryRun || context.SelectedPaths is not null || !context.ProcessRunner.Exists(Executable))
         {
             return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
         }

@@ -2,6 +2,7 @@ using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 using Cleaner.Core.Services;
 using Cleaner.Core.Tests.Fakes;
+using Cleaner.Core.Utils;
 using Xunit;
 
 namespace Cleaner.Core.Tests;
@@ -51,6 +52,37 @@ public sealed class ProcessCleanerBaseTests
         Assert.Empty(runner.Invocations);
         Assert.Equal(200, result.BytesFreed);
         Assert.False(fs.DirectoryExists("/cache"));
+    }
+
+    [Fact]
+    public void Command_driven_cleaners_do_not_offer_partial_selection()
+    {
+        Assert.False(new TestProcessCleaner("tool").SupportsPartialSelection);
+    }
+
+    [Fact]
+    public async Task Selection_deletes_directly_instead_of_clearing_the_whole_cache()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/cache/keep/a.bin", 200)
+            .AddFile("/cache/drop/b.bin", 50);
+        var runner = new FakeProcessRunner().WithAvailable("tool");
+        var cleaner = new TestProcessCleaner(
+            "tool",
+            new CleanupPath("/cache/keep"),
+            new CleanupPath("/cache/drop"));
+        var context = TestContext.Create(
+            fs,
+            processRunner: runner,
+            selectedPaths: PathComparison.CreateSet(["/cache/drop"], isLinux: false));
+
+        var result = await cleaner.CleanAsync(context);
+
+        // The tool clears everything, so a partial pick must not reach it.
+        Assert.Empty(runner.Invocations);
+        Assert.Equal(50, result.BytesFreed);
+        Assert.True(fs.DirectoryExists("/cache/keep"));
+        Assert.False(fs.DirectoryExists("/cache/drop"));
     }
 
     [Fact]

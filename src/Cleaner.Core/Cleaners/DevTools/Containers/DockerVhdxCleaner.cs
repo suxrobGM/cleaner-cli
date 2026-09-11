@@ -22,6 +22,9 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
     public override bool SupportsSizeEstimate => false;
 
+    /// <summary>Compacts every virtual disk it finds, not the single estimate row a scan reports.</summary>
+    public override bool SupportsPartialSelection => false;
+
     public override string ConfirmationWarning =>
         "this shuts down WSL and every container with it — quit Docker Desktop first, and run " +
         "'docker system prune' beforehand so the space being compacted away is actually free";

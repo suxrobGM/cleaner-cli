@@ -17,6 +17,9 @@ public sealed class CleanupContext
     /// <summary>Base directory for project-local sweeps (bin/obj, node_modules, ...). Defaults to cwd.</summary>
     public string WorkingDirectory { get; init; } = System.Environment.CurrentDirectory;
 
+    /// <summary>Folders the user kept, keyed by <see cref="Utils.PathComparison"/>; null takes all.</summary>
+    public IReadOnlySet<string>? SelectedPaths { get; init; }
+
     /// <summary>Roots for workspace sweeps; defaults to <see cref="WorkingDirectory"/>.</summary>
     public IReadOnlyList<string> ScanRoots
     {
