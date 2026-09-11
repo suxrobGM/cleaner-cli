@@ -35,6 +35,9 @@ public interface IConsoleRenderer
     /// <summary>Show the multi-select menu grouped by category; returns the chosen cleaners.</summary>
     IReadOnlyList<ICleaner> PromptSelection(IReadOnlyList<ICleaner> choosable);
 
+    /// <summary>Untick individual scanned folders; returns the ones kept, or null if not asked.</summary>
+    IReadOnlyList<string>? PromptFolders(IReadOnlyList<ScanRow> rows);
+
     /// <summary>Run <paramref name="work"/> under a status spinner and return its result.</summary>
     Task<T> StatusAsync<T>(string status, Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken);
 

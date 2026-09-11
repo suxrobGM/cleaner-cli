@@ -13,6 +13,9 @@ the selection menu takes everything under it.
 Workspace sweepers (`build-artifacts`, `unity`) use repeatable `--path`/`-p <dir>` roots (default:
 the current directory), e.g. `cleaner -p ~/source -p ~/work`.
 
+A cleaner that finds more than one folder can be opened up after the scan to untick individual
+folders. Command-driven cleaners are all-or-nothing, so they are not offered.
+
 Cleaners honor the usual cache-relocation environment variables (`NUGET_PACKAGES`, `CARGO_HOME`,
 `GOMODCACHE`, `GRADLE_USER_HOME`, `npm_config_cache`, `YARN_CACHE_FOLDER`, `PIP_CACHE_DIR`,
 `UV_CACHE_DIR`, `CONAN_HOME`, `PUB_CACHE`, and friends) — a relocated cache is scanned and cleaned

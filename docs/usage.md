@@ -87,6 +87,14 @@ Point them at your code with `--path`, then select them:
 cleaner --path ./my-repo
 ```
 
+## Picking individual folders
+
+A sweep over a source tree can match hundreds of folders, and taking all of them means reinstalling
+dependencies for every project still in use. After the size table, a cleaner that found more than one
+folder can be opened up: say yes to the folder prompt and they are listed by name (`node_modules`,
+`.venv`, `.next`, ...) with their sizes. Everything starts ticked, so untick only what to keep.
+Decline and the run removes everything in the table, as before.
+
 ## Logs
 
 Cleaner logs runs, errors, and crashes to **`~/.cleaner/logs/cleaner.log`**.

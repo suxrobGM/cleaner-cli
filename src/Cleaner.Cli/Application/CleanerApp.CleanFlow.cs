@@ -108,12 +108,51 @@ public sealed partial class CleanerApp
             return 0;
         }
 
-        var selectedBytes = rows
-            .Where(r => actionable.Contains(r.Cleaner))
-            .Sum(r => r.Result.TotalBytes);
+        // Needs several folders to be worth a choice, and the cleaner must be one that acts on the
+        // folders it reported rather than handing the job to a tool that clears everything.
+        var expandable = rows
+            .Where(r => actionable.Contains(r.Cleaner) && r.Cleaner.SupportsPartialSelection && r.Result.Targets.Count > 1)
+            .ToList();
 
-        return await ConfirmAndCleanAsync(actionable, selectedBytes, context, cancellationToken);
+        var keptPaths = expandable.Count > 0
+            && renderer.Confirm("Pick individual folders before deleting? [grey](otherwise everything above is removed)[/]")
+                ? renderer.PromptFolders(expandable)
+                : null;
+
+        if (keptPaths is null)
+        {
+            var scannedBytes = rows.Where(r => actionable.Contains(r.Cleaner)).Sum(r => r.Result.TotalBytes);
+            return await ConfirmAndCleanAsync(actionable, scannedBytes, null, _ => context, cancellationToken);
+        }
+
+        var selectedPaths = PathComparison.CreateSet(keptPaths, environment.IsLinux);
+        var offered = expandable.Select(r => r.Cleaner).ToHashSet();
+
+        // Only the cleaners that were actually offered get a narrowed context, so everyone else
+        // keeps the one their scan measured against and is left exactly as the table promised.
+        var kept = rows
+            .Where(r => actionable.Contains(r.Cleaner))
+            .Where(r => !offered.Contains(r.Cleaner) || Kept(r, selectedPaths).Any())
+            .ToList();
+
+        if (kept.Count == 0)
+        {
+            renderer.Line("[grey]Nothing selected — nothing to do.[/]");
+            return 0;
+        }
+
+        var narrowed = contextFactory.Create(options, selectedPaths);
+        return await ConfirmAndCleanAsync(
+            [.. kept.Select(r => r.Cleaner)],
+            kept.Sum(r => offered.Contains(r.Cleaner) ? Kept(r, selectedPaths).Sum(t => t.Bytes) : r.Result.TotalBytes),
+            $"{keptPaths.Count} of {expandable.Sum(r => r.Result.Targets.Count)} folders",
+            c => offered.Contains(c) ? narrowed : context,
+            cancellationToken);
     }
+
+    /// <summary>The folders of a row that survived the user's picks.</summary>
+    private static IEnumerable<CleanupTarget> Kept(ScanRow row, IReadOnlySet<string> selectedPaths) =>
+        row.Result.Targets.Where(t => PathComparison.IsSelected(selectedPaths, t.Path));
 
     /// <summary>Partition the applicable cleaners into what can run now and what needs admin.</summary>
     private (List<ICleaner> Runnable, List<ICleaner> Blocked) Partition(IReadOnlyList<ICleaner> applicable)
@@ -164,19 +203,21 @@ public sealed partial class CleanerApp
     private async Task<int> ConfirmAndCleanAsync(
         IReadOnlyList<ICleaner> actionable,
         long total,
-        CleanupContext context,
+        string? scope,
+        Func<ICleaner, CleanupContext> contextFor,
         CancellationToken cancellationToken)
     {
+        var note = scope is null ? string.Empty : $" [grey]({scope})[/]";
         var prompt = total > 0
-            ? $"Delete [bold]{SizeFormatter.Humanize(total)}[/] across {actionable.Count} cleaner(s)?"
-            : $"Run {actionable.Count} cleaner(s)? (size is reported after running)";
+            ? $"Delete [bold]{SizeFormatter.Humanize(total)}[/] across {actionable.Count} cleaner(s){note}?"
+            : $"Run {actionable.Count} cleaner(s){note}? (size is reported after running)";
         if (!renderer.Confirm(prompt))
         {
             renderer.Line("[grey]Cancelled.[/]");
             return 0;
         }
 
-        var results = await renderer.CleanAsync(actionable, c => SafeCleanAsync(c, context, cancellationToken), cancellationToken);
+        var results = await renderer.CleanAsync(actionable, c => SafeCleanAsync(c, contextFor(c), cancellationToken), cancellationToken);
         renderer.CleanSummary(results);
 
         var freed = results.Sum(r => r.Result.BytesFreed);

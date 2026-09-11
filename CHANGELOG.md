@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Folders can be picked individually before deleting. A sweep over a source tree can match hundreds
+  of them, and taking all of them means reinstalling dependencies for every project still in use.
+  After the size table, a cleaner that found more than one folder can be opened up and its folders
+  listed by name with their sizes. Everything starts ticked, so untick only what to keep. Declining
+  leaves the run unchanged. Command-driven cleaners are not offered, since the tool decides.
+
 ## [1.2.3] - 2026-09-10
 
 ### Fixed

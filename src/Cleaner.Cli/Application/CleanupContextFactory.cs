@@ -9,12 +9,14 @@ public sealed class CleanupContextFactory(
     IEnvironmentService environment,
     IProcessRunner processRunner)
 {
-    public CleanupContext Create(RunOptions options) => new()
+    /// <param name="selectedPaths">Folders the user kept; null takes all.</param>
+    public CleanupContext Create(RunOptions options, IReadOnlySet<string>? selectedPaths = null) => new()
     {
         FileSystem = fileSystem,
         Environment = environment,
         ProcessRunner = processRunner,
         WorkingDirectory = options.WorkingDirectory,
         ScanRoots = options.ScanRoots,
+        SelectedPaths = selectedPaths,
     };
 }
