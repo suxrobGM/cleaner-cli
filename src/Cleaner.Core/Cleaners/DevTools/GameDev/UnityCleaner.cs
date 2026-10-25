@@ -48,17 +48,14 @@ public sealed class UnityCleaner : DirectoryCleanerBase
     private static IEnumerable<CleanupPath> ProjectCaches(CleanupContext context)
     {
         var fs = context.FileSystem;
-        var roots = ProjectRoots.Allowed(context);
 
         // A scan root may itself be a project; the search never enters artifact folders.
-        var projects = roots
+        var projects = ProjectRoots.Allowed(context)
             .Where(root => IsUnityProject(fs, root))
-            .Concat(DirectorySearch.Find(
-                fs,
-                roots,
+            .Concat(ProjectRoots.Search(
+                context,
                 dir => IsUnityProject(fs, dir),
-                dir => context.Guard.CanEnter(dir)
-                    && !ProjectArtifacts.Contains(PathComparison.Name(dir), StringComparer.OrdinalIgnoreCase)));
+                dir => !ProjectArtifacts.Contains(PathComparison.Name(dir), StringComparer.OrdinalIgnoreCase)));
 
         return projects.SelectMany(project =>
             ProjectArtifacts.Select(artifact => new CleanupPath(Path.Combine(project, artifact), Description: artifact)));

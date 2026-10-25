@@ -12,9 +12,28 @@ internal static class ProjectRoots
     public static IReadOnlyList<string> Allowed(CleanupContext context) =>
         [.. context.ScanRoots.Where(root => context.Guard.WhyNotProjectRoot(root) is null)];
 
-    /// <summary>Whether a single project folder (usually the working directory) may be searched.</summary>
-    public static bool IsAllowed(CleanupContext context, string root) =>
-        context.Guard.WhyNotProjectRoot(root) is null;
+    /// <summary>
+    /// A path inside the working directory, or null when the guard refuses the working directory as a
+    /// project (the profile, a drive root, a system folder).
+    /// </summary>
+    public static string? InWorkingDirectory(CleanupContext context, params string[] parts) =>
+        context.Guard.WhyNotProjectRoot(context.WorkingDirectory) is null
+            ? Path.Combine([context.WorkingDirectory, .. parts])
+            : null;
+
+    /// <summary>
+    /// Matching folders below the allowed scan roots. The search enters only folders the guard allows
+    /// and that <paramref name="canEnter"/> (when given) also allows.
+    /// </summary>
+    public static IEnumerable<string> Search(
+        CleanupContext context,
+        Func<string, bool> isMatch,
+        Func<string, bool>? canEnter = null) =>
+        DirectorySearch.Find(
+            context.FileSystem,
+            Allowed(context),
+            isMatch,
+            dir => context.Guard.CanEnter(dir) && (canEnter is null || canEnter(dir)));
 
     /// <summary>One note per refused root, naming the fix.</summary>
     public static IEnumerable<string> Refusals(CleanupContext context)

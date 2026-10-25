@@ -16,7 +16,5 @@ public sealed class ExpoCleaner : DirectoryCleanerBase
     public override string Category => Categories.Mobile;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        ProjectRoots.IsAllowed(context, context.WorkingDirectory)
-            ? [new CleanupPath(Path.Combine(context.WorkingDirectory, ".expo"), Description: "project cache")]
-            : [];
+        ProjectRoots.InWorkingDirectory(context, ".expo") is { } expo ? [new CleanupPath(expo, Description: "project cache")] : [];
 }

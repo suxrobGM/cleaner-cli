@@ -28,11 +28,7 @@ public sealed class BuildArtifactCleaner : DirectoryCleanerBase
         "the projects under the scanned folders; each project needs a rebuild or reinstall afterwards";
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        DirectorySearch.Find(
-                context.FileSystem,
-                ProjectRoots.Allowed(context),
-                dir => BuildOutput.Matches(context.FileSystem, dir),
-                context.Guard.CanEnter)
+        ProjectRoots.Search(context, dir => BuildOutput.Matches(context.FileSystem, dir))
             .Select(dir => new CleanupPath(dir, Description: PathComparison.Name(dir)));
 
     protected override IEnumerable<string> ScanNotes(CleanupContext context) => ProjectRoots.Refusals(context);
