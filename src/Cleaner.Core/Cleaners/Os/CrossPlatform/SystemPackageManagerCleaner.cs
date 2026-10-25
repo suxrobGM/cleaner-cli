@@ -4,12 +4,8 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>
-/// Configurable cleaner for system package managers (apt, dnf, pacman, brew, scoop, and choco).
-/// Instances provide their command and applicability from the composition root.
-/// </summary>
+/// <summary>A system package manager's cleanup command (apt, brew, scoop, ...), configured at registration.</summary>
 /// <param name="followUpArguments">Further commands run after <paramref name="cleanArguments"/>, in order.</param>
-/// <param name="confirmationWarning">Shown before the run when the cleanup has a trade-off.</param>
 public sealed class SystemPackageManagerCleaner(
     string id,
     string name,

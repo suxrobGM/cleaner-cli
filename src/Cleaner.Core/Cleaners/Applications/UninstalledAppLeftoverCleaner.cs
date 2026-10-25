@@ -4,18 +4,14 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Applications;
 
-/// <summary>
-/// Per-user profile directories left by uninstalled applications.
-/// </summary>
+/// <summary>Profile folders left behind by a fixed list of uninstalled apps.</summary>
 /// <remarks>
-/// Targets are curated and offered only when every sign of an install is absent: the install
-/// folders, an MSIX package, a PATH entry into the app's folders and, on Windows, an uninstall
-/// record in the registry. A failed or empty registry read is treated as unknown and offers nothing;
-/// broad AppData name-matching could remove data for live tools.
+/// An app's folders are offered only when every sign of an install is gone: install folders, MSIX
+/// package, PATH entry and, on Windows, an uninstall registry entry. A failed registry read offers
+/// nothing. The list is fixed because matching AppData by name could delete data of installed tools.
 /// </remarks>
 public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
 {
-    /// <summary>The uninstall keys an installed app registers its <c>DisplayName</c> under.</summary>
     private static readonly string[] UninstallKeys =
     [
         @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
@@ -28,9 +24,7 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
     /// <summary>Leftovers found for the current run context, so the clean does not query again.</summary>
     private (CleanupContext Context, IReadOnlyList<CleanupPath> Targets)? _leftovers;
 
-    /// <summary>
-    /// One app: how to tell it is installed, and what it leaves behind if it isn't.
-    /// </summary>
+    /// <summary>How to tell an app is installed, and what it leaves behind once it is not.</summary>
     /// <param name="InstallMarkers">Folders that exist only while the app is installed.</param>
     /// <param name="RegistryNames">Text any uninstall <c>DisplayName</c> of the app contains.</param>
     /// <param name="MsixPrefixes">Name prefixes of its MSIX package folders under <c>%LOCALAPPDATA%\Packages</c>.</param>
@@ -54,10 +48,7 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
     public override bool IsApplicable(CleanupContext context) =>
         context.Environment.IsWindows || context.Environment.IsMacOs;
 
-    /// <summary>
-    /// Relevant wherever an app looks uninstalled on disk and left data behind; whether the
-    /// registry agrees costs a scan, so it is asked only there.
-    /// </summary>
+    /// <summary>Checks the disk only; the slower registry check is left to the scan.</summary>
     public override bool IsAvailable(CleanupContext context) =>
         LooksUninstalled(context).Any(app => app.DataDirectories.Any(context.FileSystem.DirectoryExists));
 
@@ -146,8 +137,8 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
             .ToArray();
 
     /// <summary>
-    /// Whether <paramref name="path"/> is <paramref name="directory"/> or inside it. Compared with
-    /// both separators unified and case ignored, as on the Windows and macOS volumes this runs on.
+    /// Whether <paramref name="path"/> is <paramref name="directory"/> or inside it, ignoring case as
+    /// the Windows and macOS volumes this runs on do.
     /// </summary>
     private static bool IsWithin(string path, string directory)
     {
@@ -207,18 +198,15 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
     {
         var local = env.LocalAppDataDirectory;
         var roaming = env.AppDataDirectory;
-        // Without the install roots there is no way to tell an uninstalled app from an installed
-        // one, and the markers would silently pass — offer nothing rather than guess.
+        // Without the Program Files paths the install markers can't be checked, so offer nothing.
         if (OsPaths.ProgramFiles(env) is not { } programFiles
             || OsPaths.ProgramFiles(env, x86: true) is not { } programFilesX86)
         {
             yield break;
         }
 
-
-        // Claude Desktop. Deliberately excludes ~/.claude, %LOCALAPPDATA%\claude-cli-nodejs and
-        // %LOCALAPPDATA%\ClaudeCodeExtension: those belong to Claude Code (the CLI and the editor
-        // extension), a separate product that is often installed while the desktop app is not.
+        // Leaves out ~/.claude, %LOCALAPPDATA%\claude-cli-nodejs and %LOCALAPPDATA%\ClaudeCodeExtension:
+        // they belong to Claude Code, which is often installed without the desktop app.
         yield return new AppLeftovers(
             "Claude Desktop",
             [Path.Combine(local, "AnthropicClaude"), Path.Combine(local, "Programs", "Claude")],
@@ -226,8 +214,7 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
             ["Claude"],
             ["Claude_", "AnthropicPBC"]);
 
-        // Docker Desktop keeps its WSL2 virtual disk under %LOCALAPPDATA%\Docker; with the app gone
-        // that file is dead weight and is usually the largest leftover on a dev machine.
+        // %LOCALAPPDATA%\Docker holds the WSL2 disk image, usually the largest leftover on a dev machine.
         yield return new AppLeftovers(
             "Docker Desktop",
             [Path.Combine(programFiles, "Docker"), Path.Combine(local, "Docker Desktop")],

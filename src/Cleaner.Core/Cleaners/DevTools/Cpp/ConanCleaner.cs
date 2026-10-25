@@ -3,13 +3,12 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Conan (C/C++) cache via <c>conan cache clean "*"</c>: source, build, download, and temporary
-/// folders, rebuilt on the next install.
+/// Conan (C/C++) source, build, download, and temp folders via <c>conan cache clean "*"</c>; package
+/// binaries are kept.
 /// </summary>
 /// <remarks>
-/// Package binaries are kept: <c>conan remove</c> would also drop packages built locally or exported
-/// with <c>conan create</c>/<c>conan export</c>, which no remote can restore. Nothing is deleted
-/// directly, so the cleaner is offered only when <c>conan</c> is on PATH.
+/// <c>conan remove</c> is avoided because it also drops locally built or exported packages that no remote
+/// can restore. Nothing is deleted directly, so the cleaner needs <c>conan</c> on PATH.
 /// </remarks>
 public sealed class ConanCleaner : ProcessCleanerBase
 {
@@ -19,7 +18,7 @@ public sealed class ConanCleaner : ProcessCleanerBase
 
     public override string Category => Categories.Languages;
 
-    // Without declared directories the size is only knowable after the command runs.
+    // With no known directories, the size is only known after the command runs.
     public override bool SupportsSizeEstimate => false;
 
     protected override string Executable => "conan";

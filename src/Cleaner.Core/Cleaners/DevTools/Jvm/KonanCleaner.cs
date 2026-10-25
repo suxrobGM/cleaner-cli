@@ -4,9 +4,7 @@ using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>
-/// Kotlin/Native compiler, toolchain, and downloaded distribution caches. Builds re-fetch needed data.
-/// </summary>
+/// <summary>Kotlin/Native compiler cache, toolchain, and downloaded compilers (re-fetched by builds).</summary>
 public sealed class KonanCleaner : DirectoryCleanerBase
 {
     public override string Id => "konan";
@@ -21,7 +19,6 @@ public sealed class KonanCleaner : DirectoryCleanerBase
         yield return new CleanupPath(Path.Combine(root, "cache"), Description: "compiler cache");
         yield return new CleanupPath(Path.Combine(root, "dependencies"), Description: "toolchain dependencies");
 
-        // Downloaded compiler distributions (kotlin-native-prebuilt-*, kotlin-native-*) — re-fetched on demand.
         foreach (var dir in context.FileSystem.EnumerateDirectories(root))
         {
             if (PathComparison.Name(dir).StartsWith("kotlin-native-", StringComparison.OrdinalIgnoreCase))

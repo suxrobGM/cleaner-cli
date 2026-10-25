@@ -4,7 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>Temp directories of the built-in service accounts (LocalService, NetworkService). Needs elevation.</summary>
+/// <summary>Temp folders of the built-in LocalService and NetworkService accounts.</summary>
 public sealed class ServiceProfileTempCleaner : WindowsCleanerBase
 {
     private static readonly string[] ServiceAccounts = ["LocalService", "NetworkService"];

@@ -8,7 +8,6 @@ namespace Cleaner.Cli.Infrastructure;
 
 internal static partial class ServiceCollectionExtensions
 {
-    /// <summary>Registers system package managers and their platform-specific cache paths.</summary>
     private static void AddSystemPackageManagerCleaners(this IServiceCollection services)
     {
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(

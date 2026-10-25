@@ -4,7 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>Windows servicing and component logs (CBS, DISM, WindowsUpdate). Needs elevation.</summary>
+/// <summary>Windows servicing and component logs (CBS, DISM, WindowsUpdate).</summary>
 public sealed class WindowsLogCleaner : WindowsCleanerBase
 {
     public override string Id => "windows-logs";

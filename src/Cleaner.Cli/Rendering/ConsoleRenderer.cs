@@ -3,10 +3,7 @@ using Spectre.Console;
 
 namespace Cleaner.Cli.Rendering;
 
-/// <summary>
-/// The Spectre.Console implementation of <see cref="IConsoleRenderer"/>. The rest of it is split by
-/// concern into the <c>Tables</c>, <c>Prompts</c>, and <c>Progress</c> partials beside this file.
-/// </summary>
+/// <summary>Spectre.Console <see cref="IConsoleRenderer"/>, split into Tables, Prompts, and Progress files.</summary>
 public sealed partial class ConsoleRenderer(IAnsiConsole console) : IConsoleRenderer
 {
     public bool IsInteractive => console.Profile.Capabilities.Interactive;

@@ -6,7 +6,7 @@ namespace Cleaner.Core.Services;
 /// <inheritdoc cref="IGitHubReleaseClient"/>
 public sealed class GitHubReleaseClient : IGitHubReleaseClient, IDisposable
 {
-    // The repository whose releases drive auto-update. Must match the real remote.
+    // Releases from this repository drive self-update; it must match the real remote.
     private const string Owner = "suxrobGM";
     private const string Repo = "cleaner-cli";
 
@@ -19,7 +19,7 @@ public sealed class GitHubReleaseClient : IGitHubReleaseClient, IDisposable
     {
     }
 
-    /// <summary>Test/seam constructor — lets callers inject a pre-configured <see cref="HttpClient"/>.</summary>
+    /// <summary>Lets tests supply their own <see cref="HttpClient"/>.</summary>
     public GitHubReleaseClient(HttpClient httpClient)
     {
         http = httpClient;
@@ -35,7 +35,7 @@ public sealed class GitHubReleaseClient : IGitHubReleaseClient, IDisposable
         using var response = await http.GetAsync(url, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            // 404 simply means no published release yet; treat any non-success as "nothing to offer".
+            // 404 means nothing is published yet; any failure means there is no update to offer.
             return null;
         }
 

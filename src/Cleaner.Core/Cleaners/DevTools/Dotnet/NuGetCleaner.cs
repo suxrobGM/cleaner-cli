@@ -3,10 +3,7 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>
-/// Clears NuGet caches. Prefers <c>dotnet nuget locals all --clear</c> when the .NET SDK is present;
-/// otherwise deletes the cache directories directly.
-/// </summary>
+/// <summary>NuGet caches. Prefers <c>dotnet nuget locals all --clear</c> when the .NET SDK is installed.</summary>
 public sealed class NuGetCleaner : ProcessCleanerBase
 {
     public override string Id => "nuget";
@@ -23,7 +20,7 @@ public sealed class NuGetCleaner : ProcessCleanerBase
     {
         var env = context.Environment;
 
-        // global-packages — the big one, same location on every OS unless NUGET_PACKAGES moves it.
+        // global-packages is the same on every OS unless NUGET_PACKAGES moves it.
         yield return new CleanupPath(
             OsPaths.Env(env, "NUGET_PACKAGES") ?? env.HomePath(".nuget", "packages"),
             Description: "global-packages");

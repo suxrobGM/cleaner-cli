@@ -4,10 +4,7 @@ namespace Cleaner.Core.Tests.Fakes;
 
 public static class CleanerTestExtensions
 {
-    /// <summary>
-    /// Scan, then clean everything the scan reported, the way the app runs a fully approved plan.
-    /// Keeps tests that only care about the end state short.
-    /// </summary>
+    /// <summary>Scans, then cleans everything the scan reported, like a fully approved plan.</summary>
     public static async Task<CleanResult> CleanAsync(this ICleaner cleaner, CleanupContext context)
     {
         var scan = await cleaner.ScanAsync(context);

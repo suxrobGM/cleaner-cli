@@ -5,12 +5,12 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
-/// Clears Chromium HTTP/GPU/shader caches for known Electron apps. Only cache subdirectories are
-/// targeted; configuration, logs, and local storage remain untouched.
+/// Chromium HTTP, GPU, and shader caches of known Electron apps. Configuration, logs, and local
+/// storage are kept.
 /// </summary>
 public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
 {
-    /// <summary>Folder name segments of each known app, relative to the per-OS app-data root.</summary>
+    /// <summary>App folders relative to the per-OS app-data root.</summary>
     private static readonly (string Label, string[] Segments)[] Apps =
     [
         ("Discord", ["discord"]),
@@ -47,9 +47,8 @@ public sealed class ElectronAppCacheCleaner : DirectoryCleanerBase
             }
         }
 
-        // New Microsoft Teams (the Store/WebView2 app) keeps its Chromium caches inside its
-        // package's EBWebView profile rather than under %APPDATA%; the classic Teams entry in
-        // the table above covers the old Electron client.
+        // New Teams (the Store/WebView2 app) keeps its caches in its package's EBWebView profile,
+        // not under %APPDATA%; the Teams entry above covers the classic Electron client.
         if (env.IsWindows)
         {
             var webView = Path.Combine(

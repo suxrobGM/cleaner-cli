@@ -3,9 +3,7 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>
-/// pre-commit hook environment cache (rebuilt on the next run). Prefers <c>pre-commit clean</c>.
-/// </summary>
+/// <summary>pre-commit hook environments (rebuilt on the next run). Prefers <c>pre-commit clean</c>.</summary>
 public sealed class PreCommitCleaner : ProcessCleanerBase
 {
     public override string Id => "pre-commit";

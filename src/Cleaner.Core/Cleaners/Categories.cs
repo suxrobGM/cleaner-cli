@@ -1,13 +1,13 @@
 namespace Cleaner.Core.Cleaners;
 
-/// <summary>The three top-level buckets every category belongs to, for display and bulk selection.</summary>
+/// <summary>The top-level groups every category belongs to, for display and bulk selection.</summary>
 public static class CategoryGroups
 {
     public const string OperatingSystem = "Operating system";
     public const string Development = "Development tools";
     public const string Applications = "Applications";
 
-    /// <summary>Where a category lands when it is not part of the known layout.</summary>
+    /// <summary>The group for a category that isn't in the known layout.</summary>
     public const string Other = "Other";
 }
 
@@ -33,7 +33,7 @@ public static class Categories
     public const string ProjectLocal = "Project-local";
     public const string DesktopApps = "Desktop apps";
 
-    /// <summary>Categories in curated UI order, paired with their display groups.</summary>
+    /// <summary>Categories in curated display order, paired with their groups.</summary>
     private static readonly (string Group, string Category)[] Layout =
     [
         (CategoryGroups.OperatingSystem, SystemCaches),
@@ -56,10 +56,8 @@ public static class Categories
         (CategoryGroups.Applications, DesktopApps),
     ];
 
-    /// <summary>Every known category, in display order.</summary>
     public static IReadOnlyList<string> Ordered { get; } = [.. Layout.Select(l => l.Category)];
 
-    /// <summary>Every known group, in display order.</summary>
     public static IReadOnlyList<string> Groups { get; } =
         [.. Layout.Select(l => l.Group).Distinct(StringComparer.Ordinal)];
 
@@ -70,16 +68,12 @@ public static class Categories
         return rank < Layout.Length ? Layout[rank].Group : CategoryGroups.Other;
     }
 
-    /// <summary>
-    /// Sort key placing a category at its spot in <see cref="Ordered"/>. Unknown categories sort
-    /// last as a block, where an alphabetical tie-break keeps them stable.
-    /// </summary>
+    /// <summary>Sort key matching <see cref="Ordered"/>; unknown categories sort last.</summary>
     public static int RankOf(string category) => IndexOf(Ordered, category);
 
-    /// <summary>Sort key for a group, matching the order groups first appear in the layout.</summary>
+    /// <summary>Sort key matching <see cref="Groups"/>; unknown groups sort last.</summary>
     public static int RankOfGroup(string group) => IndexOf(Groups, group);
 
-    /// <summary>Position of a name in a display-order list, or last when it is not in there.</summary>
     private static int IndexOf(IReadOnlyList<string> names, string name)
     {
         for (var i = 0; i < names.Count; i++)

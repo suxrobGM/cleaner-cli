@@ -3,7 +3,7 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>Vacuums the systemd journal to a small size (Linux). Needs elevation.</summary>
+/// <summary>Vacuums the systemd journal to a small size (Linux).</summary>
 public sealed class JournalLogCleaner : ProcessCleanerBase
 {
     public override string Id => "journal";

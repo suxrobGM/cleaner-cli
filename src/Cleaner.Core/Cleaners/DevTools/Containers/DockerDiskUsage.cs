@@ -3,21 +3,14 @@ using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>
-/// Usage and reclaimable bytes reported by <c>docker system df</c>, used to size both Docker cleaners.
-/// </summary>
-/// <param name="Used">Bytes of images, containers, volumes and build cache Docker is holding.</param>
-/// <param name="Reclaimable">
-/// The part of <paramref name="Used"/> nothing references any more, excluding volumes: the prune
-/// keeps them, so their reclaimable bytes are not on offer.
-/// </param>
+/// <summary>Disk usage from <c>docker system df</c>, used to size both Docker cleaners.</summary>
+/// <param name="Used">Bytes held by images, containers, volumes, and build cache.</param>
+/// <param name="Reclaimable">Unreferenced bytes, excluding volumes because the prune keeps them.</param>
 internal readonly record struct DockerDiskUsage(long Used, long Reclaimable)
 {
     private static readonly TimeSpan QueryTimeout = TimeSpan.FromSeconds(15);
 
-    /// <summary>
-    /// Queries the daemon; null indicates a missing CLI, unavailable daemon, or invalid output.
-    /// </summary>
+    /// <summary>Returns null if the CLI is missing, the daemon is down, or the output is invalid.</summary>
     public static async Task<DockerDiskUsage?> QueryAsync(CleanupContext context, CancellationToken cancellationToken)
     {
         if (!context.ProcessRunner.Exists("docker"))

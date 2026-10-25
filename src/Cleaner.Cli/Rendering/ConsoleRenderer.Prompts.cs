@@ -54,7 +54,7 @@ public sealed partial class ConsoleRenderer
                 }
 
                 // Opt-in cleaners sit outside "All cleaners" so ticking everything never includes
-                // a sweep whose reach depends on where Cleaner was started.
+                // a cleaner whose reach depends on where Cleaner was started.
                 var optIn = choosable.Where(c => c.OptIn).ToList();
                 if (optIn.Count > 0)
                 {

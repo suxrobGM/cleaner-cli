@@ -51,8 +51,8 @@ internal static class OsPaths
     }
 
     /// <summary>
-    /// A path under <c>%ProgramData%</c>, or null when neither the variable nor the Windows
-    /// directory resolves. Falls back to the Windows drive root so a relocated install still works.
+    /// A path under <c>%ProgramData%</c>, falling back to the Windows drive when the variable is unset;
+    /// null when neither resolves.
     /// </summary>
     public static string? ProgramData(IEnvironmentService env, params string[] segments)
     {
@@ -63,8 +63,8 @@ internal static class OsPaths
     }
 
     /// <summary>
-    /// A path under <c>%ProgramFiles%</c> (or its 32-bit sibling), or null when neither the
-    /// variable nor the Windows directory resolves.
+    /// A path under <c>%ProgramFiles%</c> (or its x86 sibling), falling back to the Windows drive; null when
+    /// neither resolves.
     /// </summary>
     public static string? ProgramFiles(IEnvironmentService env, bool x86 = false, params string[] segments)
     {
@@ -76,9 +76,8 @@ internal static class OsPaths
     }
 
     /// <summary>
-    /// Combine <paramref name="segments"/> onto a Windows path's drive root (<c>C:\Windows</c> →
-    /// <c>C:\NVIDIA</c>). Hand-joined rather than via <see cref="Path"/>, which only treats
-    /// <c>C:\</c> as rooted on Windows hosts and mangles these paths on a Linux/macOS build.
+    /// Joins <paramref name="segments"/> onto a Windows path's drive (<c>C:\Windows</c> → <c>C:\NVIDIA</c>).
+    /// Joined by hand because <see cref="Path"/> treats <c>C:\</c> as rooted only on Windows hosts.
     /// </summary>
     public static string FromWindowsDriveRoot(string windowsPath, params string[] segments)
     {
@@ -87,8 +86,8 @@ internal static class OsPaths
     }
 
     /// <summary>
-    /// First non-blank variable among <paramref name="names"/>, or null. For cache-relocation
-    /// overrides like <c>NUGET_PACKAGES</c>.
+    /// First non-blank variable among <paramref name="names"/>, or null; used for cache-location overrides
+    /// like <c>NUGET_PACKAGES</c>.
     /// </summary>
     public static string? Env(IEnvironmentService env, params string[] names)
     {

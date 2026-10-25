@@ -8,7 +8,7 @@ namespace Cleaner.Cli.Application;
 
 public sealed partial class CleanerApp
 {
-    /// <summary>The whole user interface: a menu looping until the user exits.</summary>
+    /// <summary>Shows the main menu until the user exits.</summary>
     public async Task<int> InteractiveAsync(RunOptions options, CancellationToken cancellationToken)
     {
         if (!renderer.IsInteractive)
@@ -48,7 +48,6 @@ public sealed partial class CleanerApp
         return exitCode;
     }
 
-    /// <summary>Ask which cleaners to act on, then run the scan / preview / confirm / delete flow.</summary>
     private async Task<int> SelectAndRunAsync(RunOptions options, CancellationToken cancellationToken)
     {
         var context = contextFactory.Create(options);
@@ -102,9 +101,8 @@ public sealed partial class CleanerApp
 
         ReportSkipped(blocked);
 
-        // Command-backed cleaners may be actionable even when their size is unknown: an installed
-        // tool still runs its own cleanup when every folder it uses is protected from direct
-        // deletion. A cleaner with neither unprotected folders nor a tool sits this run out.
+        // A command-based cleaner stays available with no folders: its tool can still run its own
+        // cleanup when every folder it uses is protected. Cleaners with neither are dropped.
         var available = rows
             .Where(r => !r.Result.ToolUnavailable)
             .Where(r => r.Result.Targets.Count > 0 || r.Cleaner.IsAvailable(context))
@@ -124,8 +122,8 @@ public sealed partial class CleanerApp
             return 0;
         }
 
-        // Needs several folders to be worth a choice, and the cleaner must be one that acts on the
-        // folders it reported rather than handing the job to a tool that clears everything.
+        // Offer the folder picker only for cleaners that delete the folders they report (not a tool
+        // that clears everything) and that report more than one.
         var plannedRows = rows.Where(r => actionable.Contains(r.Cleaner)).ToList();
         var expandable = plannedRows
             .Where(r => r.Cleaner.SupportsPartialSelection && r.Result.Targets.Count > 1)
@@ -144,8 +142,8 @@ public sealed partial class CleanerApp
             return 0;
         }
 
-        // Folders the user unticked are protected for every cleaner in this run, so another
-        // cleaner that reported the same folder (or a parent of it) can't delete it anyway.
+        // Protect unticked folders for the whole run, so another cleaner reporting the same folder
+        // or a parent of it can't delete it.
         var unticked = kept is null
             ? []
             : expandable.SelectMany(r => r.Result.Targets).Select(t => t.Path).Where(p => !PathComparison.IsSelected(kept, p)).ToList();
@@ -184,7 +182,6 @@ public sealed partial class CleanerApp
         return plan;
     }
 
-    /// <summary>Partition the applicable cleaners into what can run now and what needs admin.</summary>
     private (List<ICleaner> Runnable, List<ICleaner> Blocked) Partition(IReadOnlyList<ICleaner> applicable)
     {
         var runnable = applicable.Where(c => !c.RequiresElevation || environment.IsElevated).ToList();
@@ -192,7 +189,6 @@ public sealed partial class CleanerApp
         return (runnable, blocked);
     }
 
-    /// <summary>Tell the user which cleaners were left out because they need admin/root.</summary>
     private void ReportSkipped(IReadOnlyList<ICleaner> blocked)
     {
         if (blocked.Count > 0)
@@ -290,7 +286,7 @@ public sealed partial class CleanerApp
         return failed.Count > 0 || regressions.Count > 0 ? 1 : 0;
     }
 
-    /// <summary>The reviewed plan, written before anything is deleted: the record of what was approved.</summary>
+    /// <summary>Logs the approved plan before anything is deleted.</summary>
     private void LogPlan(IReadOnlyDictionary<ICleaner, IReadOnlyList<CleanupTarget>> plan)
     {
         foreach (var (cleaner, targets) in plan)

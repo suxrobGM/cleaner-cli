@@ -8,7 +8,7 @@ public sealed class CommandLineBuilder(CleanerApp app)
 {
     private readonly Option<string[]> pathOption = new("--path", "-p")
     {
-        Description = "Directory for project-local cleaners; repeat to sweep several workspaces (defaults to cwd).",
+        Description = "Directory for project-local cleaners; repeat to scan several workspaces (defaults to cwd).",
         AllowMultipleArgumentsPerToken = true,
     };
 
@@ -41,7 +41,7 @@ public sealed class CommandLineBuilder(CleanerApp app)
 
     private RunOptions BuildOptions(ParseResult result)
     {
-        // The first path is the project-local working directory; all paths feed workspace sweeps.
+        // The first path is the working directory for project-local cleaners; all are searched for projects.
         var paths = result.GetValue(pathOption) ?? [];
         return new RunOptions
         {

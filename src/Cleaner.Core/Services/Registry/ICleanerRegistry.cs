@@ -7,6 +7,6 @@ public interface ICleanerRegistry
 {
     IReadOnlyList<ICleaner> All { get; }
 
-    /// <summary>Find a cleaner by its <see cref="ICleaner.Id"/> (case-insensitive), or null.</summary>
+    /// <summary>Looks up <see cref="ICleaner.Id"/> case-insensitively; null when not found.</summary>
     ICleaner? Find(string id);
 }

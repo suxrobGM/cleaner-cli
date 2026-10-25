@@ -31,7 +31,6 @@ public sealed class FileSystemServiceTests : IDisposable
     [Fact]
     public void DeleteDirectory_does_not_traverse_into_symlinked_directories()
     {
-        // Links must be removed without traversing their targets.
         var external = Path.Combine(_root, "external");
         var externalFile = Path.Combine(external, "keep.txt");
         Directory.CreateDirectory(external);
@@ -168,8 +167,8 @@ public sealed class FileSystemServiceTests : IDisposable
     }
 
     /// <summary>
-    /// A junction on Windows (what scoop's <c>current</c> is, and creatable without admin), a
-    /// symlink elsewhere. False where neither can be made.
+    /// Creates a junction on Windows (like scoop's <c>current</c>; needs no admin), else a symlink.
+    /// Returns false where neither can be made.
     /// </summary>
     private static bool TryLink(string link, string target)
     {
@@ -215,7 +214,7 @@ public sealed class FileSystemServiceTests : IDisposable
             return;
         }
 
-        // Clear read-only bits before best-effort teardown.
+        // Directory.Delete fails on read-only files.
         try
         {
             foreach (var file in Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories))
@@ -231,7 +230,7 @@ public sealed class FileSystemServiceTests : IDisposable
         }
         catch
         {
-            // Leave the temp dir for the OS to reap rather than failing teardown.
+            // Leave the temp dir for the OS rather than fail teardown.
         }
     }
 }

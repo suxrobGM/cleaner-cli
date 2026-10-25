@@ -88,7 +88,7 @@ public sealed class PythonCleanerTests
     {
         var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
 
-        // With the tool on PATH, the tool clears its own cache.
+        // Tool on PATH: it clears its own cache.
         var runner = new FakeProcessRunner().WithAvailable(executable);
         var fs = new FakeFileSystem().AddFile(cachedFile, 1_000);
         await factory().CleanAsync(TestContext.Create(fs, env, runner));
@@ -97,7 +97,7 @@ public sealed class PythonCleanerTests
         Assert.Equal((executable, command), (runner.Invocations[0].Executable, string.Join(' ', runner.Invocations[0].Arguments)));
         Assert.True(fs.FileExists(cachedFile));
 
-        // Without it, the declared directory is deleted directly.
+        // No tool: the cache folder is deleted directly.
         var bare = new FakeFileSystem().AddFile(cachedFile, 1_000);
         var result = await factory().CleanAsync(TestContext.Create(bare, env));
 

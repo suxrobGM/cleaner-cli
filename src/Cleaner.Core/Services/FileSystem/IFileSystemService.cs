@@ -7,7 +7,7 @@ public interface IFileSystemService
 
     bool FileExists(string path);
 
-    /// <summary>Recursive total size of a directory in bytes; unreadable entries are skipped.</summary>
+    /// <summary>Recursive size in bytes; unreadable entries are skipped.</summary>
     long GetDirectorySize(string path);
 
     long GetFileSize(string path);
@@ -26,20 +26,18 @@ public interface IFileSystemService
     /// <summary>Where a link finally points, or null when the path is not a link.</summary>
     string? ResolveLinkTarget(string path);
 
-    /// <summary>Rename a directory; atomic on one volume, and fails while anything inside is open on Windows.</summary>
+    /// <summary>Atomic on one volume; on Windows it fails while anything inside is open.</summary>
     void MoveDirectory(string source, string destination);
 
-    /// <summary>Delete a directory and everything under it.</summary>
     void DeleteDirectory(string path);
 
     void DeleteFile(string path);
 
-    /// <summary>The lines of a text file, or empty when it can't be read.</summary>
+    /// <summary>Empty when the file can't be read.</summary>
     IReadOnlyList<string> ReadAllLines(string path);
 
-    /// <summary>Write text to <paramref name="path"/>, creating or overwriting it.</summary>
     void WriteAllText(string path, string contents);
 
-    /// <summary>Append one line to a text file, creating it and its directory if needed.</summary>
+    /// <summary>Creates the file and its directory if needed.</summary>
     void AppendLine(string path, string line);
 }

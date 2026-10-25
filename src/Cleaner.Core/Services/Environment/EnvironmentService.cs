@@ -114,7 +114,6 @@ public sealed partial class EnvironmentService : IEnvironmentService
                 return IsUserAnAdmin();
             }
 
-            // Unix: effective uid 0 is root.
             return GetEuid() == 0;
         }
         catch

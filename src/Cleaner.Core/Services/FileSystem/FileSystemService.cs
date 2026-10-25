@@ -58,8 +58,7 @@ public sealed class FileSystemService : IFileSystemService
 
         try
         {
-            // Links are skipped so a walk can't follow scoop's `current` or nvm's symlink into an
-            // install that lives elsewhere.
+            // Skip links so a walk can't follow scoop's `current` or an nvm symlink into an install elsewhere.
             return Directory.EnumerateDirectories(path, "*", RecursiveScan(recurse: false));
         }
         catch
@@ -142,7 +141,7 @@ public sealed class FileSystemService : IFileSystemService
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
         {
             // Read-only files (e.g. NuGet caches) block delete on Windows. Clearing them walks the
-            // whole tree, so only do it on the rare delete that fails, then retry.
+            // whole tree, so do it only after a failed delete.
             ClearReadOnlyAttributes(path);
             Directory.Delete(path, recursive: true);
         }
@@ -208,10 +207,7 @@ public sealed class FileSystemService : IFileSystemService
         }
     }
 
-    /// <summary>
-    /// Shared enumeration options: skip inaccessible entries and never follow reparse points
-    /// (symlinks/junctions), so a scan can't wander outside the target or loop.
-    /// </summary>
+    /// <summary>Skips inaccessible entries and never follows links, so a scan can't leave the target or loop.</summary>
     private static EnumerationOptions RecursiveScan(bool recurse) => new()
     {
         RecurseSubdirectories = recurse,

@@ -3,11 +3,10 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>Conda package cache. Uses <c>conda clean --all --yes</c>.</summary>
+/// <summary>Conda package cache. Prefers <c>conda clean --all --yes</c>.</summary>
 /// <remarks>
-/// Without conda on PATH only the downloaded archives directly inside each <c>pkgs</c> dir are
-/// deleted. The extracted package folders beside them may be hard-linked into environments, and
-/// only conda can tell which are unused.
+/// Without conda, only the archives inside each <c>pkgs</c> dir are deleted: the extracted folders may be
+/// hard-linked into environments, and only conda knows which are unused.
 /// </remarks>
 public sealed class CondaCleaner : ProcessCleanerBase
 {
@@ -21,10 +20,9 @@ public sealed class CondaCleaner : ProcessCleanerBase
 
     protected override IReadOnlyList<string> CleanArguments => ["clean", "--all", "--yes"];
 
-    /// <summary>Conventional install roots whose <c>pkgs</c> dir holds the package cache.</summary>
     private static readonly string[] InstallRoots = ["miniconda3", "anaconda3", "miniforge3", "mambaforge"];
 
-    /// <summary>Downloaded package archive formats; extracted folders are never matched.</summary>
+    /// <summary>Downloaded archives only; extracted folders are never matched.</summary>
     private static readonly string[] ArchiveExtensions = [".conda", ".tar.bz2"];
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
@@ -50,7 +48,7 @@ public sealed class CondaCleaner : ProcessCleanerBase
     {
         var env = context.Environment;
 
-        // Explicit cache relocation: CONDA_PKGS_DIRS is a comma-separated list of cache dirs.
+        // CONDA_PKGS_DIRS is a comma-separated list.
         if (OsPaths.Env(env, "CONDA_PKGS_DIRS") is { } pkgsDirs)
         {
             foreach (var dir in pkgsDirs.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
@@ -73,7 +71,7 @@ public sealed class CondaCleaner : ProcessCleanerBase
             yield return env.HomePath(root, "pkgs");
         }
 
-        // Legacy per-user location, kept for completeness.
+        // Older per-user location.
         yield return env.HomePath(".conda", "pkgs");
     }
 }

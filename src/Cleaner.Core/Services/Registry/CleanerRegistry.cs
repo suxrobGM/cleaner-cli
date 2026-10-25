@@ -10,9 +10,8 @@ public sealed class CleanerRegistry : ICleanerRegistry
 
     public CleanerRegistry(IEnumerable<ICleaner> cleaners)
     {
-        // Categories run in their curated display order, not alphabetically, so the menu reads
-        // top-down: OS first, then development tooling, then apps. Anything outside the known
-        // layout sorts last as an alphabetical block.
+        // Curated category order (OS, then development tools, then apps) rather than alphabetical;
+        // unknown categories sort last, alphabetically.
         All = cleaners
             .OrderBy(c => CategoryLayout.RankOf(c.Category))
             .ThenBy(c => c.Category, StringComparer.OrdinalIgnoreCase)

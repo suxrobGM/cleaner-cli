@@ -4,8 +4,8 @@ using Cleaner.Core.Utils;
 namespace Cleaner.Core.Services;
 
 /// <summary>
-/// An installed tool's folder. Nothing in it may be deleted except its <paramref name="CacheFolders"/>,
-/// the cache subfolders the tool downloads again by itself.
+/// An installed tool's folder. Only its <paramref name="CacheFolders"/>, which the tool downloads again by
+/// itself, may be deleted.
 /// </summary>
 internal sealed record ProtectedRoot(string Path, string Reason, IReadOnlyList<string> CacheFolders);
 
@@ -78,7 +78,7 @@ internal static class ProtectedPaths
         }
     }
 
-    /// <summary>A workspace sweep must not start anywhere under these.</summary>
+    /// <summary>A project search must not start anywhere under these.</summary>
     public static IEnumerable<string> NonProjectFolders(IEnvironmentService env)
     {
         var home = env.HomeDirectory;
@@ -114,7 +114,7 @@ internal static class ProtectedPaths
         yield return Path.Combine(home, "Library");
     }
 
-    /// <summary>Installed tools and personal data, each with the cache holes that may still be cleared.</summary>
+    /// <summary>Installed tools and personal data, each with the cache folders that may still be cleared.</summary>
     public static IEnumerable<ProtectedRoot> Installs(IEnvironmentService env)
     {
         var home = env.HomeDirectory;

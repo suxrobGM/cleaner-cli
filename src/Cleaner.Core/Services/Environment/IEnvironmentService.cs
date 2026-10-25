@@ -19,41 +19,38 @@ public interface IEnvironmentService
 
     bool IsLinux { get; }
 
-    /// <summary>True if the process is running elevated (Windows administrator / Unix root).</summary>
+    /// <summary>True when running as Windows administrator or Unix root.</summary>
     bool IsElevated { get; }
 
-    /// <summary>The current user's home directory.</summary>
     string HomeDirectory { get; }
 
-    /// <summary>The system temp directory.</summary>
     string TempDirectory { get; }
 
-    /// <summary>Per-user local (non-roaming) application data: %LOCALAPPDATA% on Windows.</summary>
+    /// <summary>%LOCALAPPDATA% on Windows.</summary>
     string LocalAppDataDirectory { get; }
 
-    /// <summary>Per-user roaming application data: %APPDATA% on Windows.</summary>
+    /// <summary>%APPDATA% on Windows.</summary>
     string AppDataDirectory { get; }
 
     /// <summary>Conventional cache root for the current platform.</summary>
     string CacheDirectory { get; }
 
-    /// <summary>The Windows directory (%SystemRoot%), or null on non-Windows.</summary>
+    /// <summary>%SystemRoot%, or null on non-Windows.</summary>
     string? WindowsDirectory { get; }
 
-    /// <summary>Directory where Cleaner writes its own log files: <c>~/.cleaner/logs</c>.</summary>
+    /// <summary><c>~/.cleaner/logs</c>.</summary>
     string LogDirectory { get; }
 
     /// <summary>
-    /// Every directory on PATH: this process's, plus the user and machine PATH on Windows, so a
-    /// tool installed since the terminal opened is still known. Expanded, absolute, de-duplicated.
+    /// Expanded, absolute, de-duplicated PATH entries. On Windows this adds the user and machine PATH,
+    /// so a tool installed since the terminal opened is still found.
     /// </summary>
     IReadOnlyList<string> PathDirectories { get; }
 
-    /// <summary>Root folders of the ready, fixed (non-removable) drives, e.g. <c>C:\</c>.</summary>
+    /// <summary>Roots of the ready, fixed (non-removable) drives, e.g. <c>C:\</c>.</summary>
     IReadOnlyList<string> FixedDriveRoots { get; }
 
     string? GetEnvironmentVariable(string name);
 
-    /// <summary>Combine path segments under the user's home directory.</summary>
     string HomePath(params string[] segments);
 }

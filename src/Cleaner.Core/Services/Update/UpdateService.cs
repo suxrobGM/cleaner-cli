@@ -89,7 +89,7 @@ public sealed class UpdateService(IGitHubReleaseClient releaseClient, IEnvironme
         }
         catch
         {
-            // The previous binary may still be locked briefly; we'll get it next run.
+            // The old binary may still be locked; try again next run.
         }
     }
 
@@ -111,7 +111,7 @@ public sealed class UpdateService(IGitHubReleaseClient releaseClient, IEnvironme
             return;
         }
 
-        // .tar.gz — gunzip the stream straight into the tar extractor.
+        // Otherwise a .tar.gz.
         using var fileStream = File.OpenRead(archivePath);
         using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
         TarFile.ExtractToDirectory(gzip, destination, overwriteFiles: true);
@@ -129,8 +129,8 @@ public sealed class UpdateService(IGitHubReleaseClient releaseClient, IEnvironme
     {
         try
         {
-            // Use the framework OS check (not IEnvironmentService) so the platform-compatibility
-            // analyzer can flow-analyze the Unix-only File.SetUnixFileMode call below.
+            // OperatingSystem.IsWindows (not IEnvironmentService) lets the platform analyzer accept the
+            // Unix-only File.SetUnixFileMode call below.
             if (OperatingSystem.IsWindows())
             {
                 // A running .exe can't be deleted, but it can be renamed out of the way.

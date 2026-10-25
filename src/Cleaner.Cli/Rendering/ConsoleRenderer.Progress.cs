@@ -16,7 +16,7 @@ public sealed partial class ConsoleRenderer
         Func<ICleaner, Task<ScanResult>> scan,
         CancellationToken cancellationToken)
     {
-        // Scans are independent; indexed storage preserves caller order as they complete.
+        // Scans run in parallel; writing each result by index keeps the caller's order.
         var rows = new ScanRow[cleaners.Count];
         var scanned = 0;
         var parallelOptions = new ParallelOptions
@@ -85,7 +85,6 @@ public sealed partial class ConsoleRenderer
                 task.Value = 1.0;
             });
 
-    /// <summary>A progress display with the standard description / bar / percentage / spinner columns.</summary>
     private Progress BarProgress() =>
         console.Progress()
             .Columns(

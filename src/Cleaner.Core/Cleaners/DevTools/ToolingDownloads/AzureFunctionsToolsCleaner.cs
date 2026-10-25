@@ -14,7 +14,6 @@ public sealed class AzureFunctionsToolsCleaner : DirectoryCleanerBase
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
-        // The Visual Studio / VS Code tooling stores release feeds under %LOCALAPPDATA% on Windows.
         yield return new CleanupPath(
             Path.Combine(context.Environment.LocalAppDataDirectory, "AzureFunctionsTools", "Releases"),
             DeleteMode.ClearContents);

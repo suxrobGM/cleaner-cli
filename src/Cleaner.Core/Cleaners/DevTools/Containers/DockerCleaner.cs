@@ -4,14 +4,10 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Prunes unused Docker containers, networks, images, and build cache. Volumes are kept: named
-/// volumes hold user data such as databases. On Docker
-/// Desktop/WSL2 this frees space inside the <c>.vhdx</c>; compacting the host file is separate.
+/// Prunes unused Docker containers, networks, images, and build cache. Volumes are kept: they hold user
+/// data such as databases. On Docker Desktop this frees space only inside the WSL2 disk; see
+/// <see cref="DockerVhdxCleaner"/> to shrink it on the host.
 /// </summary>
-/// <remarks>
-/// Both estimates and freed totals come from <c>docker system df</c>. If the daemon is unavailable,
-/// the cleaner reports an unknown size.
-/// </remarks>
 public sealed class DockerCleaner : ProcessCleanerBase
 {
     public override string Id => "docker";

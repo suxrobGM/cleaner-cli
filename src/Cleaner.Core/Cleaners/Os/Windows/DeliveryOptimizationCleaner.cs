@@ -4,7 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>Windows Delivery Optimization download cache. Needs elevation.</summary>
+/// <summary>Windows Delivery Optimization download cache.</summary>
 public sealed class DeliveryOptimizationCleaner : WindowsCleanerBase
 {
     public override string Id => "delivery-optimization";

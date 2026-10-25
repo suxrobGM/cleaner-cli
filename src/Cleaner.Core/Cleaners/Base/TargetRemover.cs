@@ -4,9 +4,9 @@ using Cleaner.Core.Utils;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Removes approved targets one at a time, all or nothing. Each folder is re-checked against the
-/// guard, renamed aside (atomic, and refused by Windows while anything inside is open), then
-/// deleted, so an interrupted delete never leaves a half-removed install at its original path.
+/// Removes approved targets one at a time. Each folder is re-checked against the guard, renamed aside
+/// (atomic, and refused by Windows while anything inside is open), then deleted, so an interrupted
+/// delete never leaves a half-removed install at its original path.
 /// </summary>
 internal sealed class TargetRemover(CleanupContext context, string cleanerId)
 {
@@ -18,7 +18,7 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
     private long _bytesFreed;
     private int _removed;
 
-    /// <summary>Leftovers of movedAside deletes that could not finish, offered again on the next run.</summary>
+    /// <summary>Lists renamed-aside folders whose delete didn't finish, so the next run can offer them again.</summary>
     public static string PendingDeletesFile(CleanupContext context) =>
         Path.Combine(context.Environment.HomeDirectory, ".cleaner", "pending-deletes.txt");
 
@@ -127,7 +127,7 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
         catch (Exception ex)
         {
             // The original path is already gone, so nothing looks installed but broken. Record the
-            // remainder so the next run can finish the job.
+            // rest so the next run can finish it.
             var left = fs.DirectoryExists(movedAside) ? fs.GetDirectorySize(movedAside) : 0;
             _bytesFreed += Math.Max(0, size - left);
             Fail(path, $"moved aside to {movedAside} but could not finish deleting it: {ex.Message}");

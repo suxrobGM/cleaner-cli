@@ -6,7 +6,6 @@ namespace Cleaner.Cli.Infrastructure;
 
 internal static partial class ServiceCollectionExtensions
 {
-    /// <summary>Operating-system cleaners: temp/trash, browser caches, and Windows-specific caches.</summary>
     private static void AddOsCleaners(this IServiceCollection services)
     {
         services.AddSingleton<ICleaner, UserTempCleaner>();

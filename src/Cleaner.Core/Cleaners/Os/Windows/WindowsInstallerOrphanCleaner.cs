@@ -8,16 +8,14 @@ namespace Cleaner.Core.Cleaners.Os;
 /// product or patch references.
 /// </summary>
 /// <remarks>
-/// The live set comes from <c>LocalPackage</c> values under the Installer's <c>UserData</c> registry
-/// key. A failed or empty query is treated as unknown; deleting in that case could break repair.
+/// References are read from <c>LocalPackage</c> values under the Installer's <c>UserData</c> registry key.
+/// A failed or empty query is treated as unknown, since deleting a needed package breaks repair.
 /// </remarks>
 public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
 {
     private const string UserDataKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData";
 
-    /// <summary>
-    /// Cached orphan results for the current run context.
-    /// </summary>
+    /// <summary>Orphans found for the current run context, so the clean does not query again.</summary>
     private (CleanupContext Context, IReadOnlyList<CleanupPath> Targets)? _orphans;
 
     public override string Id => "windows-installer-orphans";
@@ -30,7 +28,7 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
         "if a package is still needed by a product this can't see, that product loses repair, " +
         "patch, and uninstall — a fresh Windows update run beforehand keeps the registry accurate";
 
-    /// <summary>Relevant wherever the package cache exists; whether any package is orphaned costs a scan.</summary>
+    /// <summary>Checks only that cached packages exist; finding orphans is left to the scan.</summary>
     public override bool IsAvailable(CleanupContext context) => CachedPackages(context).Any();
 
     protected override async ValueTask<IEnumerable<CleanupPath>> GetTargetsAsync(
@@ -47,7 +45,6 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
         return targets;
     }
 
-    /// <summary>Cached packages that no installed product or patch still references.</summary>
     private static async Task<IReadOnlyList<CleanupPath>> OrphansAsync(
         CleanupContext context,
         CancellationToken cancellationToken)
@@ -87,15 +84,10 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
         extension.Equals(".msi", StringComparison.OrdinalIgnoreCase)
         || extension.Equals(".msp", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// Normalizes separators so registry and filesystem paths compare consistently.
-    /// </summary>
+    /// <summary>Unifies separators so registry and filesystem paths compare equal.</summary>
     private static string Normalize(string path) =>
         path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
 
-    /// <summary>
-    /// Reads every <c>LocalPackage</c> path under the Installer's <c>UserData</c> key.
-    /// </summary>
     private static async Task<HashSet<string>> ReferencedPackagesAsync(CleanupContext context, CancellationToken cancellationToken)
     {
         var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

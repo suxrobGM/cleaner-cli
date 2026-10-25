@@ -14,8 +14,7 @@ public sealed class RiskyCleanerTests
     {
         var fs = Disks();
         var runner = new FakeProcessRunner().WithAvailable("wsl", "diskpart");
-        // diskpart shrinking the file is what the cleaner measures, so model that -- and only that,
-        // otherwise the shutdown call would shrink it before the "before" size is taken.
+        // Shrink the disk only when diskpart runs; shrinking on the wsl call would skew the "before" size.
         runner.OnRun = () =>
         {
             if (runner.Invocations[^1].Executable == "diskpart")

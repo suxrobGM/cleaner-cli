@@ -1,19 +1,19 @@
 namespace Cleaner.Core.Services;
 
-/// <summary>What the machine's developer tools looked like at one moment.</summary>
+/// <summary>The state of the machine's developer tools at one moment.</summary>
 /// <param name="WorkingTools">Tools whose version command succeeded, e.g. "git", "node".</param>
-/// <param name="PathFiles">The files directly inside each PATH folder that existed, keyed by folder.</param>
+/// <param name="PathFiles">The files directly inside each existing PATH folder, keyed by folder.</param>
 public sealed record ToolHealthSnapshot(
     IReadOnlySet<string> WorkingTools,
     IReadOnlyDictionary<string, IReadOnlySet<string>> PathFiles);
 
 /// <summary>
-/// Checks, before and after a clean, that the tools on PATH still start and that no PATH folder
-/// lost files. A cleaner that broke an install is reported right away instead of being found later.
+/// Checks before and after a clean that PATH tools still start and no PATH folder lost files, so a
+/// broken install is reported right away.
 /// </summary>
 public static class ToolHealthCheck
 {
-    /// <summary>Well-known tools and the arguments that print their version without side effects.</summary>
+    /// <summary>Tools and the arguments that print their version without side effects.</summary>
     private static readonly (string Tool, string[] Arguments)[] Probes =
     [
         ("git", ["--version"]), ("node", ["--version"]), ("npm", ["--version"]), ("pnpm", ["--version"]),
@@ -50,7 +50,7 @@ public static class ToolHealthCheck
             files);
     }
 
-    /// <summary>Human-readable problems that appeared between <paramref name="before"/> and <paramref name="after"/>.</summary>
+    /// <summary>Problems that appeared between <paramref name="before"/> and <paramref name="after"/>.</summary>
     public static IReadOnlyList<string> Regressions(ToolHealthSnapshot before, ToolHealthSnapshot after)
     {
         var problems = new List<string>();

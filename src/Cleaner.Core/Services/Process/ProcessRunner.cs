@@ -7,8 +7,7 @@ namespace Cleaner.Core.Services;
 /// <inheritdoc cref="IProcessRunner"/>
 public sealed class ProcessRunner : IProcessRunner
 {
-    // PATH lookups miss for most tools and cost ~1000 file probes each; the answer cannot
-    // usefully change within a session, so resolve every executable at most once.
+    // A PATH lookup can cost ~1000 file probes and won't change within a session, so cache each one.
     private readonly ConcurrentDictionary<string, string?> resolvedPaths = new(StringComparer.Ordinal);
 
     public bool Exists(string executable) => TryResolve(executable, out _);
@@ -102,7 +101,7 @@ public sealed class ProcessRunner : IProcessRunner
         }
         catch (Win32Exception ex)
         {
-            // The tool may have disappeared since the availability check; return a failed result.
+            // The tool may have been removed since the availability check.
             return new ProcessResult(-1, string.Empty, $"Failed to start '{executable}': {ex.Message}");
         }
 
@@ -115,8 +114,8 @@ public sealed class ProcessRunner : IProcessRunner
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // WaitForExitAsync does not stop the child. A timed-out scan (or Ctrl+C) must not
-            // leave docker or another redirected console process alive in the background.
+            // WaitForExitAsync doesn't stop the child; kill it so a timeout or Ctrl+C doesn't leave
+            // docker or another tool running in the background.
             try
             {
                 process.Kill(entireProcessTree: true);
@@ -145,9 +144,7 @@ public sealed class ProcessRunner : IProcessRunner
         return new ProcessResult(process.ExitCode, stdOut, stdErr);
     }
 
-    /// <summary>
-    /// Resolves <paramref name="executable"/> to a concrete file path, honoring Windows PATHEXT.
-    /// </summary>
+    /// <summary>Resolves to a concrete file path, honoring Windows PATHEXT.</summary>
     private bool TryResolve(string executable, out string resolvedPath)
     {
         var hit = resolvedPaths.GetOrAdd(executable, static name => Probe(name, out var path) ? path : null);
@@ -159,7 +156,6 @@ public sealed class ProcessRunner : IProcessRunner
     {
         resolvedPath = executable;
 
-        // Already a usable path (absolute or relative to the working directory).
         if (Path.IsPathRooted(executable) && File.Exists(executable))
         {
             return true;

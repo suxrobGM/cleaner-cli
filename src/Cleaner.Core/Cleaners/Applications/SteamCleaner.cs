@@ -6,8 +6,8 @@ using Cleaner.Core.Services;
 namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
-/// Clears Steam's safe caches — shader, download, web/HTML caches, logs and dumps. Never touches
-/// installed games (<c>steamapps/common</c>) or user/save data.
+/// Steam's shader, download, and web caches, logs, and dumps. Installed games
+/// (<c>steamapps/common</c>) and user and save data are never touched.
 /// </summary>
 public sealed class SteamCleaner : DirectoryCleanerBase
 {

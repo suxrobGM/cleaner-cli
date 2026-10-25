@@ -4,8 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Prunes Podman storage; like Docker, the prune commands are the only safe interface. Named volumes
-/// hold user data and are kept.
+/// Prunes Podman storage through its prune commands, the only safe interface. Named volumes hold user
+/// data and are kept.
 /// </summary>
 public sealed class PodmanCleaner : ProcessCleanerBase
 {

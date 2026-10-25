@@ -4,7 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>The machine-wide Windows\Temp directory. Needs elevation.</summary>
+/// <summary>The machine-wide Windows\Temp directory.</summary>
 public sealed class WindowsTempCleaner : WindowsCleanerBase
 {
     public override string Id => "windows-temp";

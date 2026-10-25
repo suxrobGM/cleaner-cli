@@ -12,7 +12,7 @@ public sealed class ApplicationCleanerTests
 {
     private const string HklmUninstall = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
 
-    /// <summary>A registry whose HKLM uninstall key lists <paramref name="displayNames"/>; the other keys fail to read.</summary>
+    /// <summary>Lists <paramref name="displayNames"/> under the HKLM uninstall key; other keys fail.</summary>
     private static FakeProcessRunner Registry(params string[] displayNames)
     {
         var output = string.Concat(displayNames.Select((name, i) =>

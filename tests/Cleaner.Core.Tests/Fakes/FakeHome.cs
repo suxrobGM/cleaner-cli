@@ -1,9 +1,8 @@
 namespace Cleaner.Core.Tests.Fakes;
 
 /// <summary>
-/// A home folder laid out like a real developer machine: Scoop, Cargo, rustup, nvm, Bun, WinGet,
-/// <c>~/.local/bin</c>, editor extensions, a few installed apps, real caches, and real projects,
-/// with a PATH that points into the installs. Modelled on the machine the 2026-10-24 run broke.
+/// A developer home folder with installed tools, apps, caches, projects, and a PATH into the installs.
+/// Models the machine the 2026-10-24 run broke.
 /// </summary>
 public sealed class FakeHome
 {
@@ -19,7 +18,7 @@ public sealed class FakeHome
 
     public string Home => Environment.HomeDirectory;
 
-    /// <summary>Folder holding the projects whose build output may be swept.</summary>
+    /// <summary>Folder holding the projects whose build output may be cleaned.</summary>
     public string Repos { get; private init; } = string.Empty;
 
     /// <summary>Files of installed tools, apps, and source code. None may ever disappear.</summary>
@@ -28,7 +27,7 @@ public sealed class FakeHome
     /// <summary>Files a cache cleaner should remove when it runs.</summary>
     public List<string> Caches { get; } = [];
 
-    /// <summary>Files inside project build output, removed only when the projects folder is swept.</summary>
+    /// <summary>Build output files, removed only when the projects folder is scanned.</summary>
     public List<string> ProjectArtifacts { get; } = [];
 
     public static FakeHome Windows()
@@ -81,7 +80,7 @@ public sealed class FakeHome
             $@"{h}\.ssh\id_ed25519",
             $@"{h}\Documents\notes.txt");
 
-        // Junctions the old sweep followed into live installs.
+        // Junctions into live installs; following them would delete the install.
         home.FileSystem.AddLink($@"{h}\scoop\apps\scoop\current", $@"{h}\scoop\apps\scoop\0.5");
         home.FileSystem.AddLink($@"{h}\scoop\apps\openssl\current", $@"{h}\scoop\apps\openssl\3.5.0");
         home.FileSystem.AddLink($@"{l}\Author Software\nvm\.nodejs", $@"{l}\Author Software\nvm\installs\v24.21.0");
@@ -175,9 +174,8 @@ public sealed class FakeHome
     }
 
     /// <summary>
-    /// The commands on PATH: files directly inside each PATH folder, to compare before and after a
-    /// run. Deeper files of an install are in <see cref="Installed"/>; recursing here would count
-    /// C:\Windows\Temp as "on PATH" because C:\Windows is.
+    /// Files directly inside each PATH folder. Not recursive, since that would count C:\Windows\Temp
+    /// as on PATH because C:\Windows is.
     /// </summary>
     public HashSet<string> FilesOnPath() =>
         Environment.PathDirectories

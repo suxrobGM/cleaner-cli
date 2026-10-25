@@ -4,8 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.Applications;
 
 /// <summary>
-/// Claude Desktop's re-downloadable local-agent VM images. Chat history, settings, Chromium caches,
-/// and profiles left by uninstalled copies are handled by separate cleaners.
+/// Claude Desktop's re-downloadable agent VM images; chat history and settings are kept. Its Chromium
+/// caches and leftovers from uninstalled copies have their own cleaners.
 /// </summary>
 public sealed class ClaudeDesktopCleaner : DirectoryCleanerBase
 {

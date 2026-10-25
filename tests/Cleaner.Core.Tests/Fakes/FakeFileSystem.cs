@@ -13,7 +13,7 @@ public sealed class FakeFileSystem : IFileSystemService
 
     public HashSet<string> ThrowOnDelete { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Folders some program holds open: renaming them (or anything containing them) fails, as on Windows.</summary>
+    /// <summary>Folders a program holds open; renaming them or a parent fails, as on Windows.</summary>
     public HashSet<string> InUse { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Path prefixes whose recursive delete throws, e.g. a staged folder that won't finish deleting.</summary>

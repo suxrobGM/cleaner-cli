@@ -1,53 +1,46 @@
 namespace Cleaner.Core.Abstractions;
 
-/// <summary>Extension point for a cleanup target, registered once in the composition root.</summary>
+/// <summary>A cleanup target, registered explicitly in the composition root.</summary>
 public interface ICleaner
 {
     /// <summary>Stable, kebab-case identifier (e.g. "nuget", "npm").</summary>
     string Id { get; }
 
-    /// <summary>Human-friendly name shown in lists and prompts (e.g. "NuGet package cache").</summary>
     string Name { get; }
 
     /// <summary>Grouping for display and bulk selection (e.g. "Package managers").</summary>
     string Category { get; }
 
-    /// <summary>True if removing this cleaner's targets requires administrator/root privileges.</summary>
     bool RequiresElevation { get; }
 
-    /// <summary>
-    /// False when an available cleaner may have no pre-run size; command estimates can still be reported.
-    /// </summary>
+    /// <summary>False when the cleaner may not know its size before running.</summary>
     bool SupportsSizeEstimate => true;
 
     /// <summary>
-    /// Whether the cleanup acts on exactly the targets a scan reported, so the user can keep some
-    /// and drop the rest. False for cleaners that hand the whole job to a tool with no way to say
-    /// which folders to spare.
+    /// False when cleanup hands the whole job to a tool that can't be told which targets to keep.
     /// </summary>
     bool SupportsPartialSelection => true;
 
-    /// <summary>Optional warning shown before running a potentially costly cleanup.</summary>
+    /// <summary>Warning shown before a cleanup with a real trade-off.</summary>
     string? ConfirmationWarning => null;
 
     /// <summary>
-    /// Left out of bulk selection ("All cleaners"); the user has to tick it by name. For cleaners
-    /// whose reach depends on where Cleaner was started, such as workspace sweeps.
+    /// Left out of "All cleaners" and must be picked by name, because its reach depends on where
+    /// Cleaner was started.
     /// </summary>
     bool OptIn => false;
 
     /// <summary>True if this cleaner is meaningful on the current operating system.</summary>
     bool IsApplicable(CleanupContext context);
 
-    /// <summary>True if the tool/paths this cleaner targets are actually present on this machine.</summary>
+    /// <summary>True if the tool or paths this cleaner targets are present on this machine.</summary>
     bool IsAvailable(CleanupContext context);
 
-    /// <summary>Measure what would be removed without deleting anything.</summary>
     Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Remove exactly the <paramref name="approved"/> targets, the ones the user reviewed, and
-    /// nothing a fresh look would find (honoring <see cref="CleanupContext.DryRun"/>).
+    /// Removes only the <paramref name="approved"/> targets the user reviewed, never anything found
+    /// since (honoring <see cref="CleanupContext.DryRun"/>).
     /// </summary>
     Task<CleanResult> CleanAsync(
         CleanupContext context,

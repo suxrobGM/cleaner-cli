@@ -1,9 +1,9 @@
 namespace Cleaner.Core.Utils;
 
-/// <summary>How paths are matched, shared so callers can't disagree about what a path is.</summary>
+/// <summary>Shared path matching, so callers can't disagree about what a path is.</summary>
 /// <remarks>
-/// Everything here is plain string logic. It never asks the OS to resolve a path, so Windows-shaped
-/// paths compare correctly on a Linux test runner and vice versa.
+/// Pure string logic that never asks the OS, so Windows paths compare correctly on a Linux test runner
+/// and vice versa.
 /// </remarks>
 public static class PathComparison
 {
@@ -19,7 +19,7 @@ public static class PathComparison
     public static IReadOnlySet<string> CreateSet(IEnumerable<string> paths, bool isLinux) =>
         new HashSet<string>(paths.Select(Normalize), ComparerFor(isLinux));
 
-    /// <summary>Whether a path survived the user's picks; a null selection takes everything.</summary>
+    /// <summary>Whether the user selected the path; a null selection means everything.</summary>
     public static bool IsSelected(IReadOnlySet<string>? selected, string path) =>
         selected is null || selected.Contains(Normalize(path));
 
@@ -43,7 +43,7 @@ public static class PathComparison
         return key is "/" or "" || (key.Length == 2 && key[1] == ':') || (key.StartsWith("//") && key.Count(c => c == '/') <= 3);
     }
 
-    /// <summary>An absolute path on either platform: <c>/x</c>, <c>\x</c>, <c>C:\x</c>, or <c>\\server\share</c>.</summary>
+    /// <summary>Absolute on either platform:<c>/x</c>, <c>\x</c>, <c>C:\x</c>, or <c>\\server\share</c>.</summary>
     public static bool IsRooted(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -55,7 +55,6 @@ public static class PathComparison
         return p[0] is '/' or '\\' || (p.Length >= 3 && char.IsAsciiLetter(p[0]) && p[1] == ':' && p[2] is '/' or '\\');
     }
 
-    /// <summary>True when <paramref name="path"/> is <paramref name="root"/> or lies anywhere under it.</summary>
     public static bool IsSameOrUnder(string path, string root, bool isLinux)
     {
         var p = TrimRoot(Key(path));
@@ -90,13 +89,12 @@ public static class PathComparison
         return parent.Replace('/', separator);
     }
 
-    /// <summary>The final segment of a path.</summary>
     public static string Name(string path)
     {
         var key = Key(path);
         return key[(key.LastIndexOf('/') + 1)..];
     }
 
-    // "/" keys to "/" so a prefix test against "/x" still sees the separator; "C:" stays as is.
+    // Map "/" to "" so the prefix test still finds a separator right after the root; "C:" needs no change.
     private static string TrimRoot(string key) => key == "/" ? string.Empty : key;
 }

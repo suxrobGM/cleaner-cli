@@ -6,7 +6,7 @@ namespace Cleaner.Core.Utils;
 /// <summary>Helpers for semantic-version comparison and release-asset selection.</summary>
 public static class VersionUtils
 {
-    /// <summary>Strip a leading <c>v</c> and any <c>+build</c> metadata, e.g. <c>v1.2.3+abc</c> → <c>1.2.3</c>.</summary>
+    /// <summary>Strips a leading <c>v</c> and <c>+build</c> metadata: <c>v1.2.3+abc</c> → <c>1.2.3</c>.</summary>
     public static string Normalize(string version)
     {
         if (string.IsNullOrWhiteSpace(version))
@@ -36,7 +36,7 @@ public static class VersionUtils
             return coreCompare;
         }
 
-        // Equal core: no pre-release outranks a pre-release; otherwise compare pre-release tags.
+        // Same release number: the final release outranks its pre-releases.
         if (preA.Length == 0 && preB.Length == 0)
         {
             return 0;
@@ -55,10 +55,9 @@ public static class VersionUtils
         return string.CompareOrdinal(preA, preB);
     }
 
-    /// <summary>True if <paramref name="latest"/> is strictly newer than <paramref name="current"/>.</summary>
     public static bool IsNewer(string latest, string current) => Compare(latest, current) > 0;
 
-    /// <summary>Returns the asset matching a runtime identifier, or null if none matches.</summary>
+    /// <summary>The first asset whose name contains <paramref name="runtimeIdentifier"/>, or null.</summary>
     public static UpdateAsset? SelectAsset(IEnumerable<GitHubAsset> assets, string runtimeIdentifier)
     {
         if (string.IsNullOrWhiteSpace(runtimeIdentifier))

@@ -11,22 +11,22 @@ public sealed record CleanupContext
 
     public required IProcessRunner ProcessRunner { get; init; }
 
-    /// <summary>Decides what may be deleted. Consulted at scan time and again before every removal.</summary>
+    /// <summary>Checked at scan time and again before every removal.</summary>
     public required IDeletionGuard Guard { get; init; }
 
-    /// <summary>Receives the per-path record of a clean: every removal, skip, and failure.</summary>
+    /// <summary>Receives every removal, skip, and failure of a clean.</summary>
     public IAppLogger? Logger { get; init; }
 
-    /// <summary>Identifies one scan-then-clean run, so a measurement taken by the scan is only reused by its clean.</summary>
+    /// <summary>Ties a scan to its clean, so a size measured by one scan is reused only by that clean.</summary>
     public Guid RunId { get; init; } = Guid.NewGuid();
 
     /// <summary>When true, cleaners measure and report but never delete.</summary>
     public bool DryRun { get; init; }
 
-    /// <summary>Base directory for project-local sweeps (bin/obj, node_modules, ...). Defaults to cwd.</summary>
+    /// <summary>Base directory for project-local cleaners (bin/obj, node_modules, ...).</summary>
     public string WorkingDirectory { get; init; } = System.Environment.CurrentDirectory;
 
-    /// <summary>Roots for workspace sweeps; defaults to <see cref="WorkingDirectory"/>.</summary>
+    /// <summary>Folders searched for projects; defaults to <see cref="WorkingDirectory"/>.</summary>
     public IReadOnlyList<string> ScanRoots
     {
         get => _scanRoots is { Count: > 0 } ? _scanRoots : [WorkingDirectory];

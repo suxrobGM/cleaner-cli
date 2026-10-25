@@ -3,13 +3,8 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>
-/// Compacts Docker Desktop's WSL2 virtual disks after pruning frees space inside them.
-/// </summary>
-/// <remarks>
-/// WSL is shut down before each disk is compacted with the built-in <c>diskpart</c> utility;
-/// compacting an attached disk could corrupt it.
-/// </remarks>
+/// <summary>Compacts Docker Desktop's WSL2 virtual disks after pruning frees space inside them.</summary>
+/// <remarks>WSL is shut down first because compacting an attached disk could corrupt it.</remarks>
 public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 {
     public override string Id => "docker-vhdx";
@@ -22,7 +17,7 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
     public override bool SupportsSizeEstimate => false;
 
-    /// <summary>Compacts every virtual disk it finds, not the single estimate row a scan reports.</summary>
+    /// <summary>Every disk is compacted together; the scan reports them as one estimate row.</summary>
     public override bool SupportsPartialSelection => false;
 
     public override string ConfirmationWarning =>
@@ -31,9 +26,7 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
 
     public override bool IsApplicable(CleanupContext context) => context.Environment.IsWindows;
 
-    /// <summary>
-    /// Estimates reclaimable slack as host disk size minus Docker's reported usage.
-    /// </summary>
+    /// <summary>Estimates free space inside the disks as their size on the host minus Docker's usage.</summary>
     public override async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
     {
         var disks = VirtualDisks(context).ToList();
@@ -100,7 +93,6 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
         return new CleanResult(freed, compacted, errors);
     }
 
-    /// <summary>Available once Docker Desktop has created at least one WSL disk.</summary>
     public override bool IsAvailable(CleanupContext context) => VirtualDisks(context).Any();
 
     private static IEnumerable<string> VirtualDisks(CleanupContext context)
@@ -111,9 +103,6 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
             : [];
     }
 
-    /// <summary>
-    /// Runs diskpart's attach/compact/detach sequence from a temporary script.
-    /// </summary>
     private static async Task<Services.ProcessResult> CompactAsync(
         CleanupContext context,
         string disk,

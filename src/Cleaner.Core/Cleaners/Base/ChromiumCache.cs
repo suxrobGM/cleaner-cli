@@ -20,13 +20,11 @@ internal static class ChromiumCache
         "ShaderCache",
     ];
 
-    /// <summary>
-    /// On-device model stores beside browser profiles; Chrome and Edge re-download them as needed.
-    /// </summary>
+    /// <summary>On-device model stores beside browser profiles; Chrome and Edge re-download them as needed.</summary>
     public static readonly string[] ModelStores =
         ["OptGuideOnDeviceModel", "OptGuideOnDeviceClassifierModel", "optimization_guide_model_store"];
 
-    /// <summary>Yields each cache directory directly under <paramref name="root"/>, cleared in place.</summary>
+    /// <summary>Each cache directory directly under <paramref name="root"/>, cleared in place.</summary>
     public static IEnumerable<CleanupPath> Under(string root, string? description = null)
     {
         foreach (var sub in Directories)
@@ -39,10 +37,6 @@ internal static class ChromiumCache
             Path.Combine(root, "Service Worker", "CacheStorage"), DeleteMode.ClearContents, description);
     }
 
-    /// <summary>
-    /// Yields the model stores under a browser's User Data root; the browser re-downloads whatever
-    /// it still needs.
-    /// </summary>
     public static IEnumerable<CleanupPath> ModelStoresUnder(string userDataRoot, string description)
     {
         foreach (var store in ModelStores)

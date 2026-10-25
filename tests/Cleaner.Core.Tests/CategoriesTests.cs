@@ -23,7 +23,7 @@ public sealed class CategoriesTests
     [Fact]
     public void Categories_of_a_group_are_contiguous_in_the_display_order()
     {
-        // Group tables depend on categories being contiguous in the configured order.
+        // Each group is rendered as one table.
         var groups = Categories.Ordered.Select(Categories.GroupOf).ToList();
         Assert.Equal(Categories.Groups.Count, CountRuns(groups));
     }

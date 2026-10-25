@@ -4,8 +4,8 @@ using Cleaner.Core.Utils;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Base implementation for cleaners that declare filesystem targets. Handles sizing, dry runs,
-/// deletion, and error capture; subclasses usually override <see cref="GetTargets"/>.
+/// Base for cleaners with filesystem targets: handles sizing, dry runs, deletion, and error capture.
+/// Subclasses usually override <see cref="GetTargets"/>.
 /// </summary>
 public abstract class DirectoryCleanerBase : ICleaner
 {
@@ -22,8 +22,8 @@ public abstract class DirectoryCleanerBase : ICleaner
 
     /// <inheritdoc cref="ICleaner.SupportsPartialSelection"/>
     /// <remarks>
-    /// True because <see cref="CleanAsync"/> deletes exactly the approved targets <see cref="ScanAsync"/> reported.
-    /// An override that reaches past those targets must say so by returning false.
+    /// True because <see cref="CleanAsync"/> deletes only the approved targets; an override that reaches
+    /// further must return false.
     /// </remarks>
     public virtual bool SupportsPartialSelection => true;
 
@@ -33,7 +33,7 @@ public abstract class DirectoryCleanerBase : ICleaner
     /// <inheritdoc cref="ICleaner.OptIn"/>
     public virtual bool OptIn => false;
 
-    /// <summary>Candidate targets, which may not exist and may be files (<see cref="DeleteMode.DeleteFile"/>).</summary>
+    /// <summary>Candidate targets; they may not exist and may be files (<see cref="DeleteMode.DeleteFile"/>).</summary>
     protected virtual IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
 
     /// <summary>
@@ -76,12 +76,12 @@ public abstract class DirectoryCleanerBase : ICleaner
         return new ScanResult(targets) { Notes = notes };
     }
 
-    /// <summary>Anything about discovery the user should see, such as a scan root that was refused.</summary>
+    /// <summary>Messages about discovery for the user, such as a refused search folder.</summary>
     protected virtual IEnumerable<string> ScanNotes(CleanupContext context) => [];
 
     /// <summary>
-    /// Removes exactly the approved targets. Each is checked against the guard again first, and
-    /// nothing is rediscovered, so the run can't reach past what the preview showed.
+    /// Removes only the approved targets, re-checking each against the guard and finding nothing new,
+    /// so the run can't go past what the preview showed.
     /// </summary>
     public virtual Task<CleanResult> CleanAsync(
         CleanupContext context,
@@ -99,8 +99,8 @@ public abstract class DirectoryCleanerBase : ICleaner
     }
 
     /// <summary>
-    /// What a target would free once the guard has had its say: null when it is protected outright,
-    /// and for <see cref="DeleteMode.ClearContents"/> the sum of the children that may go.
+    /// What a target would free after guard checks: null when it is protected, and for
+    /// <see cref="DeleteMode.ClearContents"/> only the children that may go.
     /// </summary>
     private (long? Bytes, int Blocked) Measure(CleanupContext context, CleanupPath path)
     {
@@ -148,7 +148,6 @@ public abstract class DirectoryCleanerBase : ICleaner
     private void LogProtected(CleanupContext context, string path, string why) =>
         context.Logger?.Detail($"[{Id}] not offered: {path} {why}");
 
-    /// <summary>On-disk size of a target, measured as whatever its <see cref="DeleteMode"/> says it is.</summary>
     protected static long SizeOf(CleanupContext context, CleanupPath path) =>
         path.Mode == DeleteMode.DeleteFile
             ? context.FileSystem.GetFileSize(path.Path)
@@ -159,7 +158,7 @@ public abstract class DirectoryCleanerBase : ICleaner
             ? context.FileSystem.FileExists(path.Path)
             : context.FileSystem.DirectoryExists(path.Path);
 
-    /// <summary>Targets that actually exist on disk (file or directory), de-duplicated by path.</summary>
+    /// <summary>Targets that exist on disk, de-duplicated by path.</summary>
     protected IEnumerable<CleanupPath> ExistingTargets(CleanupContext context) =>
         Existing(context, GetTargets(context));
 
@@ -182,8 +181,8 @@ public abstract class DirectoryCleanerBase : ICleaner
                 continue;
             }
 
-            // Normalize separators so the same directory spelled two ways de-dupes, and check
-            // existence first so a nonexistent candidate doesn't shadow a real one it aliases.
+            // Normalize separators so one folder spelled two ways is de-duplicated; check existence
+            // first so a missing candidate can't hide a real one with the same key.
             var key = PathComparison.Normalize(path.Path);
             if (Exists(context, path) && seen.Add(key))
             {

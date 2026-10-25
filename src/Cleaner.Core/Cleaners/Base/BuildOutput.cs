@@ -4,10 +4,9 @@ using Cleaner.Core.Utils;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// When a folder is a project's build output rather than something that only shares its name. A
-/// folder qualifies only when its parent is a project of the right kind and the folder carries
-/// proof it was generated there; an installed tool's <c>bin</c> or an editor extension's
-/// <c>node_modules</c> has neither.
+/// Tells a project's build output from a folder that only shares its name. The parent must be a project
+/// of the right kind and the folder must show it was generated there; an installed tool's <c>bin</c> or
+/// an editor extension's <c>node_modules</c> has neither.
 /// </summary>
 internal static class BuildOutput
 {

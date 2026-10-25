@@ -8,7 +8,7 @@ using Spectre.Console;
 
 namespace Cleaner.Cli.Infrastructure;
 
-/// <summary>Explicit Native-AOT-safe composition root; cleaner categories are split into partials.</summary>
+/// <summary>Explicit registrations, since Native AOT rules out assembly scanning.</summary>
 internal static partial class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCleaner(this IServiceCollection services)
@@ -32,7 +32,6 @@ internal static partial class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>Registers cleaners from the category-specific partial methods.</summary>
     private static void AddCleaners(this IServiceCollection services)
     {
         services.AddDevToolCleaners();

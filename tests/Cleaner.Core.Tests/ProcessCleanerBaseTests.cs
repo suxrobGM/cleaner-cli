@@ -62,8 +62,7 @@ public sealed class ProcessCleanerBaseTests
     [Fact]
     public async Task A_tool_whose_cache_is_protected_still_runs_its_own_cleanup()
     {
-        // uv installed by Scoop keeps its cache under scoop\persist, which Cleaner never deletes
-        // directly; `uv cache clean` is still the right thing to run.
+        // Scoop's uv caches under scoop\persist: never deleted directly, but `uv cache clean` still runs.
         var env = new FakeEnvironment().SetVariable("SCOOP", "/home/test/scoop");
         var fs = new FakeFileSystem().AddFile("/home/test/scoop/persist/uv/cache/x.whl", 200);
         var runner = new FakeProcessRunner().WithAvailable("tool");

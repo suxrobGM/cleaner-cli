@@ -8,7 +8,6 @@ public sealed partial class ConsoleRenderer
 {
     public void CleanerList(IReadOnlyList<CleanerListEntry> entries)
     {
-        // Grouped tables keep the large cleaner list scannable.
         var layout = ByLayout(entries, e => e.Cleaner.Category).ToList();
         foreach (var group in layout)
         {
@@ -138,7 +137,6 @@ public sealed partial class ConsoleRenderer
         table.AddRow(cells);
     }
 
-    /// <summary>Indented per-target rows under a cleaner, largest first, shown in verbose mode.</summary>
     private static void AppendVerboseTargets(Table table, ScanRow row)
     {
         foreach (var target in row.Result.Targets.Where(t => t.Bytes > 0).OrderByDescending(t => t.Bytes))

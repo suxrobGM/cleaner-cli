@@ -3,17 +3,13 @@ using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.Base;
 
-/// <summary>
-/// Traversal for workspace sweep cleaners; matching directories are yielded and not traversed.
-/// </summary>
+/// <summary>Finds matching directories below a set of folders, without descending into matches.</summary>
 internal static class DirectorySearch
 {
-
     /// <summary>
-    /// Depth-first walk below each existing root. A child is tested with <paramref name="isMatch"/>
-    /// first and yielded on a match; otherwise it is entered only if <paramref name="canEnter"/>
-    /// allows. Roots themselves are never yielded, and links are never followed (see
-    /// <see cref="IFileSystemService.EnumerateDirectories"/>).
+    /// Depth-first walk below each existing root. A matching child is yielded and not entered; any other
+    /// child is entered only if <paramref name="canEnter"/> allows. Roots are never yielded, and links are
+    /// never followed.
     /// </summary>
     public static IEnumerable<string> Find(
         IFileSystemService fileSystem,

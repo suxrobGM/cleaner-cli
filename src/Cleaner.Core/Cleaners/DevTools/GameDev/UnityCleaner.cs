@@ -6,9 +6,8 @@ using Cleaner.Core.Utils;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Unity's global editor cache and regenerable <c>Library</c>/<c>Temp</c>/<c>Logs</c>/<c>obj</c>
-/// folders inside detected Unity projects. Scan roots come from repeatable <c>--path</c> options
-/// (defaulting to the current directory); player builds and the Asset Store cache are preserved.
+/// Unity's editor cache and the <c>Library</c>/<c>Temp</c>/<c>Logs</c>/<c>obj</c> folders of Unity projects
+/// under the scan roots. Player builds and the Asset Store cache are kept.
 /// </summary>
 public sealed class UnityCleaner : DirectoryCleanerBase
 {
@@ -51,8 +50,7 @@ public sealed class UnityCleaner : DirectoryCleanerBase
         var fs = context.FileSystem;
         var roots = ProjectRoots.Allowed(context);
 
-        // Find Unity projects under the scan roots (a root may itself be one), never entering the
-        // regenerable artifact folders, links, dot-folders, or installed tools along the way.
+        // A scan root may itself be a project; the search never enters artifact folders.
         var projects = roots
             .Where(root => IsUnityProject(fs, root))
             .Concat(DirectorySearch.Find(
@@ -68,7 +66,7 @@ public sealed class UnityCleaner : DirectoryCleanerBase
 
     protected override IEnumerable<string> ScanNotes(CleanupContext context) => ProjectRoots.Refusals(context);
 
-    /// <summary>ProjectVersion.txt is what Unity writes; Assets plus ProjectSettings alone could be anything.</summary>
+    /// <summary>Requires ProjectVersion.txt; Assets plus ProjectSettings alone could be anything.</summary>
     private static bool IsUnityProject(IFileSystemService fs, string dir) =>
         fs.DirectoryExists(Path.Combine(dir, "Assets")) &&
         fs.FileExists(Path.Combine(dir, "ProjectSettings", "ProjectVersion.txt"));

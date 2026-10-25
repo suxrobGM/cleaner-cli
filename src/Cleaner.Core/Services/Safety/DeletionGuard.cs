@@ -6,9 +6,8 @@ namespace Cleaner.Core.Services;
 
 /// <inheritdoc cref="IDeletionGuard"/>
 /// <remarks>
-/// Immutable and safe to share across the parallel scan. Paths are compared as strings (see
-/// <see cref="PathComparison"/>) except for link resolution, which asks the filesystem and is
-/// cached per directory.
+/// Immutable, so the parallel scan can share it. Rules compare path strings; only link resolution
+/// touches the filesystem, and it is cached per directory.
 /// </remarks>
 public sealed partial class DeletionGuard : IDeletionGuard
 {
@@ -65,8 +64,8 @@ public sealed partial class DeletionGuard : IDeletionGuard
         var windows = env.WindowsDirectory is { } w ? PathComparison.Key(w) : null;
         var comparison = env.IsLinux ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
-        // "Inside a PATH entry" is only meaningful for entries that are a tool's own folder. A root,
-        // the profile, or the Windows tree is on PATH too, and those hold caches Cleaner may clear.
+        // Only a tool's own PATH folder protects what's inside it. Drive roots, the profile, and the
+        // Windows tree can be on PATH too, and they hold caches Cleaner may clear.
         var strict = pathKeys
             .Where(key => key.Length > 0 && !(key.Length == 2 && key[1] == ':'))
             .Where(key => !essential.Any(e => Under(e, key, comparison)))
@@ -80,7 +79,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
                 g.Key,
                 g.First().Path,
                 g.First().Reason,
-                // The same folder named twice keeps only the holes both entries allow.
+                // A folder listed twice keeps only the cache folders both entries allow.
                 g.Select(r => r.CacheFolders.Select(h => PathComparison.Key(g.Key + "/" + h)))
                     .Aggregate((a, b) => a.Intersect(b, StringComparer.FromComparison(comparison)))
                     .ToArray()))
@@ -134,7 +133,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
             return "is a link; deleting through it would reach whatever it points to";
         }
 
-        // Reached through a junction (scoop's `current`, nvm's symlink), the real folder decides.
+        // Behind a junction (scoop's `current`, nvm's symlink), the real folder must pass too.
         return RealPath(path) is { } real && !Same(real, path) && Check(real, contentsOnly) is { } viaLink
             ? $"resolves to {real}, which {viaLink}"
             : null;

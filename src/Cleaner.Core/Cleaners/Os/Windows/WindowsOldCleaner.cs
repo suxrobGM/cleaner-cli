@@ -4,10 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>
-/// The previous Windows installation left by an upgrade. Deleting it removes rollback capability;
-/// files are owned by TrustedInstaller, so ownership is taken on this directory before deletion.
-/// </summary>
+/// <summary>The previous Windows installation left behind by an upgrade.</summary>
 public sealed class WindowsOldCleaner : WindowsCleanerBase
 {
     public override string Id => "windows-old";
@@ -37,9 +34,8 @@ public sealed class WindowsOldCleaner : WindowsCleanerBase
     {
         if (!context.DryRun)
         {
-            // TrustedInstaller/SYSTEM own most of the tree; a plain recursive delete gets access
-            // denied. Take ownership and grant Administrators full control — on approved, unprotected
-            // paths only, since the grant itself can't be undone.
+            // TrustedInstaller and SYSTEM own most of the tree, so a plain delete is denied. Take
+            // ownership first, but only of approved, unprotected paths: the grant cannot be undone.
             foreach (var target in approved.Where(t => context.Guard.WhyProtected(t.Path) is null))
             {
                 await context.ProcessRunner

@@ -8,55 +8,50 @@ public interface IConsoleRenderer
     /// <summary>False when output is redirected or no live terminal is attached (no prompts/spinners).</summary>
     bool IsInteractive { get; }
 
-    /// <summary>Write a single line of Spectre markup.</summary>
     void Line(string markup);
 
-    /// <summary>The figlet banner, version, and tagline shown when the interactive menu opens.</summary>
+    /// <summary>The banner, tagline, and version shown when the menu opens.</summary>
     void InteractiveHeader(string version);
 
-    /// <summary>Render the cleaner list, one table per group and a section per category.</summary>
+    /// <summary>One table per group, with a section per category.</summary>
     void CleanerList(IReadOnlyList<CleanerListEntry> entries);
 
-    /// <summary>Pauses interactive output until a key is pressed; no-op when redirected.</summary>
+    /// <summary>Waits for a key press; does nothing when not interactive.</summary>
     void Pause(string markup);
 
-    /// <summary>Renders scan sizes, optionally including per-target paths.</summary>
     void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false);
 
     /// <summary>Show each cleaner's scan notes: protected paths left alone, refused scan roots.</summary>
     void ScanNotes(IReadOnlyList<ScanRow> rows);
 
-    /// <summary>Render the post-clean summary table (freed bytes, status) and any error detail.</summary>
+    /// <summary>Post-run table of freed space and status, followed by any errors.</summary>
     void CleanSummary(IReadOnlyList<CleanRow> results);
 
-    /// <summary>Ask a yes/no question.</summary>
+    /// <summary>Asks a yes/no question; returns <paramref name="defaultValue"/> when not interactive.</summary>
     bool Confirm(string markup, bool defaultValue = false);
 
-    /// <summary>Show the top-level menu and return the action the user picked.</summary>
     MainMenuChoice PromptMainMenu();
 
-    /// <summary>Show the multi-select menu grouped by category; returns the chosen cleaners.</summary>
     IReadOnlyList<ICleaner> PromptSelection(IReadOnlyList<ICleaner> choosable);
 
-    /// <summary>Untick individual scanned folders; returns the ones kept, or null if not asked.</summary>
+    /// <summary>Lets the user untick scanned folders; returns the ones kept, or null when not interactive.</summary>
     IReadOnlyList<string>? PromptFolders(IReadOnlyList<ScanRow> rows);
 
-    /// <summary>Run <paramref name="work"/> under a status spinner and return its result.</summary>
     Task<T> StatusAsync<T>(string status, Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken);
 
-    /// <summary>Scan each cleaner under a spinner, surfacing the current cleaner's name.</summary>
+    /// <summary>Scans the cleaners in parallel under a spinner; results keep the input order.</summary>
     Task<IReadOnlyList<ScanRow>> ScanAsync(
         IReadOnlyList<ICleaner> cleaners,
         Func<ICleaner, Task<ScanResult>> scan,
         CancellationToken cancellationToken);
 
-    /// <summary>Clean each cleaner under a progress bar, surfacing the current cleaner's name.</summary>
+    /// <summary>Runs the cleaners one at a time under a progress bar.</summary>
     Task<IReadOnlyList<CleanRow>> CleanAsync(
         IReadOnlyList<ICleaner> cleaners,
         Func<ICleaner, Task<CleanResult>> clean,
         CancellationToken cancellationToken);
 
-    /// <summary>Run <paramref name="work"/> under a progress bar, feeding it a 0..1 progress sink.</summary>
+    /// <summary>Runs <paramref name="work"/> under a progress bar; it reports progress from 0 to 1.</summary>
     Task DownloadAsync(
         string description,
         Func<IProgress<double>, CancellationToken, Task> work,

@@ -3,17 +3,16 @@ using Cleaner.Core.Abstractions;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Decides which folders a project sweep may start from. Started from the profile, a drive root, or
-/// a system folder, a sweep would reach installed tools, so those roots are refused with a note
-/// that says how to point Cleaner at a workspace instead.
+/// Decides which folders a project search may start from. The profile, drive roots, and system folders
+/// would reach installed tools, so they are refused with a note on how to point Cleaner at a workspace.
 /// </summary>
 internal static class ProjectRoots
 {
-    /// <summary>The scan roots a sweep may walk.</summary>
+    /// <summary>The <see cref="CleanupContext.ScanRoots"/> the guard allows.</summary>
     public static IReadOnlyList<string> Allowed(CleanupContext context) =>
         [.. context.ScanRoots.Where(root => context.Guard.WhyNotProjectRoot(root) is null)];
 
-    /// <summary>Whether a single project folder (usually the working directory) may be swept.</summary>
+    /// <summary>Whether a single project folder (usually the working directory) may be searched.</summary>
     public static bool IsAllowed(CleanupContext context, string root) =>
         context.Guard.WhyNotProjectRoot(root) is null;
 

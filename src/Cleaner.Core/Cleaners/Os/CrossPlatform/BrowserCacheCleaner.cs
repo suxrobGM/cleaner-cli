@@ -3,13 +3,10 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>
-/// Clears the HTTP/code caches of installed browsers — Chrome, Edge, Brave, Opera, Vivaldi,
-/// Chromium, Arc, and Firefox — keeping history, cookies, and profiles.
-/// </summary>
+/// <summary>Browser HTTP and code caches; history, cookies, and profiles are kept.</summary>
 public sealed class BrowserCacheCleaner : DirectoryCleanerBase
 {
-    /// <summary>Chromium-based browsers on Windows: label + User Data root relative to %LOCALAPPDATA%.</summary>
+    /// <summary>User Data roots relative to %LOCALAPPDATA%.</summary>
     private static readonly (string Label, string[] Segments)[] WindowsChromiumBrowsers =
     [
         ("Chrome", ["Google", "Chrome", "User Data"]),
@@ -76,7 +73,7 @@ public sealed class BrowserCacheCleaner : DirectoryCleanerBase
 
     private static IEnumerable<CleanupPath> ChromiumProfiles(CleanupContext context, string userDataRoot, string browser)
     {
-        // Some browsers (e.g. Opera) keep the cache dirs directly in the root instead of per-profile.
+        // Some browsers (such as Opera) keep their caches in the root rather than per profile.
         foreach (var path in ChromiumCache.Under(userDataRoot, browser))
         {
             yield return path;

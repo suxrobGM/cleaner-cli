@@ -1,6 +1,5 @@
 namespace Cleaner.Cli.Application;
 
-/// <summary>Per-invocation options shared by the interactive flows.</summary>
 public sealed record RunOptions
 {
     /// <summary>Show the per-target path breakdown in size tables.</summary>
@@ -8,6 +7,6 @@ public sealed record RunOptions
 
     public string WorkingDirectory { get; init; } = Environment.CurrentDirectory;
 
-    /// <summary>Roots (<c>--path</c>) for workspace-sweeping cleaners; empty falls back to cwd.</summary>
+    /// <summary>Folders from <c>--path</c> to search for projects; empty means the working directory.</summary>
     public IReadOnlyList<string> ScanRoots { get; init; } = [];
 }

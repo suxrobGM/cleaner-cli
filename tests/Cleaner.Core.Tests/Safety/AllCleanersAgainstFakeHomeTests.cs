@@ -9,9 +9,8 @@ using Xunit;
 namespace Cleaner.Core.Tests.Safety;
 
 /// <summary>
-/// Runs every registered cleaner, scan then full clean, against a realistic home folder and checks
-/// that only caches and project build output go. This is the regression test for the 2026-10-24 run
-/// that deleted installed tools.
+/// Runs every registered cleaner against <see cref="FakeHome"/> and checks that only caches and
+/// project build output are deleted.
 /// </summary>
 public sealed class AllCleanersAgainstFakeHomeTests
 {
@@ -23,7 +22,7 @@ public sealed class AllCleanersAgainstFakeHomeTests
         return provider.GetRequiredService<ICleanerRegistry>().All;
     }
 
-    /// <summary>Scan and clean every applicable cleaner, the way "All cleaners" plus the opt-in sweep would.</summary>
+    /// <summary>Scans and cleans every applicable cleaner, like "All cleaners" plus the project scan.</summary>
     private static async Task RunAllAsync(FakeHome home, FakeProcessRunner runner, string workingDirectory, string? scanRoot = null)
     {
         var context = TestContext.Create(
@@ -52,15 +51,14 @@ public sealed class AllCleanersAgainstFakeHomeTests
         var home = Build(kind);
         var onPathBefore = home.FilesOnPath();
 
-        // No tool on PATH answers, so every cleaner falls back to deleting its folders directly:
-        // the path where a wrong target does the most damage.
+        // No tool answers, so every cleaner deletes its folders directly, where a wrong target does most damage.
         await RunAllAsync(home, new FakeProcessRunner(), workingDirectory: home.Home);
 
         Assert.All(home.Installed, file => Assert.True(home.FileSystem.FileExists(file), $"deleted an install: {file}"));
         Assert.All(onPathBefore, file => Assert.True(home.FileSystem.FileExists(file), $"deleted a file on PATH: {file}"));
 
-        // Started from the profile, the project sweep refuses, so build output stays too.
-        Assert.All(home.ProjectArtifacts, file => Assert.True(home.FileSystem.FileExists(file), $"swept from home: {file}"));
+        // The project scan refuses to run from the profile, so build output stays.
+        Assert.All(home.ProjectArtifacts, file => Assert.True(home.FileSystem.FileExists(file), $"removed build output from a home scan: {file}"));
         Assert.All(home.Caches, file => Assert.False(home.FileSystem.FileExists(file), $"left a cache behind: {file}"));
     }
 

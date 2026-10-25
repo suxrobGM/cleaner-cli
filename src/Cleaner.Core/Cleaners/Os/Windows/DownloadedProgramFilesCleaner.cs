@@ -4,7 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>Leftover downloaded installers and ActiveX/Java applet caches. Needs elevation.</summary>
+/// <summary>Leftover downloaded installers and ActiveX/Java applet caches.</summary>
 public sealed class DownloadedProgramFilesCleaner : WindowsCleanerBase
 {
     public override string Id => "downloaded-program-files";

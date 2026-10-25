@@ -5,10 +5,10 @@ using Serilog.Events;
 
 namespace Cleaner.Cli.Infrastructure;
 
-/// <summary>Native-AOT-safe, file-backed Serilog implementation of <see cref="IAppLogger"/>.</summary>
+/// <summary>File-backed Serilog implementation of <see cref="IAppLogger"/>.</summary>
 /// <remarks>
-/// <c>cleaner.log</c> rolls and keeps run summaries; each clean also writes every path it removed or
-/// skipped to its own <c>runs/run-&lt;timestamp&gt;.log</c>, the only record of what was deleted.
+/// <c>cleaner.log</c> rolls and keeps run summaries. Each clean also writes every removed or skipped path
+/// to its own <c>runs/run-&lt;timestamp&gt;.log</c>, the only record of what was deleted.
 /// </remarks>
 public sealed class SerilogAppLogger : IAppLogger, IDisposable
 {

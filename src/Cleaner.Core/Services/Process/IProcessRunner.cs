@@ -17,16 +17,12 @@ public interface IProcessRunner
     /// <summary>True if <paramref name="executable"/> can be found on PATH.</summary>
     bool Exists(string executable);
 
-    /// <summary>
-    /// Image paths of the processes running right now, as far as this user can see them. Best
-    /// effort: processes that refuse inspection are left out.
-    /// </summary>
+    /// <summary>Executable paths of running processes; ones this user can't inspect are left out.</summary>
     IReadOnlyList<string> RunningExecutablePaths();
 
     /// <summary>
-    /// Runs <paramref name="executable"/> to completion. A <paramref name="timeout"/> stops a
-    /// command that would otherwise hold a scan open, and is reported as a failed result;
-    /// cancellation requested by the caller propagates instead.
+    /// Runs to completion. Hitting <paramref name="timeout"/> returns a failed result so a hung tool can't
+    /// stall a scan; caller cancellation throws instead.
     /// </summary>
     Task<ProcessResult> RunAsync(
         string executable,

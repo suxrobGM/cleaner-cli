@@ -10,10 +10,9 @@ namespace Cleaner.Core.Cleaners.Os;
 /// Omits <c>/ResetBase</c> so updates remain uninstallable.
 /// </summary>
 /// <remarks>
-/// WinSxS is mostly hard links, so only DISM can size it — and its report costs a full walk of the
-/// component store, which takes minutes on an ordinary machine and blocks outright while Windows
-/// servicing holds its lock. Scanning never pays that: this cleaner reports its size after running,
-/// like the other command-driven ones. Both DISM calls carry a deadline so neither can stall a run.
+/// WinSxS is mostly hard links, so only DISM can size it, and that report walks the whole store: minutes
+/// on a normal machine, or a hang while servicing holds its lock. So the size is reported after cleaning,
+/// and both DISM calls have a timeout.
 /// </remarks>
 public sealed class WinSxSCleaner : ProcessCleanerBase
 {
@@ -50,10 +49,6 @@ public sealed class WinSxSCleaner : ProcessCleanerBase
     protected override IReadOnlyList<string> CleanArguments =>
         ["/Online", "/Cleanup-Image", "/StartComponentCleanup"];
 
-    /// <summary>
-    /// Measures the store through DISM so results reflect the actual store size. Only the clean
-    /// path calls this, because the report is far too slow to run during a scan.
-    /// </summary>
     protected override async ValueTask<long?> MeasureAsync(CleanupContext context, CancellationToken cancellationToken)
     {
         // Analysis needs the same elevation the cleanup does; asking without it just fails slowly.

@@ -11,7 +11,7 @@ using var provider = services.BuildServiceProvider();
 var logger = provider.GetRequiredService<IAppLogger>();
 var updateService = provider.GetRequiredService<IUpdateService>();
 
-// Last-resort capture: anything that escapes the normal flow is recorded before the process dies.
+// Log anything that escapes the normal flow before the process dies.
 AppDomain.CurrentDomain.UnhandledException += (_, e) =>
     logger.Error("Unhandled exception", e.ExceptionObject as Exception);
 
@@ -21,7 +21,7 @@ TaskScheduler.UnobservedTaskException += (_, e) =>
     e.SetObserved();
 };
 
-// Remove any leftover binary backup from a previous self-update (Windows renames the old exe aside).
+// Self-update on Windows renames the old exe aside; remove that backup.
 updateService.CleanupStaleBackup();
 
 try

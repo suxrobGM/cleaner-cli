@@ -6,7 +6,6 @@ namespace Cleaner.Cli.Infrastructure;
 
 internal static partial class ServiceCollectionExtensions
 {
-    /// <summary>Cleaners for developer tooling: languages, package managers, build caches, IDEs, etc.</summary>
     private static void AddDevToolCleaners(this IServiceCollection services)
     {
         // .NET

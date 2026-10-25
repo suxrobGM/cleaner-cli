@@ -19,7 +19,6 @@ public sealed class UnrealCleaner : DirectoryCleanerBase
     {
         var env = context.Environment;
 
-        // UE-LOCALDATACACHEPATH / the shared DDC env override, when set.
         if (OsPaths.Env(env, "UE-LocalDataCachePath", "UE_LocalDataCachePath") is { } configured)
         {
             yield return new CleanupPath(configured, DeleteMode.ClearContents);

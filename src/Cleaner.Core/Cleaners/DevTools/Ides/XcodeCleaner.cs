@@ -3,9 +3,7 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>
-/// Xcode derived data, device-support symbols, and simulator caches (macOS). Archives are preserved.
-/// </summary>
+/// <summary>Xcode derived data, device-support symbols, and simulator caches (macOS); archives are kept.</summary>
 public sealed class XcodeCleaner : DirectoryCleanerBase
 {
     public override string Id => "xcode";

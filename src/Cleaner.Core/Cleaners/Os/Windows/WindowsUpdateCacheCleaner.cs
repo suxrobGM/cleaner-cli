@@ -4,7 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>Downloaded Windows Update payloads (SoftwareDistribution\Download). Needs elevation.</summary>
+/// <summary>Downloaded Windows Update payloads (SoftwareDistribution\Download).</summary>
 public sealed class WindowsUpdateCacheCleaner : WindowsCleanerBase
 {
     public override string Id => "windows-update";

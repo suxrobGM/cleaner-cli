@@ -4,7 +4,7 @@ using Cleaner.Core.Services;
 
 namespace Cleaner.Core.Cleaners.Os;
 
-/// <summary>System crash memory dumps (kernel minidumps, live kernel reports). Needs elevation.</summary>
+/// <summary>System crash memory dumps (kernel minidumps, live kernel reports).</summary>
 public sealed class SystemMemoryDumpCleaner : WindowsCleanerBase
 {
     public override string Id => "memory-dumps";

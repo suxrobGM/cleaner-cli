@@ -23,7 +23,7 @@ public sealed class ZigCleaner : DirectoryCleanerBase
 
         yield return new CleanupPath(OsPaths.AppCache(env, "zig", "zig", "zig"));
 
-        // zig also uses ~/.cache/zig on macOS in several versions; harmless if absent.
+        // Some zig versions use ~/.cache/zig on macOS too.
         yield return new CleanupPath(env.HomePath(".cache", "zig"));
     }
 }

@@ -23,7 +23,7 @@ public sealed partial class CleanerApp(
         return 0;
     }
 
-    /// <summary>Marks available command-backed cleaners whose size is unknown until execution.</summary>
+    /// <summary>Marks available command-based cleaners whose size is unknown until they run.</summary>
     private static IReadOnlyList<ScanRow> MarkCommandBased(IReadOnlyList<ScanRow> rows, CleanupContext context) =>
         [.. rows.Select(r => MarkCommandBased(r, context))];
 
