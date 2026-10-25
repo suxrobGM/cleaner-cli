@@ -18,14 +18,13 @@ public sealed class TrashCleaner : DirectoryCleanerBase
 
         if (env.IsWindows)
         {
-            foreach (var drive in DriveInfo.GetDrives())
+            // Each user's bin is a SID-named folder that only they can open. Clearing inside the
+            // ones we can read empties our own bin without renaming folders Windows owns.
+            foreach (var drive in env.FixedDriveRoots)
             {
-                if (drive is { DriveType: DriveType.Fixed, IsReady: true })
+                foreach (var userBin in context.FileSystem.EnumerateDirectories(Path.Combine(drive, "$Recycle.Bin")))
                 {
-                    yield return new CleanupPath(
-                        Path.Combine(drive.RootDirectory.FullName, "$Recycle.Bin"),
-                        DeleteMode.ClearContents,
-                        drive.Name);
+                    yield return new CleanupPath(userBin, DeleteMode.ClearContents, drive);
                 }
             }
 

@@ -26,7 +26,7 @@ public sealed class ConsoleRendererTests
         public Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default) =>
             Task.FromResult(ScanResult.Empty);
 
-        public Task<CleanResult> CleanAsync(CleanupContext context, IProgress<CleanProgress>? progress = null, CancellationToken cancellationToken = default) =>
+        public Task<CleanResult> CleanAsync(CleanupContext context, IReadOnlyList<CleanupTarget> approved, IProgress<CleanProgress>? progress = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(CleanResult.Empty);
     }
 
@@ -53,7 +53,7 @@ public sealed class ConsoleRendererTests
         var console = Recording(new StringWriter());
         var row = new ScanRow(
             new StubCleaner("npm", Categories.JavaScript),
-            new ScanResult([new CleanupTarget("/a", 10), new CleanupTarget("/b", 20)]));
+            new ScanResult([new CleanupTarget("/a", 10, DeleteMode.DeleteDirectory), new CleanupTarget("/b", 20, DeleteMode.DeleteDirectory)]));
 
         // Redirected output cannot answer a prompt, so nothing is narrowed.
         Assert.Null(new ConsoleRenderer(console).PromptFolders([row]));
@@ -92,8 +92,8 @@ public sealed class ConsoleRendererTests
         console.Profile.Width = 200;
         var rows = new[]
         {
-            new ScanRow(new StubCleaner("npm", Categories.JavaScript), new ScanResult([new CleanupTarget("/a", 1024)])),
-            new ScanRow(new StubCleaner("pip", Categories.Python), new ScanResult([new CleanupTarget("/b", 3072)])),
+            new ScanRow(new StubCleaner("npm", Categories.JavaScript), new ScanResult([new CleanupTarget("/a", 1024, DeleteMode.DeleteDirectory)])),
+            new ScanRow(new StubCleaner("pip", Categories.Python), new ScanResult([new CleanupTarget("/b", 3072, DeleteMode.DeleteDirectory)])),
         };
 
         new ConsoleRenderer(console).SizeTable(rows, "Reclaimable");

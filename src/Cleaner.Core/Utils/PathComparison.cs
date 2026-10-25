@@ -1,6 +1,10 @@
 namespace Cleaner.Core.Utils;
 
 /// <summary>How paths are matched, shared so callers can't disagree about what a path is.</summary>
+/// <remarks>
+/// Everything here is plain string logic. It never asks the OS to resolve a path, so Windows-shaped
+/// paths compare correctly on a Linux test runner and vice versa.
+/// </remarks>
 public static class PathComparison
 {
     /// <summary>Unifies separators so one folder spelled two ways compares equal.</summary>
@@ -15,10 +19,84 @@ public static class PathComparison
     public static IReadOnlySet<string> CreateSet(IEnumerable<string> paths, bool isLinux) =>
         new HashSet<string>(paths.Select(Normalize), ComparerFor(isLinux));
 
-    /// <summary>
-    /// Whether a path survived the user's picks. The one place that knows a selection must be
-    /// looked up normalized, and that a null selection takes everything.
-    /// </summary>
+    /// <summary>Whether a path survived the user's picks; a null selection takes everything.</summary>
     public static bool IsSelected(IReadOnlySet<string>? selected, string path) =>
         selected is null || selected.Contains(Normalize(path));
+
+    /// <summary>
+    /// A comparison key: forward slashes, no repeated or trailing separators. A filesystem root
+    /// becomes <c>""</c> and a drive root becomes <c>"C:"</c>, so "is under" is a plain prefix test.
+    /// </summary>
+    public static string Key(string path)
+    {
+        var unified = path.Trim().Replace('\\', '/');
+        var unc = unified.StartsWith("//", StringComparison.Ordinal);
+        var parts = unified.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var joined = string.Join('/', parts);
+        return unc ? "//" + joined : unified.StartsWith('/') ? "/" + joined : joined;
+    }
+
+    /// <summary>True for <c>/</c>, <c>C:\</c>, and other volume roots.</summary>
+    public static bool IsRoot(string path)
+    {
+        var key = Key(path);
+        return key is "/" or "" || (key.Length == 2 && key[1] == ':') || (key.StartsWith("//") && key.Count(c => c == '/') <= 3);
+    }
+
+    /// <summary>An absolute path on either platform: <c>/x</c>, <c>\x</c>, <c>C:\x</c>, or <c>\\server\share</c>.</summary>
+    public static bool IsRooted(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        var p = path.Trim();
+        return p[0] is '/' or '\\' || (p.Length >= 3 && char.IsAsciiLetter(p[0]) && p[1] == ':' && p[2] is '/' or '\\');
+    }
+
+    /// <summary>True when <paramref name="path"/> is <paramref name="root"/> or lies anywhere under it.</summary>
+    public static bool IsSameOrUnder(string path, string root, bool isLinux)
+    {
+        var p = TrimRoot(Key(path));
+        var r = TrimRoot(Key(root));
+        var comparison = isLinux ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        return p.Equals(r, comparison)
+            || (p.Length > r.Length && p.StartsWith(r, comparison) && p[r.Length] == '/');
+    }
+
+    /// <summary>Paths overlap when either one contains the other.</summary>
+    public static bool Overlaps(string a, string b, bool isLinux) =>
+        IsSameOrUnder(a, b, isLinux) || IsSameOrUnder(b, a, isLinux);
+
+    /// <summary>The parent directory by string logic, or null at a root.</summary>
+    public static string? Parent(string path)
+    {
+        var key = Key(path);
+        var cut = key.LastIndexOf('/');
+        if (IsRoot(path) || cut < 0)
+        {
+            return null;
+        }
+
+        // Keep the separator style of the input so the result can be handed back to the OS.
+        var separator = path.Contains('\\') ? '\\' : '/';
+        var parent = cut == 0 ? "/" : key[..cut];
+        if (parent.Length == 2 && parent[1] == ':')
+        {
+            parent += "/";
+        }
+
+        return parent.Replace('/', separator);
+    }
+
+    /// <summary>The final segment of a path.</summary>
+    public static string Leaf(string path)
+    {
+        var key = Key(path);
+        return key[(key.LastIndexOf('/') + 1)..];
+    }
+
+    // "/" keys to "/" so a prefix test against "/x" still sees the separator; "C:" stays as is.
+    private static string TrimRoot(string key) => key == "/" ? string.Empty : key;
 }

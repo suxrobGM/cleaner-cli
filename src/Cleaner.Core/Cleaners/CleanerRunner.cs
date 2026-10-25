@@ -33,12 +33,13 @@ public static class CleanerRunner
     public static async Task<CleanResult> SafeCleanAsync(
         ICleaner cleaner,
         CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,
         IAppLogger logger,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            return await cleaner.CleanAsync(context, progress: null, cancellationToken).ConfigureAwait(false);
+            return await cleaner.CleanAsync(context, approved, progress: null, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

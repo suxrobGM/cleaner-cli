@@ -3,12 +3,12 @@ using Cleaner.Core.Abstractions;
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>
-/// Base for cleaners driven by an external command. Uses the command when available and falls back
-/// to declared directories otherwise.
+/// Base for cleaners driven by an external command. Uses the command when the tool is installed and
+/// the declared cache directories only when it is not.
 /// </summary>
 public abstract class ProcessCleanerBase : DirectoryCleanerBase
 {
-    private CleanupContext? _measuredContext;
+    private Guid? _measuredRun;
     private long? _measuredBytes;
 
     /// <summary>The executable to invoke (resolved on PATH), e.g. "dotnet", "npm", "docker".</summary>
@@ -32,50 +32,59 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
     /// <summary>The tool clears its own cache wholesale; it takes no list of folders to spare.</summary>
     public override bool SupportsPartialSelection => false;
 
+    /// <summary>
+    /// Runs the tool's own cleanup whenever the tool is installed: it knows which of its folders
+    /// are safe to remove. A failed command is reported and nothing is deleted in its place. Only
+    /// when the tool is gone are the approved cache folders removed directly.
+    /// </summary>
     public override async Task<CleanResult> CleanAsync(
         CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,
         IProgress<CleanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        // A partial selection makes the bulk command the wrong tool: it clears the whole cache,
-        // including the folders the user kept. Direct deletion is what honors the picks.
-        if (context.DryRun || context.SelectedPaths is not null || !context.ProcessRunner.Exists(Executable))
+        if (context.DryRun || !context.ProcessRunner.Exists(Executable))
         {
-            return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
+            return await base.CleanAsync(context, approved, progress, cancellationToken).ConfigureAwait(false);
         }
 
         var before = await BaselineAsync(context, cancellationToken).ConfigureAwait(false);
+        var outcomes = new List<TargetOutcome>();
+        var errors = new List<string>();
         foreach (var arguments in CommandSequence(context))
         {
+            var command = string.Join(' ', [Executable, .. arguments]);
             var result = await context.ProcessRunner
                 .RunAsync(Executable, arguments, CommandTimeout, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!result.Success)
             {
-                // A command failed — fall back to direct deletion so the user still gets results.
-                var fallback = await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
-                return fallback with
-                {
-                    Errors = [.. fallback.Errors, $"{Executable}: {result.FailureMessage(Executable)}"],
-                };
+                var failure = result.FailureMessage(Executable);
+                outcomes.Add(new TargetOutcome(command, OutcomeKind.Failed, Reason: failure));
+                errors.Add($"{command}: {failure}");
+                context.Logger?.Error($"[{Id}] command failed: {command}: {failure}");
+                break;
             }
+
+            outcomes.Add(new TargetOutcome(command, OutcomeKind.CommandRun));
+            context.Logger?.Info($"[{Id}] ran {command}");
         }
 
         var after = await MeasureAsync(context, cancellationToken).ConfigureAwait(false);
         var freed = before is { } start && after is { } end ? Math.Max(0, start - end) : 0;
         progress?.Report(new CleanProgress(Name, freed));
-        return new CleanResult(freed, 1, []);
+        return new CleanResult(freed, errors.Count == 0 ? 1 : 0, errors) { Outcomes = outcomes };
     }
 
     /// <summary>
     /// Hand the clean the size a scan has just measured, so a run that scans first does not pay
-    /// for the same measurement twice. Only the context that produced the number can spend it, and
+    /// for the same measurement twice. Only the run that produced the number can spend it, and
     /// only once, so a later run always measures afresh.
     /// </summary>
     protected void RememberMeasurement(CleanupContext context, long? bytes)
     {
-        _measuredContext = context;
+        _measuredRun = context.RunId;
         _measuredBytes = bytes;
     }
 
@@ -83,10 +92,10 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
     private async ValueTask<long?> BaselineAsync(CleanupContext context, CancellationToken cancellationToken)
     {
         var remembered = _measuredBytes;
-        var matches = ReferenceEquals(_measuredContext, context);
+        var matches = _measuredRun == context.RunId;
 
-        // Spent either way, so a stale number can never be read and the context is not held on.
-        _measuredContext = null;
+        // Spent either way, so a stale number can never be read.
+        _measuredRun = null;
         _measuredBytes = null;
 
         return matches ? remembered : await MeasureAsync(context, cancellationToken).ConfigureAwait(false);

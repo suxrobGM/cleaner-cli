@@ -50,11 +50,12 @@ public sealed class CompositionRootTests
                      "game-launchers", "unreal", "winsxs", "windows-old", "rubygems", "wandb",
                      "app-leftovers", "vscode-cpptools", "android-studio", "amd-telemetry",
                      "winre-agent", "razer", "claude-desktop", "codex", "docker-vhdx", "ngen-cache", "windows-installer-orphans",
+                     "cleaner-leftovers",
                  })
         {
             Assert.NotNull(registry.Find(id));
         }
 
-        Assert.Equal(131, registry.All.Count);
+        Assert.Equal(132, registry.All.Count);
     }
 }

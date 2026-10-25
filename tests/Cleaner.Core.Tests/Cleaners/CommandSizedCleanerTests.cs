@@ -71,8 +71,8 @@ public sealed class CommandSizedCleanerTests
 
         var context = TestContext.Create(processRunner: runner);
         var cleaner = new DockerCleaner();
-        await cleaner.ScanAsync(context);
-        var result = await cleaner.CleanAsync(context);
+        var scan = await cleaner.ScanAsync(context);
+        var result = await cleaner.CleanAsync(context, scan.Targets);
 
         Assert.Equal(800_000_000, result.BytesFreed);
         Assert.Contains(runner.Invocations, i => i.Arguments.Contains("prune"));

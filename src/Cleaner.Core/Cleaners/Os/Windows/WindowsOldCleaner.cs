@@ -31,24 +31,26 @@ public sealed class WindowsOldCleaner : WindowsCleanerBase
 
     public override async Task<CleanResult> CleanAsync(
         CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,
         IProgress<CleanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         if (!context.DryRun)
         {
             // TrustedInstaller/SYSTEM own most of the tree; a plain recursive delete gets access
-            // denied. Take ownership and grant Administrators full control — on this path only.
-            foreach (var path in ExistingTargets(context))
+            // denied. Take ownership and grant Administrators full control — on approved, unprotected
+            // paths only, since the grant itself can't be undone.
+            foreach (var target in approved.Where(t => context.Guard.WhyProtected(t.Path) is null))
             {
                 await context.ProcessRunner
-                    .RunAsync("takeown", ["/F", path.Path, "/R", "/A", "/D", "Y"], cancellationToken: cancellationToken)
+                    .RunAsync("takeown", ["/F", target.Path, "/R", "/A", "/D", "Y"], cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
                 await context.ProcessRunner
-                    .RunAsync("icacls", [path.Path, "/grant", "Administrators:F", "/T", "/C"], cancellationToken: cancellationToken)
+                    .RunAsync("icacls", [target.Path, "/grant", "Administrators:F", "/T", "/C"], cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }
         }
 
-        return await base.CleanAsync(context, progress, cancellationToken).ConfigureAwait(false);
+        return await base.CleanAsync(context, approved, progress, cancellationToken).ConfigureAwait(false);
     }
 }

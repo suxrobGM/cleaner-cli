@@ -22,13 +22,16 @@ public abstract class DirectoryCleanerBase : ICleaner
 
     /// <inheritdoc cref="ICleaner.SupportsPartialSelection"/>
     /// <remarks>
-    /// True because <see cref="CleanAsync"/> deletes exactly what <see cref="ScanAsync"/> reported.
+    /// True because <see cref="CleanAsync"/> deletes exactly the approved targets <see cref="ScanAsync"/> reported.
     /// An override that reaches past those targets must say so by returning false.
     /// </remarks>
     public virtual bool SupportsPartialSelection => true;
 
     /// <inheritdoc cref="ICleaner.ConfirmationWarning"/>
     public virtual string? ConfirmationWarning => null;
+
+    /// <inheritdoc cref="ICleaner.OptIn"/>
+    public virtual bool OptIn => false;
 
     /// <summary>Candidate targets, which may not exist and may be files (<see cref="DeleteMode.DeleteFile"/>).</summary>
     protected virtual IEnumerable<CleanupPath> GetTargets(CleanupContext context) => [];
@@ -43,70 +46,107 @@ public abstract class DirectoryCleanerBase : ICleaner
 
     public virtual bool IsApplicable(CleanupContext context) => true;
 
+    /// <summary>Some target exists that the guard would let this cleaner remove.</summary>
     public virtual bool IsAvailable(CleanupContext context) =>
-        ExistingTargets(context).Any();
+        ExistingTargets(context).Any(path =>
+            path.Mode == DeleteMode.ToolManaged
+            || context.Guard.WhyProtected(path.Path, contentsOnly: path.Mode == DeleteMode.ClearContents) is null);
 
     public virtual async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
     {
         var targets = new List<CleanupTarget>();
+        var protectedPaths = 0;
         foreach (var path in await ExistingTargetsAsync(context, cancellationToken).ConfigureAwait(false))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            targets.Add(new CleanupTarget(path.Path, SizeOf(context, path), path.Description));
+            var (bytes, blocked) = Measure(context, path);
+            protectedPaths += blocked;
+            if (bytes is { } size)
+            {
+                targets.Add(new CleanupTarget(path.Path, size, path.Mode, path.Description));
+            }
         }
 
-        return new ScanResult(targets);
+        var notes = ScanNotes(context).ToList();
+        if (protectedPaths > 0)
+        {
+            notes.Add($"{protectedPaths} protected path(s) left alone; the log says why");
+        }
+
+        return new ScanResult(targets) { Notes = notes };
     }
 
-    public virtual async Task<CleanResult> CleanAsync(
+    /// <summary>Anything about discovery the user should see, such as a scan root that was refused.</summary>
+    protected virtual IEnumerable<string> ScanNotes(CleanupContext context) => [];
+
+    /// <summary>
+    /// Removes exactly the approved targets. Each is checked against the guard again first, and
+    /// nothing is rediscovered, so the run can't reach past what the preview showed.
+    /// </summary>
+    public virtual Task<CleanResult> CleanAsync(
         CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,
         IProgress<CleanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        long bytesFreed = 0;
-        var itemsRemoved = 0;
-        var errors = new List<string>();
-
-        foreach (var path in await ExistingTargetsAsync(context, cancellationToken).ConfigureAwait(false))
+        var remover = new TargetRemover(context, Id);
+        foreach (var target in approved)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var size = SizeOf(context, path);
-
-            try
-            {
-                if (!context.DryRun)
-                {
-                    Remove(context, path);
-                }
-
-                bytesFreed += size;
-                itemsRemoved++;
-                progress?.Report(new CleanProgress(path.Description ?? path.Path, size));
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"{path.Path}: {ex.Message}");
-            }
+            remover.Remove(target, progress, cancellationToken);
         }
 
-        return new CleanResult(bytesFreed, itemsRemoved, errors);
+        return Task.FromResult(remover.Result);
     }
 
-    private static void Remove(CleanupContext context, CleanupPath path)
+    /// <summary>
+    /// What a target would free once the guard has had its say: null when it is protected outright,
+    /// and for <see cref="DeleteMode.ClearContents"/> the sum of the children that may go.
+    /// </summary>
+    private (long? Bytes, int Blocked) Measure(CleanupContext context, CleanupPath path)
     {
-        switch (path.Mode)
+        var guard = context.Guard;
+        if (path.Mode == DeleteMode.ToolManaged)
         {
-            case DeleteMode.ClearContents:
-                context.FileSystem.DeleteContents(path.Path);
-                break;
-            case DeleteMode.DeleteFile:
-                context.FileSystem.DeleteFile(path.Path);
-                break;
-            default:
-                context.FileSystem.DeleteDirectory(path.Path);
-                break;
+            return (SizeOf(context, path), 0);
         }
+
+        if (guard.WhyProtected(path.Path, contentsOnly: path.Mode == DeleteMode.ClearContents) is { } why)
+        {
+            LogProtected(context, path.Path, why);
+            return (null, 1);
+        }
+
+        if (path.Mode != DeleteMode.ClearContents)
+        {
+            return (SizeOf(context, path), 0);
+        }
+
+        long total = 0;
+        var blocked = 0;
+        foreach (var entry in context.FileSystem.EnumerateEntries(path.Path))
+        {
+            if (context.FileSystem.IsLink(entry))
+            {
+                continue;
+            }
+
+            if (guard.WhyProtected(entry) is { } childWhy)
+            {
+                LogProtected(context, entry, childWhy);
+                blocked++;
+                continue;
+            }
+
+            total += context.FileSystem.DirectoryExists(entry)
+                ? context.FileSystem.GetDirectorySize(entry)
+                : context.FileSystem.GetFileSize(entry);
+        }
+
+        return (total, blocked);
     }
+
+    private void LogProtected(CleanupContext context, string path, string why) =>
+        context.Logger?.Detail($"[{Id}] not offered: {path} {why}");
 
     /// <summary>On-disk size of a target, measured as whatever its <see cref="DeleteMode"/> says it is.</summary>
     protected static long SizeOf(CleanupContext context, CleanupPath path) =>
@@ -138,11 +178,6 @@ public abstract class DirectoryCleanerBase : ICleaner
         foreach (var path in candidates)
         {
             if (string.IsNullOrWhiteSpace(path.Path))
-            {
-                continue;
-            }
-
-            if (!PathComparison.IsSelected(context.SelectedPaths, path.Path))
             {
                 continue;
             }

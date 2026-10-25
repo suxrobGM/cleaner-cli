@@ -23,6 +23,9 @@ public interface IConsoleRenderer
     /// <summary>Renders scan sizes, optionally including per-target paths.</summary>
     void SizeTable(IReadOnlyList<ScanRow> rows, string sizeHeader, bool verbose = false);
 
+    /// <summary>Show each cleaner's scan notes: protected paths left alone, refused scan roots.</summary>
+    void ScanNotes(IReadOnlyList<ScanRow> rows);
+
     /// <summary>Render the post-clean summary table (freed bytes, status) and any error detail.</summary>
     void CleanSummary(IReadOnlyList<CleanRow> results);
 

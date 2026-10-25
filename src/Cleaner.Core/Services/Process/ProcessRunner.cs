@@ -13,6 +13,30 @@ public sealed class ProcessRunner : IProcessRunner
 
     public bool Exists(string executable) => TryResolve(executable, out _);
 
+    public IReadOnlyList<string> RunningExecutablePaths()
+    {
+        var paths = new List<string>();
+        foreach (var process in Process.GetProcesses())
+        {
+            using (process)
+            {
+                try
+                {
+                    if (process.MainModule?.FileName is { Length: > 0 } file)
+                    {
+                        paths.Add(file);
+                    }
+                }
+                catch
+                {
+                    // System and elevated processes deny inspection to a normal user.
+                }
+            }
+        }
+
+        return paths;
+    }
+
     public async Task<ProcessResult> RunAsync(
         string executable,
         IReadOnlyList<string> arguments,

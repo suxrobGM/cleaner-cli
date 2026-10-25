@@ -38,8 +38,12 @@ public sealed partial class CleanerApp(
     private Task<ScanResult> SafeScanAsync(ICleaner cleaner, CleanupContext context, CancellationToken cancellationToken) =>
         CleanerRunner.SafeScanAsync(cleaner, context, logger, cancellationToken);
 
-    private Task<CleanResult> SafeCleanAsync(ICleaner cleaner, CleanupContext context, CancellationToken cancellationToken) =>
-        CleanerRunner.SafeCleanAsync(cleaner, context, logger, cancellationToken);
+    private Task<CleanResult> SafeCleanAsync(
+        ICleaner cleaner,
+        CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,
+        CancellationToken cancellationToken) =>
+        CleanerRunner.SafeCleanAsync(cleaner, context, approved, logger, cancellationToken);
 
     private CleanerStatus StatusOf(ICleaner cleaner, CleanupContext context)
     {

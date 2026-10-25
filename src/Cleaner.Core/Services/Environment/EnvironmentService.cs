@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Services;
 
@@ -7,6 +8,7 @@ namespace Cleaner.Core.Services;
 public sealed partial class EnvironmentService : IEnvironmentService
 {
     private readonly Lazy<bool> _isElevated;
+    private readonly Lazy<IReadOnlyList<string>> _pathDirectories;
 
     public EnvironmentService()
     {
@@ -16,6 +18,7 @@ public sealed partial class EnvironmentService : IEnvironmentService
             : OsPlatform.Unknown;
 
         _isElevated = new Lazy<bool>(DetectElevation);
+        _pathDirectories = new Lazy<IReadOnlyList<string>>(ReadPathDirectories);
     }
 
     public OsPlatform Os { get; }
@@ -63,9 +66,44 @@ public sealed partial class EnvironmentService : IEnvironmentService
 
     public string LogDirectory => HomePath(".cleaner", "logs");
 
+    public IReadOnlyList<string> PathDirectories => _pathDirectories.Value;
+
+    public IReadOnlyList<string> FixedDriveRoots =>
+        [.. DriveInfo.GetDrives().Where(d => d is { DriveType: DriveType.Fixed, IsReady: true }).Select(d => d.RootDirectory.FullName)];
+
     public string? GetEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name);
 
     public string HomePath(params string[] segments) => Path.Combine([HomeDirectory, .. segments]);
+
+    private static IReadOnlyList<string> ReadPathDirectories()
+    {
+        var values = new List<string?> { Environment.GetEnvironmentVariable("PATH") };
+        if (OperatingSystem.IsWindows())
+        {
+            values.Add(Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User));
+            values.Add(Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.Machine));
+        }
+
+        var seen = new HashSet<string>(PathComparison.ComparerFor(OperatingSystem.IsLinux()));
+        var result = new List<string>();
+        foreach (var entry in values.SelectMany(v => (v ?? string.Empty).Split(Path.PathSeparator)))
+        {
+            var expanded = Environment.ExpandEnvironmentVariables(entry.Trim().Trim('"'));
+
+            // Relative or unexpanded entries ("." or "%MISSING%") say nothing about a real folder.
+            if (!PathComparison.IsRooted(expanded) || expanded.Contains('%'))
+            {
+                continue;
+            }
+
+            if (seen.Add(PathComparison.Key(expanded)))
+            {
+                result.Add(PathComparison.IsRoot(expanded) ? expanded : expanded.TrimEnd('\\', '/'));
+            }
+        }
+
+        return result;
+    }
 
     private bool DetectElevation()
     {

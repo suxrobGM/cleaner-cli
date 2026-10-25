@@ -11,6 +11,7 @@ internal static partial class ServiceCollectionExtensions
     {
         services.AddSingleton<ICleaner, UserTempCleaner>();
         services.AddSingleton<ICleaner, TrashCleaner>();
+        services.AddSingleton<ICleaner, StagedLeftoverCleaner>();
         services.AddSingleton<ICleaner, BrowserCacheCleaner>();
         services.AddSingleton<ICleaner, WindowsUpdateCacheCleaner>();
         services.AddSingleton<ICleaner, WindowsTempCleaner>();

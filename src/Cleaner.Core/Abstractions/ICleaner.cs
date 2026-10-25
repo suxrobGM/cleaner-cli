@@ -30,6 +30,12 @@ public interface ICleaner
     /// <summary>Optional warning shown before running a potentially costly cleanup.</summary>
     string? ConfirmationWarning => null;
 
+    /// <summary>
+    /// Left out of bulk selection ("All cleaners"); the user has to tick it by name. For cleaners
+    /// whose reach depends on where Cleaner was started, such as workspace sweeps.
+    /// </summary>
+    bool OptIn => false;
+
     /// <summary>True if this cleaner is meaningful on the current operating system.</summary>
     bool IsApplicable(CleanupContext context);
 
@@ -39,9 +45,13 @@ public interface ICleaner
     /// <summary>Measure what would be removed without deleting anything.</summary>
     Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default);
 
-    /// <summary>Remove the targets (honoring <see cref="CleanupContext.DryRun"/>), reporting progress.</summary>
+    /// <summary>
+    /// Remove exactly the <paramref name="approved"/> targets, the ones the user reviewed, and
+    /// nothing a fresh look would find (honoring <see cref="CleanupContext.DryRun"/>).
+    /// </summary>
     Task<CleanResult> CleanAsync(
         CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,
         IProgress<CleanProgress>? progress = null,
         CancellationToken cancellationToken = default);
 }

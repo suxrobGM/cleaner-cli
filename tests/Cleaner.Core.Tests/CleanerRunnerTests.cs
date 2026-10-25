@@ -7,19 +7,14 @@ namespace Cleaner.Core.Tests;
 
 public sealed class CleanerRunnerTests
 {
-    private readonly CleanupContext _context = new()
-    {
-        FileSystem = new FakeFileSystem(),
-        Environment = new FakeEnvironment(),
-        ProcessRunner = new FakeProcessRunner(),
-    };
+    private readonly CleanupContext _context = TestContext.Create();
 
     [Fact]
     public async Task SafeCleanAsync_TurnsThrowIntoErrorResult()
     {
         var cleaner = new ThrowingCleaner(new InvalidOperationException("boom"));
 
-        var result = await CleanerRunner.SafeCleanAsync(cleaner, _context, new NullAppLogger());
+        var result = await CleanerRunner.SafeCleanAsync(cleaner, _context, [], new NullAppLogger());
 
         Assert.True(result.HasErrors);
         Assert.Contains("boom", result.Errors[0]);
@@ -42,7 +37,7 @@ public sealed class CleanerRunnerTests
         var cleaner = new ThrowingCleaner(new OperationCanceledException());
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => CleanerRunner.SafeCleanAsync(cleaner, _context, new NullAppLogger()));
+            () => CleanerRunner.SafeCleanAsync(cleaner, _context, [], new NullAppLogger()));
     }
 
     private sealed class ThrowingCleaner(Exception toThrow) : ICleaner
@@ -64,6 +59,7 @@ public sealed class CleanerRunnerTests
 
         public Task<CleanResult> CleanAsync(
             CleanupContext context,
+            IReadOnlyList<CleanupTarget> approved,
             IProgress<CleanProgress>? progress = null,
             CancellationToken cancellationToken = default) =>
             throw toThrow;

@@ -1,7 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 using Cleaner.Core.Tests.Fakes;
-using Cleaner.Core.Utils;
 using Xunit;
 
 namespace Cleaner.Core.Tests;
@@ -85,13 +84,14 @@ public sealed class DirectoryCleanerBaseTests
     }
 
     [Fact]
-    public async Task Clean_deletes_only_the_selected_folders()
+    public async Task Clean_deletes_only_the_approved_targets()
     {
         var fs = ThreeCaches();
         var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"), new CleanupPath("/c"));
-        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet(["/b"], isLinux: false));
+        var context = TestContext.Create(fs);
+        var scan = await cleaner.ScanAsync(context);
 
-        var result = await cleaner.CleanAsync(context);
+        var result = await cleaner.CleanAsync(context, [.. scan.Targets.Where(t => t.Path == "/b")]);
 
         Assert.Equal(1, result.ItemsRemoved);
         Assert.Equal(20, result.BytesFreed);
@@ -101,13 +101,27 @@ public sealed class DirectoryCleanerBaseTests
     }
 
     [Fact]
-    public async Task Clean_with_an_empty_selection_deletes_nothing()
+    public async Task Clean_never_rediscovers_targets_that_appeared_after_the_scan()
+    {
+        var fs = new FakeFileSystem().AddFile("/a/x.bin", 10);
+        var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"));
+        var context = TestContext.Create(fs);
+        var scan = await cleaner.ScanAsync(context);
+        fs.AddFile("/b/new.bin", 99);
+
+        var result = await cleaner.CleanAsync(context, scan.Targets);
+
+        Assert.Equal(10, result.BytesFreed);
+        Assert.True(fs.DirectoryExists("/b"));
+    }
+
+    [Fact]
+    public async Task Clean_with_no_approved_targets_deletes_nothing()
     {
         var fs = ThreeCaches();
         var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"));
-        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet([], isLinux: false));
 
-        var result = await cleaner.CleanAsync(context);
+        var result = await cleaner.CleanAsync(TestContext.Create(fs), []);
 
         Assert.Equal(0, result.ItemsRemoved);
         Assert.False(result.HasErrors);
@@ -115,45 +129,78 @@ public sealed class DirectoryCleanerBaseTests
     }
 
     [Fact]
-    public async Task Selection_matches_a_folder_spelled_with_either_separator()
+    public async Task A_locked_folder_is_skipped_whole_and_the_rest_continues()
     {
-        var fs = ThreeCaches();
-        var target = $"{Path.DirectorySeparatorChar}a";
-        var selected = $"{Path.AltDirectorySeparatorChar}a";
-        var cleaner = new TestCleaner(new CleanupPath(target));
-        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet([selected], isLinux: false));
-
-        var result = await cleaner.CleanAsync(context);
-
-        Assert.Equal(1, result.ItemsRemoved);
-    }
-
-    [Fact]
-    public async Task Scan_reports_only_the_selected_folders()
-    {
-        var fs = ThreeCaches();
-        var cleaner = new TestCleaner(new CleanupPath("/a"), new CleanupPath("/b"), new CleanupPath("/c"));
-        var context = TestContext.Create(fs, selectedPaths: PathComparison.CreateSet(["/a", "/c"], isLinux: false));
-
-        var result = await cleaner.ScanAsync(context);
-
-        Assert.Equal(2, result.ItemCount);
-        Assert.Equal(40, result.TotalBytes);
-    }
-
-    [Fact]
-    public async Task Clean_captures_errors_and_continues()
-    {
-        var fs = new FakeFileSystem().AddFile("/bad/a.bin", 100).AddFile("/good/b.bin", 30);
-        fs.ThrowOnDelete.Add("/bad");
+        var fs = new FakeFileSystem()
+            .AddFile("/bad/a.bin", 100)
+            .AddFile("/bad/b.bin", 100)
+            .AddFile("/good/b.bin", 30);
+        fs.InUse.Add("/bad/a.bin");
         var cleaner = new TestCleaner(new CleanupPath("/bad"), new CleanupPath("/good"));
 
         var result = await cleaner.CleanAsync(TestContext.Create(fs));
 
-        Assert.Single(result.Errors);
+        Assert.False(result.HasErrors);
+        Assert.Equal(1, result.SkippedCount);
         Assert.Equal(30, result.BytesFreed);
-        Assert.True(fs.DirectoryExists("/bad"));
+        Assert.True(fs.FileExists("/bad/a.bin"));
+        Assert.True(fs.FileExists("/bad/b.bin"));
         Assert.False(fs.DirectoryExists("/good"));
+    }
+
+    [Fact]
+    public async Task A_delete_that_fails_after_staging_reports_the_leftover()
+    {
+        var fs = new FakeFileSystem().AddFile("/bad/a.bin", 100);
+        var cleaner = new TestCleaner(new CleanupPath("/bad"));
+        var context = TestContext.Create(fs);
+        var scan = await cleaner.ScanAsync(context);
+        fs.FailDeletesUnder.Add("/bad.cleaner-deleting-");
+
+        var result = await cleaner.CleanAsync(context, scan.Targets);
+
+        Assert.Single(result.Errors);
+        Assert.Contains(".cleaner-deleting-", result.Errors[0]);
+        Assert.False(fs.DirectoryExists("/bad"));
+        Assert.Contains(".cleaner-deleting-", Assert.Single(fs.ReadAllLines("/home/test/.cleaner/pending-deletes.txt")));
+    }
+
+    [Fact]
+    public async Task Clear_contents_skips_protected_children_and_clears_the_rest()
+    {
+        var env = new FakeEnvironment { PathDirectories = ["/tmpcache/tool/bin"] };
+        var fs = new FakeFileSystem()
+            .AddFile("/tmpcache/tool/bin/tool", 5)
+            .AddFile("/tmpcache/junk/x.bin", 50);
+        var cleaner = new TestCleaner(new CleanupPath("/tmpcache", DeleteMode.ClearContents));
+        var context = TestContext.Create(fs, env);
+
+        var scan = await cleaner.ScanAsync(context);
+        var result = await cleaner.CleanAsync(context, scan.Targets);
+
+        Assert.Equal(50, scan.TotalBytes);
+        Assert.Contains(scan.Notes, n => n.Contains("protected"));
+        Assert.Equal(50, result.BytesFreed);
+        Assert.True(fs.FileExists("/tmpcache/tool/bin/tool"));
+        Assert.False(fs.DirectoryExists("/tmpcache/junk"));
+    }
+
+    [Fact]
+    public async Task Protected_targets_are_neither_offered_nor_deleted()
+    {
+        var env = new FakeEnvironment { PathDirectories = ["/opt-tools/bin"] };
+        var fs = new FakeFileSystem().AddFile("/opt-tools/bin/tool", 5).AddFile("/cache/x", 7);
+        var cleaner = new TestCleaner(new CleanupPath("/opt-tools"), new CleanupPath("/cache"));
+        var context = TestContext.Create(fs, env);
+
+        var scan = await cleaner.ScanAsync(context);
+
+        // Even if a caller approves the protected folder anyway, the remover refuses it.
+        var forced = await cleaner.CleanAsync(context, [new CleanupTarget("/opt-tools", 5, DeleteMode.DeleteDirectory)]);
+
+        Assert.Equal(["/cache"], scan.Targets.Select(t => t.Path));
+        Assert.Equal(1, forced.SkippedCount);
+        Assert.True(fs.FileExists("/opt-tools/bin/tool"));
     }
 
     private static FakeFileSystem ThreeCaches() => new FakeFileSystem()

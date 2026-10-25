@@ -42,7 +42,7 @@ public sealed class DockerCleaner : ProcessCleanerBase
 
         RememberMeasurement(context, known.Used);
         return known.Reclaimable > 0
-            ? new ScanResult([new CleanupTarget("docker", known.Reclaimable, "unused images, containers, and build cache")])
+            ? new ScanResult([new CleanupTarget("docker", known.Reclaimable, DeleteMode.ToolManaged, "unused images, containers, and build cache")])
             : ScanResult.Empty;
     }
 

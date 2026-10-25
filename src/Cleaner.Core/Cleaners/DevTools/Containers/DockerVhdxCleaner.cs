@@ -51,12 +51,13 @@ public sealed class DockerVhdxCleaner : DirectoryCleanerBase
         var onHost = disks.Sum(context.FileSystem.GetFileSize);
         var slack = Math.Max(0, onHost - known.Used);
         return slack > 0
-            ? new ScanResult([new CleanupTarget(disks[0], slack, "estimated slack in the Docker virtual disk")])
+            ? new ScanResult([new CleanupTarget(disks[0], slack, DeleteMode.ToolManaged, "estimated slack in the Docker virtual disk")])
             : ScanResult.Empty;
     }
 
     public override async Task<CleanResult> CleanAsync(
         CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,
         IProgress<CleanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {

@@ -18,6 +18,12 @@ public interface IProcessRunner
     bool Exists(string executable);
 
     /// <summary>
+    /// Image paths of the processes running right now, as far as this user can see them. Best
+    /// effort: processes that refuse inspection are left out.
+    /// </summary>
+    IReadOnlyList<string> RunningExecutablePaths();
+
+    /// <summary>
     /// Runs <paramref name="executable"/> to completion. A <paramref name="timeout"/> stops a
     /// command that would otherwise hold a scan open, and is reported as a failed result;
     /// cancellation requested by the caller propagates instead.

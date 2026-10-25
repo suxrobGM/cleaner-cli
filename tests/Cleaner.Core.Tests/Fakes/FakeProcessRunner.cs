@@ -28,6 +28,11 @@ public sealed class FakeProcessRunner : IProcessRunner
 
     public bool Exists(string executable) => _available.Contains(executable);
 
+    /// <summary>Image paths <see cref="RunningExecutablePaths"/> reports as running.</summary>
+    public List<string> RunningExecutables { get; } = [];
+
+    public IReadOnlyList<string> RunningExecutablePaths() => RunningExecutables;
+
     public Task<ProcessResult> RunAsync(
         string executable,
         IReadOnlyList<string> arguments,

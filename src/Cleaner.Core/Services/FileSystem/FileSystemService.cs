@@ -58,13 +58,58 @@ public sealed class FileSystemService : IFileSystemService
 
         try
         {
-            return Directory.EnumerateDirectories(path);
+            // Links are skipped so a walk can't follow scoop's `current` or nvm's symlink into an
+            // install that lives elsewhere.
+            return Directory.EnumerateDirectories(path, "*", RecursiveScan(recurse: false));
         }
         catch
         {
             return [];
         }
     }
+
+    public IEnumerable<string> EnumerateEntries(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            return [];
+        }
+
+        try
+        {
+            return Directory.EnumerateFileSystemEntries(path, "*", new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                AttributesToSkip = 0,
+            });
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public bool IsLink(string path) => LinkTargetOf(LinkInfo(path)) is not null;
+
+    public string? ResolveLinkTarget(string path)
+    {
+        var info = LinkInfo(path);
+        if (LinkTargetOf(info) is not { } target)
+        {
+            return null;
+        }
+
+        try
+        {
+            return info!.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? target;
+        }
+        catch
+        {
+            return target;
+        }
+    }
+
+    public void MoveDirectory(string source, string destination) => Directory.Move(source, destination);
 
     public IEnumerable<string> EnumerateFiles(string path, string searchPattern = "*", bool recursive = false)
     {
@@ -125,43 +170,27 @@ public sealed class FileSystemService : IFileSystemService
         File.WriteAllText(path, contents);
     }
 
-    public void DeleteContents(string path)
+    public IReadOnlyList<string> ReadAllLines(string path)
     {
-        if (!Directory.Exists(path))
+        try
         {
-            return;
+            return File.Exists(path) ? File.ReadAllLines(path) : [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public void AppendLine(string path, string line)
+    {
+        var directory = Path.GetDirectoryName(path);
+        if (directory is { Length: > 0 })
+        {
+            Directory.CreateDirectory(directory);
         }
 
-        var errors = new List<Exception>();
-
-        foreach (var dir in Directory.EnumerateDirectories(path))
-        {
-            try
-            {
-                DeleteDirectory(dir);
-            }
-            catch (Exception ex)
-            {
-                errors.Add(ex);
-            }
-        }
-
-        foreach (var file in Directory.EnumerateFiles(path))
-        {
-            try
-            {
-                DeleteFile(file);
-            }
-            catch (Exception ex)
-            {
-                errors.Add(ex);
-            }
-        }
-
-        if (errors.Count > 0)
-        {
-            throw new AggregateException($"Failed to delete some contents of '{path}'.", errors);
-        }
+        File.AppendAllText(path, line + Environment.NewLine);
     }
 
     private static void ClearReadOnlyAttributes(string directory)
@@ -189,6 +218,31 @@ public sealed class FileSystemService : IFileSystemService
         IgnoreInaccessible = true,
         AttributesToSkip = FileAttributes.ReparsePoint,
     };
+
+    /// <summary>The path as a directory or file, whichever it is; null when it can't be inspected.</summary>
+    private static FileSystemInfo? LinkInfo(string path)
+    {
+        try
+        {
+            return Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? LinkTargetOf(FileSystemInfo? info)
+    {
+        try
+        {
+            return info?.LinkTarget;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private static void TryClearReadOnly(string file)
     {

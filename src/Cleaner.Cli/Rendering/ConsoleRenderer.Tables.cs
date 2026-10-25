@@ -81,6 +81,17 @@ public sealed partial class ConsoleRenderer
         console.Write(table);
     }
 
+    public void ScanNotes(IReadOnlyList<ScanRow> rows)
+    {
+        foreach (var row in rows)
+        {
+            foreach (var note in row.Result.Notes)
+            {
+                console.MarkupLine($"[yellow]![/] [bold]{row.Cleaner.Name.EscapeMarkup()}[/]: {note.EscapeMarkup()}");
+            }
+        }
+    }
+
     public void CleanSummary(IReadOnlyList<CleanRow> results)
     {
         var table = new Table().Border(TableBorder.Rounded);
@@ -93,6 +104,10 @@ public sealed partial class ConsoleRenderer
             var status = row.Result.HasErrors
                 ? $"[red]{row.Result.Errors.Count} error(s)[/]"
                 : "[green]ok[/]";
+            if (row.Result.SkippedCount > 0)
+            {
+                status += $" [grey]({row.Result.SkippedCount} skipped)[/]";
+            }
             table.AddRow(
                 row.Cleaner.Name.EscapeMarkup(),
                 $"[green]{SizeFormatter.Humanize(row.Result.BytesFreed)}[/]",

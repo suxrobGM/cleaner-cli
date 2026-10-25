@@ -40,7 +40,7 @@ public sealed partial class ConsoleRenderer
             {
                 // Parent nodes give bulk selection; the Id keeps same-named cleaners apart.
                 var all = prompt.AddChoice("All cleaners");
-                foreach (var group in ByLayout(choosable, c => c.Category))
+                foreach (var group in ByLayout(choosable.Where(c => !c.OptIn).ToList(), c => c.Category))
                 {
                     var groupNode = all.AddChild($"[bold]{group.Key}[/]");
                     foreach (var category in group)
@@ -48,13 +48,30 @@ public sealed partial class ConsoleRenderer
                         var categoryNode = groupNode.AddChild(category.Key);
                         foreach (var cleaner in category)
                         {
-                            var label = $"{cleaner.Name} [grey]({cleaner.Id})[/]";
-                            labels[label] = cleaner;
-                            categoryNode.AddChild(label);
+                            categoryNode.AddChild(CleanerLabel(labels, cleaner));
                         }
                     }
                 }
+
+                // Opt-in cleaners sit outside "All cleaners" so ticking everything never includes
+                // a sweep whose reach depends on where Cleaner was started.
+                var optIn = choosable.Where(c => c.OptIn).ToList();
+                if (optIn.Count > 0)
+                {
+                    var sweeps = prompt.AddChoice("Project sweeps [grey](opt-in, not part of All cleaners)[/]");
+                    foreach (var cleaner in optIn)
+                    {
+                        sweeps.AddChild(CleanerLabel(labels, cleaner));
+                    }
+                }
             });
+
+    private static string CleanerLabel(Dictionary<string, ICleaner> labels, ICleaner cleaner)
+    {
+        var label = $"{cleaner.Name} [grey]({cleaner.Id})[/]";
+        labels[label] = cleaner;
+        return label;
+    }
 
     public IReadOnlyList<string>? PromptFolders(IReadOnlyList<ScanRow> rows) =>
         IsInteractive

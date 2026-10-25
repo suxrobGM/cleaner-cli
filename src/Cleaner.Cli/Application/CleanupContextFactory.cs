@@ -7,16 +7,18 @@ namespace Cleaner.Cli.Application;
 public sealed class CleanupContextFactory(
     IFileSystemService fileSystem,
     IEnvironmentService environment,
-    IProcessRunner processRunner)
+    IProcessRunner processRunner,
+    IAppLogger logger)
 {
-    /// <param name="selectedPaths">Folders the user kept; null takes all.</param>
-    public CleanupContext Create(RunOptions options, IReadOnlySet<string>? selectedPaths = null) => new()
+    /// <summary>A fresh context with its own guard, so PATH and the exclude file are read as they are now.</summary>
+    public CleanupContext Create(RunOptions options) => new()
     {
         FileSystem = fileSystem,
         Environment = environment,
         ProcessRunner = processRunner,
+        Guard = DeletionGuard.Create(environment, fileSystem, processRunner),
+        Logger = logger,
         WorkingDirectory = options.WorkingDirectory,
         ScanRoots = options.ScanRoots,
-        SelectedPaths = selectedPaths,
     };
 }

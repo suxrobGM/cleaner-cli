@@ -1,3 +1,5 @@
+using Cleaner.Core.Abstractions;
+
 namespace Cleaner.Core.Cleaners.Base;
 
 /// <summary>

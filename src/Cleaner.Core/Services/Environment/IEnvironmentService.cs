@@ -43,6 +43,15 @@ public interface IEnvironmentService
     /// <summary>Directory where Cleaner writes its own log files: <c>~/.cleaner/logs</c>.</summary>
     string LogDirectory { get; }
 
+    /// <summary>
+    /// Every directory on PATH: this process's, plus the user and machine PATH on Windows, so a
+    /// tool installed since the terminal opened is still known. Expanded, absolute, de-duplicated.
+    /// </summary>
+    IReadOnlyList<string> PathDirectories { get; }
+
+    /// <summary>Root folders of the ready, fixed (non-removable) drives, e.g. <c>C:\</c>.</summary>
+    IReadOnlyList<string> FixedDriveRoots { get; }
+
     string? GetEnvironmentVariable(string name);
 
     /// <summary>Combine path segments under the user's home directory.</summary>

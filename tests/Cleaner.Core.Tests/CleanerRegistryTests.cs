@@ -24,7 +24,7 @@ public sealed class CleanerRegistryTests
         public Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default) =>
             Task.FromResult(ScanResult.Empty);
 
-        public Task<CleanResult> CleanAsync(CleanupContext context, IProgress<CleanProgress>? progress = null, CancellationToken cancellationToken = default) =>
+        public Task<CleanResult> CleanAsync(CleanupContext context, IReadOnlyList<CleanupTarget> approved, IProgress<CleanProgress>? progress = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(CleanResult.Empty);
     }
 
