@@ -76,33 +76,50 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
         }
     }
 
-    private void RemoveDirectory(string path, string? description, IProgress<CleanProgress>? progress)
+    /// <summary>
+    /// The checks every removal makes first: still there, not protected, not in use. Returns false
+    /// when the path was skipped, or reported without deleting on a dry run.
+    /// </summary>
+    private bool TryPrepare(string path, bool isFile, string? description, IProgress<CleanProgress>? progress, out long size)
     {
         var fs = context.FileSystem;
-        if (!fs.DirectoryExists(path))
+        size = 0;
+        if (!(isFile ? fs.FileExists(path) : fs.DirectoryExists(path)))
         {
             Skip(path, "no longer exists");
-            return;
+            return false;
         }
 
         if (context.Guard.WhyProtected(path) is { } why)
         {
             Skip(path, why, warn: true);
-            return;
+            return false;
         }
 
         if (context.Guard.WhyInUse(path) is { } busy)
         {
             Skip(path, busy);
-            return;
+            return false;
         }
 
-        var size = fs.GetDirectorySize(path);
+        size = isFile ? fs.GetFileSize(path) : fs.GetDirectorySize(path);
         if (context.DryRun)
         {
             Removed(path, size, description, progress);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void RemoveDirectory(string path, string? description, IProgress<CleanProgress>? progress)
+    {
+        if (!TryPrepare(path, isFile: false, description, progress, out var size))
+        {
             return;
         }
+
+        var fs = context.FileSystem;
 
         // A sibling keeps the rename on the same volume, which is what makes it atomic.
         var movedAside = Path.Combine(
@@ -137,32 +154,12 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
 
     private void RemoveFile(string path, string? description, IProgress<CleanProgress>? progress)
     {
+        if (!TryPrepare(path, isFile: true, description, progress, out var size))
+        {
+            return;
+        }
+
         var fs = context.FileSystem;
-        if (!fs.FileExists(path))
-        {
-            Skip(path, "no longer exists");
-            return;
-        }
-
-        if (context.Guard.WhyProtected(path) is { } why)
-        {
-            Skip(path, why, warn: true);
-            return;
-        }
-
-        if (context.Guard.WhyInUse(path) is { } busy)
-        {
-            Skip(path, busy);
-            return;
-        }
-
-        var size = fs.GetFileSize(path);
-        if (context.DryRun)
-        {
-            Removed(path, size, description, progress);
-            return;
-        }
-
         try
         {
             fs.DeleteFile(path);
