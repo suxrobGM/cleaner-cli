@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
@@ -27,12 +28,12 @@ public sealed class JetBrainsCleaner : DirectoryCleanerBase
         var root = Path.Combine(env.LocalAppDataDirectory, "JetBrains");
         foreach (var productDir in context.FileSystem.EnumerateDirectories(root))
         {
-            if (DirectorySweep.LeafName(productDir).Equals("Toolbox", StringComparison.OrdinalIgnoreCase))
+            if (PathComparison.Name(productDir).Equals("Toolbox", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            foreach (var path in JetBrainsCache.Under(productDir, DirectorySweep.LeafName(productDir)))
+            foreach (var path in JetBrainsCache.Under(productDir, PathComparison.Name(productDir)))
             {
                 yield return path;
             }

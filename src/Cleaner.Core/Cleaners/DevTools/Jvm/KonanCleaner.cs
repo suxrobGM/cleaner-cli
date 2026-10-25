@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
@@ -23,7 +24,7 @@ public sealed class KonanCleaner : DirectoryCleanerBase
         // Downloaded compiler distributions (kotlin-native-prebuilt-*, kotlin-native-*) — re-fetched on demand.
         foreach (var dir in context.FileSystem.EnumerateDirectories(root))
         {
-            if (DirectorySweep.LeafName(dir).StartsWith("kotlin-native-", StringComparison.OrdinalIgnoreCase))
+            if (PathComparison.Name(dir).StartsWith("kotlin-native-", StringComparison.OrdinalIgnoreCase))
             {
                 yield return new CleanupPath(dir, Description: "compiler distribution");
             }

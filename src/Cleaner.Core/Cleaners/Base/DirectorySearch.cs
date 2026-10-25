@@ -6,22 +6,20 @@ namespace Cleaner.Core.Cleaners.Base;
 /// <summary>
 /// Traversal for workspace sweep cleaners; matching directories are yielded and not traversed.
 /// </summary>
-internal static class DirectorySweep
+internal static class DirectorySearch
 {
-    /// <summary>The final path segment (directory name) of <paramref name="path"/>.</summary>
-    public static string LeafName(string path) => PathComparison.Leaf(path);
 
     /// <summary>
     /// Depth-first walk below each existing root. A child is tested with <paramref name="isMatch"/>
-    /// first and yielded on a match; otherwise it is entered only if <paramref name="canDescend"/>
+    /// first and yielded on a match; otherwise it is entered only if <paramref name="canEnter"/>
     /// allows. Roots themselves are never yielded, and links are never followed (see
     /// <see cref="IFileSystemService.EnumerateDirectories"/>).
     /// </summary>
-    public static IEnumerable<string> FindDirectories(
+    public static IEnumerable<string> Find(
         IFileSystemService fileSystem,
         IEnumerable<string> roots,
         Func<string, bool> isMatch,
-        Func<string, bool> canDescend)
+        Func<string, bool> canEnter)
     {
         foreach (var root in roots)
         {
@@ -41,7 +39,7 @@ internal static class DirectorySweep
                     {
                         yield return child;
                     }
-                    else if (canDescend(child))
+                    else if (canEnter(child))
                     {
                         stack.Push(child);
                     }

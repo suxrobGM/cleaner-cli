@@ -58,10 +58,10 @@ public sealed partial class ConsoleRenderer
                 var optIn = choosable.Where(c => c.OptIn).ToList();
                 if (optIn.Count > 0)
                 {
-                    var sweeps = prompt.AddChoice("Project sweeps [grey](opt-in, not part of All cleaners)[/]");
+                    var optInNode = prompt.AddChoice("Project folders [grey](opt-in, not part of All cleaners)[/]");
                     foreach (var cleaner in optIn)
                     {
-                        sweeps.AddChild(CleanerLabel(labels, cleaner));
+                        optInNode.AddChild(CleanerLabel(labels, cleaner));
                     }
                 }
             });

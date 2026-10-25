@@ -91,7 +91,7 @@ public static class PathComparison
     }
 
     /// <summary>The final segment of a path.</summary>
-    public static string Leaf(string path)
+    public static string Name(string path)
     {
         var key = Key(path);
         return key[(key.LastIndexOf('/') + 1)..];

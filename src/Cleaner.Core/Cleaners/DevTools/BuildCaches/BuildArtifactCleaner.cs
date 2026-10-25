@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
@@ -8,7 +9,7 @@ namespace Cleaner.Core.Cleaners.DevTools;
 /// the scan roots (<c>--path</c>, repeatable; default current directory).
 /// </summary>
 /// <remarks>
-/// A folder is taken only when <see cref="ArtifactRules"/> proves it is a project's generated
+/// A folder is taken only when <see cref="BuildOutput"/> proves it is a project's generated
 /// output: a <c>bin</c> needs a .NET project and a restore beside it, a <c>node_modules</c> needs a
 /// package.json and a lockfile, and so on. The sweep refuses to start from the profile, a drive
 /// root, or a system folder, never enters links, dot-folders, or installed tools, and is opt-in so
@@ -29,13 +30,12 @@ public sealed class BuildArtifactCleaner : DirectoryCleanerBase
         "the projects under the scanned folders; each project needs a rebuild or reinstall afterwards";
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        DirectorySweep
-            .FindDirectories(
+        DirectorySearch.Find(
                 context.FileSystem,
-                WorkspaceRoots.Usable(context),
-                dir => ArtifactRules.IsArtifact(context.FileSystem, dir),
-                context.Guard.CanDescend)
-            .Select(dir => new CleanupPath(dir, Description: DirectorySweep.LeafName(dir)));
+                ProjectRoots.Allowed(context),
+                dir => BuildOutput.Matches(context.FileSystem, dir),
+                context.Guard.CanEnter)
+            .Select(dir => new CleanupPath(dir, Description: PathComparison.Name(dir)));
 
-    protected override IEnumerable<string> ScanNotes(CleanupContext context) => WorkspaceRoots.Refusals(context);
+    protected override IEnumerable<string> ScanNotes(CleanupContext context) => ProjectRoots.Refusals(context);
 }

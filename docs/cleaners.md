@@ -217,7 +217,7 @@ and take their own yes/no before the run-wide confirmation.
 | --- | --- | --- |
 | `temp` | The per-user temp directory. | |
 | `trash` | Recycle Bin / Trash for the current user. | |
-| `cleaner-leftovers` | Folders an earlier run renamed aside (`name.cleaner-deleting-xxxx`) but couldn't finish deleting, as recorded in `~/.cleaner/pending-deletes.txt`. | |
+| `unfinished-deletes` | Folders an earlier run renamed aside (`name.cleaner-deleting-xxxx`) but couldn't finish deleting, as recorded in `~/.cleaner/pending-deletes.txt`. | |
 | `browser-cache` | Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Arc, and Firefox HTTP/code caches, plus the on-device AI model stores Chrome and Edge download beside their profiles. | Keeps history/cookies/profiles. |
 | `windows-update` | `SoftwareDistribution\Download`. | Windows · needs admin |
 | `windows-temp` | The machine-wide `Windows\Temp`. | Windows · needs admin |

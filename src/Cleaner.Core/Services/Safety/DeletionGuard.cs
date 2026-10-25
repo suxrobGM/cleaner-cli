@@ -17,11 +17,11 @@ public sealed partial class DeletionGuard : IDeletionGuard
 
     private readonly IFileSystemService _fs;
     private readonly StringComparison _comparison;
-    private readonly string[] _essential;
-    private readonly string[] _notWorkspaces;
+    private readonly string[] _systemFolders;
+    private readonly string[] _nonProjectFolders;
     private readonly string[] _pathDirectories;
     private readonly string[] _strictPathDirectories;
-    private readonly KeyedRoot[] _installRoots;
+    private readonly KeyedRoot[] _installs;
     private readonly Exclusion[] _exclusions;
     private readonly Lazy<string[]> _running;
     private readonly ConcurrentDictionary<string, string> _realDirectories;
@@ -30,21 +30,21 @@ public sealed partial class DeletionGuard : IDeletionGuard
         IFileSystemService fs,
         bool isLinux,
         string[] essential,
-        string[] notWorkspaces,
+        string[] nonProjectFolders,
         string[] pathDirectories,
         string[] strictPathDirectories,
-        KeyedRoot[] installRoots,
+        KeyedRoot[] installs,
         Exclusion[] exclusions,
         Lazy<string[]> running,
         ConcurrentDictionary<string, string> realDirectories)
     {
         _fs = fs;
         _comparison = isLinux ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-        _essential = essential;
-        _notWorkspaces = notWorkspaces;
+        _systemFolders = essential;
+        _nonProjectFolders = nonProjectFolders;
         _pathDirectories = pathDirectories;
         _strictPathDirectories = strictPathDirectories;
-        _installRoots = installRoots;
+        _installs = installs;
         _exclusions = exclusions;
         _running = running;
         _realDirectories = realDirectories;
@@ -53,7 +53,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
     /// <summary>Builds the guard for this machine: its PATH, install roots, and the user's exclude file.</summary>
     public static DeletionGuard Create(IEnvironmentService env, IFileSystemService fs, IProcessRunner processRunner)
     {
-        var essential = Keys(ProtectedPaths.Essential(env));
+        var essential = Keys(ProtectedPaths.SystemFolders(env));
 
         // A PATH entry that is a link (nvm's NVM_SYMLINK) protects the folder it points at, too.
         var pathDirectories = env.PathDirectories
@@ -73,7 +73,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
             .Where(key => windows is null || !Under(key, windows, comparison))
             .ToArray();
 
-        var installRoots = ProtectedPaths.InstallRoots(env)
+        var installs = ProtectedPaths.Installs(env)
             .Where(r => PathComparison.IsRooted(r.Path))
             .GroupBy(r => PathComparison.Key(r.Path), StringComparer.FromComparison(comparison))
             .Select(g => new KeyedRoot(
@@ -81,7 +81,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
                 g.First().Path,
                 g.First().Reason,
                 // The same folder named twice keeps only the holes both entries allow.
-                g.Select(r => r.Holes.Select(h => PathComparison.Key(g.Key + "/" + h)))
+                g.Select(r => r.CacheFolders.Select(h => PathComparison.Key(g.Key + "/" + h)))
                     .Aggregate((a, b) => a.Intersect(b, StringComparer.FromComparison(comparison)))
                     .ToArray()))
             .ToArray();
@@ -95,24 +95,24 @@ public sealed partial class DeletionGuard : IDeletionGuard
             fs,
             env.IsLinux,
             essential,
-            Keys(ProtectedPaths.NotWorkspaces(env)),
+            Keys(ProtectedPaths.NonProjectFolders(env)),
             pathKeys,
             strict,
-            installRoots,
+            installs,
             exclusions,
             new Lazy<string[]>(() => [.. processRunner.RunningExecutablePaths().Select(PathComparison.Key)]),
             new ConcurrentDictionary<string, string>(StringComparer.FromComparison(comparison)));
     }
 
-    public IDeletionGuard WithRunExclusions(IEnumerable<string> paths) =>
+    public IDeletionGuard Excluding(IEnumerable<string> paths) =>
         new DeletionGuard(
             _fs,
             _comparison == StringComparison.Ordinal,
-            _essential,
-            _notWorkspaces,
+            _systemFolders,
+            _nonProjectFolders,
             _pathDirectories,
             _strictPathDirectories,
-            _installRoots,
+            _installs,
             [.. _exclusions, .. paths.Select(p => new Exclusion(PathComparison.Key(p), p, "you chose to keep it"))],
             _running,
             _realDirectories);
@@ -147,7 +147,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
         return running is null ? null : $"is in use by the running program {running}";
     }
 
-    public string? WhyUnusableWorkspaceRoot(string root)
+    public string? WhyNotProjectRoot(string root)
     {
         if (!PathComparison.IsRooted(root))
         {
@@ -160,31 +160,31 @@ public sealed partial class DeletionGuard : IDeletionGuard
             return "is a drive root";
         }
 
-        if (_essential.FirstOrDefault(e => Under(e, key, _comparison)) is { } essential)
+        if (_systemFolders.FirstOrDefault(e => Under(e, key, _comparison)) is { } essential)
         {
             return Same(essential, key) ? "is a system or profile folder" : $"contains the system or profile folder {essential}";
         }
 
-        if (_notWorkspaces.FirstOrDefault(n => Under(key, n, _comparison)) is { } system)
+        if (_nonProjectFolders.FirstOrDefault(n => Under(key, n, _comparison)) is { } system)
         {
             return $"is inside {system}, which holds installed software rather than projects";
         }
 
-        return _installRoots.FirstOrDefault(r => Under(key, r.Key, _comparison)) is { } install
+        return _installs.FirstOrDefault(r => Under(key, r.Key, _comparison)) is { } install
             ? $"is inside {install.Reason} ({install.Path})"
             : null;
     }
 
-    public bool CanDescend(string directory)
+    public bool CanEnter(string directory)
     {
-        var leaf = PathComparison.Leaf(directory);
+        var leaf = PathComparison.Name(directory);
         if (leaf.StartsWith('.') || leaf.Equals("node_modules", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
         var key = PathComparison.Key(directory);
-        return !_installRoots.Any(r => Under(key, r.Key, _comparison))
+        return !_installs.Any(r => Under(key, r.Key, _comparison))
             && !_pathDirectories.Any(p => Same(p, key));
     }
 
@@ -198,7 +198,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
             return "is a drive root";
         }
 
-        if (_essential.FirstOrDefault(e => Under(e, key, _comparison)) is { } essential)
+        if (_systemFolders.FirstOrDefault(e => Under(e, key, _comparison)) is { } essential)
         {
             return Same(essential, key) ? "is a system or profile folder" : $"contains the system or profile folder {essential}";
         }
@@ -226,14 +226,14 @@ public sealed partial class DeletionGuard : IDeletionGuard
             return $"is inside the PATH folder {owner}";
         }
 
-        foreach (var root in _installRoots)
+        foreach (var root in _installs)
         {
             if (!contentsOnly && Under(root.Key, key, _comparison))
             {
                 return Same(root.Key, key) ? $"is {root.Reason}" : $"contains {root.Reason} ({root.Path})";
             }
 
-            if (Under(key, root.Key, _comparison) && !Same(key, root.Key) && !root.Holes.Any(h => Under(key, h, _comparison)))
+            if (Under(key, root.Key, _comparison) && !Same(key, root.Key) && !root.CacheFolders.Any(h => Under(key, h, _comparison)))
             {
                 return $"is inside {root.Reason} ({root.Path})";
             }
@@ -251,7 +251,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
     /// <summary>The path with every linked ancestor replaced by what it points to, or null when unknown.</summary>
     private string? RealPath(string path) =>
         PathComparison.Parent(path) is { } parent && RealDirectory(parent, depth: 0) is { } realParent
-            ? Path.Combine(realParent, PathComparison.Leaf(path))
+            ? Path.Combine(realParent, PathComparison.Name(path))
             : null;
 
     private string? RealDirectory(string directory, int depth)
@@ -278,7 +278,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
             var realParent = parent is null ? null : RealDirectory(parent, depth + 1);
             real = realParent is null || Same(realParent, parent!)
                 ? directory
-                : Path.Combine(realParent, PathComparison.Leaf(directory));
+                : Path.Combine(realParent, PathComparison.Name(directory));
         }
 
         if (real is not null)
@@ -343,7 +343,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
     [GeneratedRegex(@"%(\w+)%|\$\{(\w+)\}|\$(\w+)")]
     private static partial Regex VariablePattern();
 
-    private sealed record KeyedRoot(string Key, string Path, string Reason, string[] Holes);
+    private sealed record KeyedRoot(string Key, string Path, string Reason, string[] CacheFolders);
 
     private sealed record Exclusion(string Key, string Path, string Source);
 }

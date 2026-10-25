@@ -13,7 +13,7 @@ public sealed class NodeModulesCacheCleaner : DirectoryCleanerBase
     public override string Category => Categories.BuildCaches;
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
-        WorkspaceRoots.IsUsable(context, context.WorkingDirectory)
+        ProjectRoots.IsAllowed(context, context.WorkingDirectory)
             ? [new CleanupPath(Path.Combine(context.WorkingDirectory, "node_modules", ".cache"))]
             : [];
 }

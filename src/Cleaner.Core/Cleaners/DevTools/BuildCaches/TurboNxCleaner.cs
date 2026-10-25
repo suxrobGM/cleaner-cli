@@ -17,7 +17,7 @@ public sealed class TurboNxCleaner : DirectoryCleanerBase
         var env = context.Environment;
         yield return new CleanupPath(Path.Combine(env.CacheDirectory, "turbo"), Description: "global turbo cache");
         yield return new CleanupPath(Path.Combine(env.CacheDirectory, "nx"), Description: "global nx cache");
-        if (WorkspaceRoots.IsUsable(context, context.WorkingDirectory))
+        if (ProjectRoots.IsAllowed(context, context.WorkingDirectory))
         {
             yield return new CleanupPath(Path.Combine(context.WorkingDirectory, ".turbo"), Description: "project .turbo");
             yield return new CleanupPath(Path.Combine(context.WorkingDirectory, ".nx", "cache"), Description: "project .nx/cache");

@@ -48,7 +48,7 @@ public sealed class SafetyHelpersTests
         Assert.Equal(@"C:\", PathComparison.Parent(@"C:\Users"));
         Assert.Null(PathComparison.Parent(@"C:\"));
         Assert.Equal("/", PathComparison.Parent("/home"));
-        Assert.Equal("test", PathComparison.Leaf(@"C:\Users\test\"));
+        Assert.Equal("test", PathComparison.Name(@"C:\Users\test\"));
     }
 
     [Fact]
@@ -85,14 +85,14 @@ public sealed class SafetyHelpersTests
     }
 
     [Fact]
-    public async Task Leftover_cleaner_finishes_recorded_staged_deletes_and_nothing_else()
+    public async Task Unfinished_delete_cleaner_finishes_recorded_deletes_and_nothing_else()
     {
         var fs = new FakeFileSystem()
             .AddFile("/work/bin.cleaner-deleting-ab12cd34/app.dll", 40)
             .AddFile("/work/keep/important.txt", 1)
             .AddFile("/home/test/.cleaner/pending-deletes.txt",
                 "/work/bin.cleaner-deleting-ab12cd34\n/work/keep\n/work/gone.cleaner-deleting-00000000\n");
-        var cleaner = new StagedLeftoverCleaner();
+        var cleaner = new UnfinishedDeleteCleaner();
         var context = TestContext.Create(fs);
 
         var scan = await cleaner.ScanAsync(context);

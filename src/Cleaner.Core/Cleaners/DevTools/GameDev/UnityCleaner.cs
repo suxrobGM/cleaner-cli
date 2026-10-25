@@ -1,6 +1,7 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 using Cleaner.Core.Services;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
@@ -48,24 +49,24 @@ public sealed class UnityCleaner : DirectoryCleanerBase
     private static IEnumerable<CleanupPath> ProjectCaches(CleanupContext context)
     {
         var fs = context.FileSystem;
-        var roots = WorkspaceRoots.Usable(context);
+        var roots = ProjectRoots.Allowed(context);
 
         // Find Unity projects under the scan roots (a root may itself be one), never entering the
         // regenerable artifact folders, links, dot-folders, or installed tools along the way.
         var projects = roots
             .Where(root => IsUnityProject(fs, root))
-            .Concat(DirectorySweep.FindDirectories(
+            .Concat(DirectorySearch.Find(
                 fs,
                 roots,
                 dir => IsUnityProject(fs, dir),
-                dir => context.Guard.CanDescend(dir)
-                    && !ProjectArtifacts.Contains(DirectorySweep.LeafName(dir), StringComparer.OrdinalIgnoreCase)));
+                dir => context.Guard.CanEnter(dir)
+                    && !ProjectArtifacts.Contains(PathComparison.Name(dir), StringComparer.OrdinalIgnoreCase)));
 
         return projects.SelectMany(project =>
             ProjectArtifacts.Select(artifact => new CleanupPath(Path.Combine(project, artifact), Description: artifact)));
     }
 
-    protected override IEnumerable<string> ScanNotes(CleanupContext context) => WorkspaceRoots.Refusals(context);
+    protected override IEnumerable<string> ScanNotes(CleanupContext context) => ProjectRoots.Refusals(context);
 
     /// <summary>ProjectVersion.txt is what Unity writes; Assets plus ProjectSettings alone could be anything.</summary>
     private static bool IsUnityProject(IFileSystemService fs, string dir) =>

@@ -1,24 +1,25 @@
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Services;
 
 /// <summary>
-/// An installed tool's folder. Nothing in it may be deleted except its <paramref name="Holes"/>,
+/// An installed tool's folder. Nothing in it may be deleted except its <paramref name="CacheFolders"/>,
 /// the cache subfolders the tool downloads again by itself.
 /// </summary>
-internal sealed record ProtectedRoot(string Path, string Reason, IReadOnlyList<string> Holes);
+internal sealed record ProtectedRoot(string Path, string Reason, IReadOnlyList<string> CacheFolders);
 
 /// <summary>The built-in lists behind <see cref="DeletionGuard"/>. None of them depend on PATH.</summary>
 internal static class ProtectedPaths
 {
-    private static readonly string[] SteamCacheHoles =
+    private static readonly string[] SteamCaches =
     [
         "Steam/appcache/httpcache", "Steam/config/htmlcache", "Steam/steamapps/shadercache",
         "Steam/steamapps/downloading", "Steam/steamapps/temp", "Steam/logs", "Steam/dumps",
     ];
 
     /// <summary>Folders that may never be deleted, nor anything that contains them.</summary>
-    public static IEnumerable<string> Essential(IEnvironmentService env)
+    public static IEnumerable<string> SystemFolders(IEnvironmentService env)
     {
         var home = env.HomeDirectory;
         yield return home;
@@ -78,7 +79,7 @@ internal static class ProtectedPaths
     }
 
     /// <summary>A workspace sweep must not start anywhere under these.</summary>
-    public static IEnumerable<string> NotWorkspaces(IEnvironmentService env)
+    public static IEnumerable<string> NonProjectFolders(IEnvironmentService env)
     {
         var home = env.HomeDirectory;
         if (env.IsWindows)
@@ -114,14 +115,14 @@ internal static class ProtectedPaths
     }
 
     /// <summary>Installed tools and personal data, each with the cache holes that may still be cleared.</summary>
-    public static IEnumerable<ProtectedRoot> InstallRoots(IEnvironmentService env)
+    public static IEnumerable<ProtectedRoot> Installs(IEnvironmentService env)
     {
         var home = env.HomeDirectory;
         var local = env.LocalAppDataDirectory;
         var roaming = env.AppDataDirectory;
 
-        ProtectedRoot Root(string? path, string reason, params string[] holes) =>
-            new(path ?? string.Empty, reason, holes);
+        ProtectedRoot Root(string? path, string reason, params string[] cacheFolders) =>
+            new(path ?? string.Empty, reason, cacheFolders);
 
         // Rust: the toolchains and the cargo/rustup proxies live beside their download caches.
         yield return Root(OsPaths.Env(env, "CARGO_HOME") ?? Path.Combine(home, ".cargo"), "Cargo's install folder",
@@ -217,7 +218,7 @@ internal static class ProtectedPaths
             yield return Root(Path.Combine(local, "Programs"), "per-user installed programs");
             foreach (var programFiles in WindowsInstallRoots(env))
             {
-                yield return Root(programFiles, "installed programs", SteamCacheHoles);
+                yield return Root(programFiles, "installed programs", SteamCaches);
             }
         }
         else

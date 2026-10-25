@@ -130,7 +130,7 @@ public sealed class FileSystemServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task The_project_sweep_does_not_follow_a_junction_into_another_tree()
+    public async Task The_project_search_does_not_follow_a_junction_into_another_tree()
     {
         var elsewhere = Path.Combine(_root, "elsewhere");
         Directory.CreateDirectory(Path.Combine(elsewhere, "obj"));

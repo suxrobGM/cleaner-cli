@@ -63,7 +63,7 @@ Builds treat warnings as errors. Native AOT publishes must produce no trim or AO
   a `bin` folder, or a version folder. Leave version pruning to the tool's own command.
 - Prefer the tool's own cleanup command when it has one. When the command fails, report it; don't
   fall back to deleting folders.
-- Workspace sweeps must use `WorkspaceRoots` and `ArtifactRules`: match a folder only with proof it is
+- Workspace sweeps must use `ProjectRoots` and `BuildOutput`: match a folder only with proof it is
   a project's build output, never by name alone.
 - Keep the build and tests clean; `TreatWarningsAsErrors` and AOT analyzers are enabled.
 - Prefer focused conventional commits, such as `feat(cleaners): add Python cache cleaners`.

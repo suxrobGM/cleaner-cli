@@ -11,14 +11,14 @@ namespace Cleaner.Core.Cleaners.Base;
 internal sealed class TargetRemover(CleanupContext context, string cleanerId)
 {
     /// <summary>Marker in the name of a folder that was renamed aside and is waiting to be deleted.</summary>
-    public const string StagedMarker = ".cleaner-deleting-";
+    public const string DeletingMarker = ".cleaner-deleting-";
 
     private readonly List<TargetOutcome> _outcomes = [];
     private readonly List<string> _errors = [];
     private long _bytesFreed;
     private int _removed;
 
-    /// <summary>Leftovers of staged deletes that could not finish, offered again on the next run.</summary>
+    /// <summary>Leftovers of movedAside deletes that could not finish, offered again on the next run.</summary>
     public static string PendingDeletesFile(CleanupContext context) =>
         Path.Combine(context.Environment.HomeDirectory, ".cleaner", "pending-deletes.txt");
 
@@ -105,12 +105,12 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
         }
 
         // A sibling keeps the rename on the same volume, which is what makes it atomic.
-        var staged = Path.Combine(
+        var movedAside = Path.Combine(
             PathComparison.Parent(path) ?? path,
-            PathComparison.Leaf(path) + StagedMarker + Guid.NewGuid().ToString("N")[..8]);
+            PathComparison.Name(path) + DeletingMarker + Guid.NewGuid().ToString("N")[..8]);
         try
         {
-            fs.MoveDirectory(path, staged);
+            fs.MoveDirectory(path, movedAside);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -121,17 +121,17 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
 
         try
         {
-            fs.DeleteDirectory(staged);
+            fs.DeleteDirectory(movedAside);
             Removed(path, size, description, progress);
         }
         catch (Exception ex)
         {
             // The original path is already gone, so nothing looks installed but broken. Record the
             // remainder so the next run can finish the job.
-            var left = fs.DirectoryExists(staged) ? fs.GetDirectorySize(staged) : 0;
+            var left = fs.DirectoryExists(movedAside) ? fs.GetDirectorySize(movedAside) : 0;
             _bytesFreed += Math.Max(0, size - left);
-            Fail(path, $"moved aside to {staged} but could not finish deleting it: {ex.Message}");
-            TryRecordPending(staged);
+            Fail(path, $"moved aside to {movedAside} but could not finish deleting it: {ex.Message}");
+            TryRecordPending(movedAside);
         }
     }
 
@@ -209,15 +209,15 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
         context.Logger?.Error($"[{cleanerId}] failed {path}: {reason}");
     }
 
-    private void TryRecordPending(string staged)
+    private void TryRecordPending(string movedAside)
     {
         try
         {
-            context.FileSystem.AppendLine(PendingDeletesFile(context), staged);
+            context.FileSystem.AppendLine(PendingDeletesFile(context), movedAside);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            context.Logger?.Warn($"[{cleanerId}] could not record {staged} for a later retry: {ex.Message}");
+            context.Logger?.Warn($"[{cleanerId}] could not record {movedAside} for a later retry: {ex.Message}");
         }
     }
 }

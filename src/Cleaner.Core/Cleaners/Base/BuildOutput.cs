@@ -9,7 +9,7 @@ namespace Cleaner.Core.Cleaners.Base;
 /// proof it was generated there; an installed tool's <c>bin</c> or an editor extension's
 /// <c>node_modules</c> has neither.
 /// </summary>
-internal static class ArtifactRules
+internal static class BuildOutput
 {
     private static readonly string[] DotnetProjects = ["*.csproj", "*.fsproj", "*.vbproj"];
 
@@ -41,9 +41,9 @@ internal static class ArtifactRules
     };
 
     /// <summary>True when <paramref name="directory"/> is build output its project can regenerate.</summary>
-    public static bool IsArtifact(IFileSystemService fs, string directory)
+    public static bool Matches(IFileSystemService fs, string directory)
     {
-        var name = PathComparison.Leaf(directory);
+        var name = PathComparison.Name(directory);
         if (PathComparison.Parent(directory) is not { } parent)
         {
             return false;
@@ -74,11 +74,11 @@ internal static class ArtifactRules
 
             case "dist":
                 return (Has("package.json") || Has("pyproject.toml") || Has("setup.py"))
-                    && GitIgnore.ListsDirectory(fs, parent, name);
+                    && GitIgnore.Ignores(fs, parent, name);
 
             case "build":
                 return BuildSystems.Any(Has)
-                    && (Inside("CMakeCache.txt") || Inside("meson-info") || Inside("tmp") || GitIgnore.ListsDirectory(fs, parent, name));
+                    && (Inside("CMakeCache.txt") || Inside("meson-info") || Inside("tmp") || GitIgnore.Ignores(fs, parent, name));
 
             case ".gradle":
                 return Has("settings.gradle") || Has("settings.gradle.kts") || Has("build.gradle") || Has("build.gradle.kts");

@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
@@ -18,7 +19,7 @@ public sealed class TexLiveCleaner : DirectoryCleanerBase
     {
         foreach (var dir in context.FileSystem.EnumerateDirectories(context.Environment.HomeDirectory))
         {
-            if (!DirectorySweep.LeafName(dir).StartsWith(".texlive", StringComparison.OrdinalIgnoreCase))
+            if (!PathComparison.Name(dir).StartsWith(".texlive", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }

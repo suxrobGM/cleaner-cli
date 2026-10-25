@@ -95,7 +95,7 @@ public sealed class DeletionGuardTests
     [InlineData(@"C:\Program Files (x86)\Steam\steamapps\shadercache")]
     [InlineData(@"C:\Users\test\AppData\Local\npm-cache\_cacache")]
     [InlineData(@"C:\Users\test\AppData\Local\Temp\junk")]
-    public void Cache_holes_inside_installs_stay_cleanable(string path) =>
+    public void Caches_inside_installs_stay_cleanable(string path) =>
         Assert.Null(Guard().WhyProtected(path));
 
     [Fact]
@@ -153,7 +153,7 @@ public sealed class DeletionGuardTests
     [Fact]
     public void Clearing_a_folder_that_contains_an_exclusion_is_judged_per_child()
     {
-        var guard = Guard().WithRunExclusions([@"D:\cache\keep"]);
+        var guard = Guard().Excluding([@"D:\cache\keep"]);
 
         Assert.Null(guard.WhyProtected(@"D:\cache", contentsOnly: true));
         Assert.NotNull(guard.WhyProtected(@"D:\cache"));
@@ -182,24 +182,24 @@ public sealed class DeletionGuardTests
     [InlineData(@"C:\Users\test\AppData\Local\nvm")]
     [InlineData(@"C:\Users\test\scoop\apps")]
     [InlineData("relative")]
-    public void Sweeps_refuse_to_start_from_system_profile_or_install_folders(string root) =>
-        Assert.NotNull(Guard().WhyUnusableWorkspaceRoot(root));
+    public void Project_roots_cannot_be_system_profile_or_install_folders(string root) =>
+        Assert.NotNull(Guard().WhyNotProjectRoot(root));
 
     [Theory]
     [InlineData(@"C:\Users\test\source\repos")]
     [InlineData(@"D:\projects")]
-    public void Sweeps_may_start_from_a_workspace(string root) =>
-        Assert.Null(Guard().WhyUnusableWorkspaceRoot(root));
+    public void Project_roots_can_be_workspaces(string root) =>
+        Assert.Null(Guard().WhyNotProjectRoot(root));
 
     [Fact]
-    public void Sweeps_never_descend_into_dot_folders_node_modules_or_installs()
+    public void Project_search_never_enters_dot_folders_node_modules_or_installs()
     {
         var guard = Guard();
 
-        Assert.False(guard.CanDescend(@"D:\work\.vscode"));
-        Assert.False(guard.CanDescend(@"D:\work\node_modules"));
-        Assert.False(guard.CanDescend($@"{H}\scoop\apps"));
-        Assert.True(guard.CanDescend(@"D:\work\src"));
+        Assert.False(guard.CanEnter(@"D:\work\.vscode"));
+        Assert.False(guard.CanEnter(@"D:\work\node_modules"));
+        Assert.False(guard.CanEnter($@"{H}\scoop\apps"));
+        Assert.True(guard.CanEnter(@"D:\work\src"));
     }
 
     [Fact]

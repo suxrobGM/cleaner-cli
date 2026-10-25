@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   files, and reports anything that broke.
 - `bun`, `uv`, `pre-commit`, and `mise` use the tool's own cache command; `scoop` also runs
   `scoop cleanup *`, which removes old app versions Scoop knows are not current.
-- `cleaner-leftovers` finishes deletes an earlier run started but couldn't complete.
+- `unfinished-deletes` finishes deletes an earlier run started but couldn't complete.
 - The preview names protected paths left alone and sweep roots that were refused.
 
 ## [1.2.4] - 2026-09-10

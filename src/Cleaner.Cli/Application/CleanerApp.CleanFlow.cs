@@ -149,7 +149,7 @@ public sealed partial class CleanerApp
         var unticked = kept is null
             ? []
             : expandable.SelectMany(r => r.Result.Targets).Select(t => t.Path).Where(p => !PathComparison.IsSelected(kept, p)).ToList();
-        var runContext = unticked.Count == 0 ? context : context with { Guard = context.Guard.WithRunExclusions(unticked) };
+        var runContext = unticked.Count == 0 ? context : context with { Guard = context.Guard.Excluding(unticked) };
 
         var scope = keptPaths is null ? null : $"{keptPaths.Count} of {expandable.Sum(r => r.Result.Targets.Count)} folders";
         return await ConfirmAndCleanAsync(plan, scope, runContext, cancellationToken);

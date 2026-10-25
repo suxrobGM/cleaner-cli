@@ -17,11 +17,11 @@ public interface IDeletionGuard
     string? WhyInUse(string path);
 
     /// <summary>Why a workspace sweep must not start at <paramref name="root"/>, or null when it may.</summary>
-    string? WhyUnusableWorkspaceRoot(string root);
+    string? WhyNotProjectRoot(string root);
 
     /// <summary>Whether a workspace sweep may look inside <paramref name="directory"/>.</summary>
-    bool CanDescend(string directory);
+    bool CanEnter(string directory);
 
     /// <summary>A guard that also protects <paramref name="paths"/>, for folders the user chose to keep.</summary>
-    IDeletionGuard WithRunExclusions(IEnumerable<string> paths);
+    IDeletionGuard Excluding(IEnumerable<string> paths);
 }

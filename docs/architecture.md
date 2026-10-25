@@ -90,7 +90,7 @@ Three pieces stand between a cleaner and the disk:
   atomic, and on Windows it fails while any file inside is open, so a folder is removed whole or not
   at all. Under clear-contents, each child is checked and staged on its own. Every removal, skip, and
   failure is written to the run log and returned as `CleanResult.Outcomes`.
-- **`WorkspaceRoots` and `ArtifactRules`** (`Cleaners/Base`) keep workspace sweeps inside projects.
+- **`ProjectRoots` and `BuildOutput`** (`Cleaners/Base`) keep workspace sweeps inside projects.
   A sweep refuses roots the guard calls unusable (home, drive roots, system and install folders),
   never descends into links, dot-folders, `node_modules`, or installed tools, and takes a folder only
   when its project proves it is build output.

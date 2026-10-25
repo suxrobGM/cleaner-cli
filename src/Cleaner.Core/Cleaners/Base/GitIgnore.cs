@@ -18,7 +18,7 @@ internal static class GitIgnore
     /// patterns count (<c>dist</c>, <c>dist/</c>, <c>/dist</c>, <c>**/dist</c>, <c>[Bb]uild/</c>);
     /// a negation of the name anywhere means "not ignored".
     /// </summary>
-    public static bool ListsDirectory(IFileSystemService fs, string projectDirectory, string name)
+    public static bool Ignores(IFileSystemService fs, string projectDirectory, string name)
     {
         var listed = false;
         var directory = projectDirectory;

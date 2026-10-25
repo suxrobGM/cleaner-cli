@@ -87,7 +87,7 @@ Point them at your code with `--path`, then select them:
 cleaner --path ./my-repo
 ```
 
-`build-artifacts` is opt-in: it sits under **Project sweeps** in the selection menu, outside **All
+`build-artifacts` is opt-in: it sits under **Project folders** in the selection menu, outside **All
 cleaners**, so ticking everything never includes it. It refuses to sweep your home folder, a drive
 root, or a system or install folder (which is what the current directory is when a terminal opens),
 and says so in the preview. It only takes a folder that is provably a project's build output; see
@@ -128,7 +128,7 @@ renamed aside within its own parent (`name.cleaner-deleting-xxxx`) and only then
 the rename fails while any program has a file inside open, so a folder that is in use is skipped
 whole instead of being left half-deleted. On every platform, a folder holding a running program is
 skipped too. If a delete fails after the rename, the original path is already gone and the leftover
-is offered by the `cleaner-leftovers` cleaner on the next run.
+is offered by the `unfinished-deletes` cleaner on the next run.
 
 Where a tool has its own cleanup command (`npm cache clean`, `bun pm cache rm`, `uv cache clean`,
 `scoop cache rm`, `dotnet nuget locals`, ...), Cleaner runs it instead of deleting the tool's folders.

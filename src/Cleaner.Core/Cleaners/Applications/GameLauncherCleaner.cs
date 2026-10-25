@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.Applications;
 
@@ -29,7 +30,7 @@ public sealed class GameLauncherCleaner : DirectoryCleanerBase
             var epicSaved = Path.Combine(local, "EpicGamesLauncher", "Saved");
             foreach (var dir in context.FileSystem.EnumerateDirectories(epicSaved))
             {
-                if (DirectorySweep.LeafName(dir).StartsWith("webcache", StringComparison.OrdinalIgnoreCase))
+                if (PathComparison.Name(dir).StartsWith("webcache", StringComparison.OrdinalIgnoreCase))
                 {
                     yield return new CleanupPath(dir, DeleteMode.ClearContents, "Epic Games");
                 }

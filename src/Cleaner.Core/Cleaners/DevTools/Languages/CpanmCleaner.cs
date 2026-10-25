@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
@@ -19,7 +20,7 @@ public sealed class CpanmCleaner : DirectoryCleanerBase
         var root = context.Environment.HomePath(".cpanm");
         foreach (var dir in context.FileSystem.EnumerateDirectories(root))
         {
-            if (DirectorySweep.LeafName(dir).StartsWith("work", StringComparison.OrdinalIgnoreCase))
+            if (PathComparison.Name(dir).StartsWith("work", StringComparison.OrdinalIgnoreCase))
             {
                 yield return new CleanupPath(dir, Description: "build workspace");
             }

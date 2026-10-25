@@ -9,11 +9,11 @@ namespace Cleaner.Core.Cleaners.Os;
 /// aside (<c>name.cleaner-deleting-xxxx</c>) and recorded in <c>~/.cleaner/pending-deletes.txt</c>,
 /// so nothing at an original path depends on them.
 /// </summary>
-public sealed class StagedLeftoverCleaner : DirectoryCleanerBase
+public sealed class UnfinishedDeleteCleaner : DirectoryCleanerBase
 {
-    public override string Id => "cleaner-leftovers";
+    public override string Id => "unfinished-deletes";
 
-    public override string Name => "Unfinished Cleaner deletes";
+    public override string Name => "Unfinished deletes";
 
     public override string Category => Categories.SystemCaches;
 
@@ -44,7 +44,7 @@ public sealed class StagedLeftoverCleaner : DirectoryCleanerBase
         context.FileSystem.ReadAllLines(TargetRemover.PendingDeletesFile(context))
             .Select(line => line.Trim())
             .Where(line => PathComparison.IsRooted(line)
-                && PathComparison.Leaf(line).Contains(TargetRemover.StagedMarker, StringComparison.Ordinal)
+                && PathComparison.Name(line).Contains(TargetRemover.DeletingMarker, StringComparison.Ordinal)
                 && context.FileSystem.DirectoryExists(line))
             .Distinct();
 }

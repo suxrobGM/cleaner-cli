@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.Applications;
 
@@ -32,7 +33,7 @@ public sealed class TelegramCleaner : DirectoryCleanerBase
         // Multi-account: each extra account keeps its caches under user_data#2, user_data#3, ...
         foreach (var dir in context.FileSystem.EnumerateDirectories(tdata))
         {
-            if (DirectorySweep.LeafName(dir).StartsWith("user_data#", StringComparison.OrdinalIgnoreCase))
+            if (PathComparison.Name(dir).StartsWith("user_data#", StringComparison.OrdinalIgnoreCase))
             {
                 yield return new CleanupPath(Path.Combine(dir, "cache"), DeleteMode.ClearContents, "media cache");
                 yield return new CleanupPath(Path.Combine(dir, "media_cache"), DeleteMode.ClearContents, "media cache");

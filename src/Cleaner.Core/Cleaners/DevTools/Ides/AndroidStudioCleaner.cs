@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
@@ -21,7 +22,7 @@ public sealed class AndroidStudioCleaner : DirectoryCleanerBase
         {
             // Android Studio adds the JPS build-server caches on top of the shared layout.
             foreach (var path in JetBrainsCache.Under(
-                root, DirectorySweep.LeafName(root), "compile-server", "compiler"))
+                root, PathComparison.Name(root), "compile-server", "compiler"))
             {
                 yield return path;
             }
@@ -40,6 +41,6 @@ public sealed class AndroidStudioCleaner : DirectoryCleanerBase
 
         return roots
             .SelectMany(context.FileSystem.EnumerateDirectories)
-            .Where(dir => DirectorySweep.LeafName(dir).StartsWith("AndroidStudio", StringComparison.OrdinalIgnoreCase));
+            .Where(dir => PathComparison.Name(dir).StartsWith("AndroidStudio", StringComparison.OrdinalIgnoreCase));
     }
 }

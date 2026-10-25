@@ -7,7 +7,7 @@ namespace Cleaner.Core.Tests;
 
 public sealed class BuildCacheCleanerTests
 {
-    private static async Task<List<string>> SweepAsync(FakeFileSystem fs, params string[] roots)
+    private static async Task<List<string>> ScanAsync(FakeFileSystem fs, params string[] roots)
     {
         var result = await new BuildArtifactCleaner().ScanAsync(TestContext.Create(fs, scanRoots: roots));
         return [.. result.Targets.Select(t => t.Path.Replace('\\', '/'))];
@@ -23,7 +23,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/tools/bin/tool.exe", 500)
             .AddFile("/work/scripts/bin/deploy.ps1", 5);
 
-        var paths = await SweepAsync(fs, "/work");
+        var paths = await ScanAsync(fs, "/work");
 
         Assert.Equal(["/work/app/bin", "/work/app/obj"], paths.Order());
     }
@@ -36,7 +36,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/app/obj/project.assets.json", 10)
             .AddFile("/work/app/bin/x64/Release/App.dll", 100);
 
-        Assert.Contains("/work/app/bin", await SweepAsync(fs, "/work"));
+        Assert.Contains("/work/app/bin", await ScanAsync(fs, "/work"));
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/vendor-ext/package.json", 1)
             .AddFile("/work/vendor-ext/node_modules/minimatch/index.js", 100);
 
-        Assert.Equal(["/work/web/node_modules"], await SweepAsync(fs, "/work"));
+        Assert.Equal(["/work/web/node_modules"], await ScanAsync(fs, "/work"));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/lib/dist/committed.js", 100);
 
         // "/dist" is anchored to the repository root, so it says nothing about /work/lib/dist.
-        Assert.Equal(["/work/dist"], await SweepAsync(fs, "/work"));
+        Assert.Equal(["/work/dist"], await ScanAsync(fs, "/work"));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/package.json", 1)
             .AddFile("/work/dist/bundle.js", 100);
 
-        Assert.Empty(await SweepAsync(fs, "/work"));
+        Assert.Empty(await ScanAsync(fs, "/work"));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/package.json", 1)
             .AddFile("/work/dist/bundle.js", 100);
 
-        Assert.Empty(await SweepAsync(fs, "/work"));
+        Assert.Empty(await ScanAsync(fs, "/work"));
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/other/Cargo.toml", 1)
             .AddFile("/work/other/target/notes.txt", 5);
 
-        Assert.Equal(["/work/crate/target"], await SweepAsync(fs, "/work"));
+        Assert.Equal(["/work/crate/target"], await ScanAsync(fs, "/work"));
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/cli/venv/pyvenv.cfg", 1)
             .AddFile("/work/loose/venv/pyvenv.cfg", 1);
 
-        Assert.Equal(["/work/api/.venv", "/work/cli/venv"], (await SweepAsync(fs, "/work")).Order());
+        Assert.Equal(["/work/api/.venv", "/work/cli/venv"], (await ScanAsync(fs, "/work")).Order());
     }
 
     [Fact]
@@ -129,11 +129,11 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/scripts/CMakeLists.txt", 1)
             .AddFile("/work/scripts/build/release.sh", 9);
 
-        Assert.Equal(["/work/android/build", "/work/native/build"], (await SweepAsync(fs, "/work")).Order());
+        Assert.Equal(["/work/android/build", "/work/native/build"], (await ScanAsync(fs, "/work")).Order());
     }
 
     [Fact]
-    public async Task BuildArtifactCleaner_refuses_to_sweep_the_profile_and_says_how_to_fix_it()
+    public async Task BuildArtifactCleaner_refuses_to_scan_the_profile_and_says_how_to_fix_it()
     {
         var fs = new FakeFileSystem()
             .AddFile("/home/test/proj/App.csproj", 1)
@@ -166,11 +166,11 @@ public sealed class BuildCacheCleanerTests
             .AddFile("/work/.hidden/App.csproj", 1)
             .AddFile("/work/.hidden/obj/project.assets.json", 1);
 
-        Assert.Empty(await SweepAsync(fs, "/work"));
+        Assert.Empty(await ScanAsync(fs, "/work"));
     }
 
     [Fact]
-    public async Task BuildArtifactCleaner_sweeps_every_scan_root()
+    public async Task BuildArtifactCleaner_scans_every_root()
     {
         var fs = new FakeFileSystem()
             .AddFile("/r1/proj/package.json", 1)

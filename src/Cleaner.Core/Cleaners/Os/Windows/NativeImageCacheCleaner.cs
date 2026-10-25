@@ -1,5 +1,6 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.Os;
 
@@ -30,7 +31,7 @@ public sealed class NativeImageCacheCleaner : WindowsCleanerBase
         var assembly = Path.Combine(windows, "assembly");
         foreach (var directory in context.FileSystem.EnumerateDirectories(assembly))
         {
-            var name = DirectorySweep.LeafName(directory);
+            var name = PathComparison.Name(directory);
             if (name.StartsWith("NativeImages_", StringComparison.OrdinalIgnoreCase))
             {
                 yield return new CleanupPath(directory, DeleteMode.ClearContents, name);
