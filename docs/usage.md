@@ -87,6 +87,57 @@ Point them at your code with `--path`, then select them:
 cleaner --path ./my-repo
 ```
 
+`build-artifacts` is opt-in: it sits under **Project sweeps** in the selection menu, outside **All
+cleaners**, so ticking everything never includes it. It refuses to sweep your home folder, a drive
+root, or a system or install folder (which is what the current directory is when a terminal opens),
+and says so in the preview. It only takes a folder that is provably a project's build output; see
+[the rules](cleaners.md#project-local).
+
+## What Cleaner never deletes
+
+Every path a cleaner reports passes a deletion guard, once at scan time and again just before it is
+removed. Nothing can switch it off. It refuses:
+
+- any folder on your PATH (user, machine, or the current shell's), anything inside one, and any
+  parent of one;
+- drive roots, your home folder, AppData, the Windows folder, `Program Files`, `ProgramData`, and on
+  macOS/Linux `/usr`, `/opt`, `/Applications`, `~/Library`, and similar;
+- installed tools, whatever PATH says: `~/.cargo` and `~/.rustup` (except their download caches),
+  Scoop's `apps`/`persist`/`shims`, WinGet packages, nvm/Volta/pyenv/asdf/mise/SDKMAN installs,
+  Bun/Deno/Go command folders, `~/.local/bin`, `~/bin`, editor extensions, `%LOCALAPPDATA%\Programs`,
+  `~/.ssh`, `~/.aws`, and the like;
+- `.git` folders and git repositories;
+- symlinks and junctions, and anything reached through one that lands somewhere protected;
+- anything listed in `~/.cleaner/exclude.txt`.
+
+To protect more, list folders in `~/.cleaner/exclude.txt`, one per line. `~`, `%VAR%`, and `$VAR`
+are expanded and lines starting with `#` are comments:
+
+```text
+# models I downloaded by hand
+~/models
+%USERPROFILE%\datasets
+```
+
+The exclude list only adds protection; it can't unlock anything the guard refuses.
+
+## How deletion works
+
+Cleaner deletes exactly what the preview showed, nothing found afterwards. Each folder is first
+renamed aside within its own parent (`name.cleaner-deleting-xxxx`) and only then deleted. On Windows
+the rename fails while any program has a file inside open, so a folder that is in use is skipped
+whole instead of being left half-deleted. On every platform, a folder holding a running program is
+skipped too. If a delete fails after the rename, the original path is already gone and the leftover
+is offered by the `cleaner-leftovers` cleaner on the next run.
+
+Where a tool has its own cleanup command (`npm cache clean`, `bun pm cache rm`, `uv cache clean`,
+`scoop cache rm`, `dotnet nuget locals`, ...), Cleaner runs it instead of deleting the tool's folders.
+If the command fails, the error is reported and nothing is deleted in its place.
+
+Before and after each clean, Cleaner checks that common developer tools (git, node, npm, dotnet,
+cargo, python, uv, scoop, ...) still report their version and that no file disappeared from a PATH
+folder. Anything that broke is shown in red and logged.
+
 ## Picking individual folders
 
 A sweep over a source tree can match hundreds of folders, and taking all of them means reinstalling
@@ -97,9 +148,15 @@ Decline and the run removes everything in the table, as before.
 
 ## Logs
 
-Cleaner logs runs, errors, and crashes to **`~/.cleaner/logs/cleaner.log`**.
+Cleaner logs runs, errors, and crashes to **`~/.cleaner/logs/cleaner.log`**: which cleaners ran,
+which were skipped for needing admin, the scan roots, how much was freed, and which cleaners failed
+and why.
 
-If one cleaner fails, the rest still run; the summary shows the failure and prints the log path.
+Every clean also writes **`~/.cleaner/logs/runs/run-<timestamp>.log`**: the approved plan, then every
+path removed (with its size and the cleaner that removed it), every path skipped and why (protected,
+in use), and every error. The last 30 run logs are kept. The summary prints the run log's path.
+
+If one cleaner fails, the rest still run; the summary shows the failure.
 
 ## Exit codes
 

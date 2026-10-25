@@ -53,7 +53,17 @@ Builds treat warnings as errors. Native AOT publishes must produce no trim or AO
 - Keep code Native-AOT safe: avoid reflection-based discovery and assembly scanning.
 - Keep deletion interactive. The main menu drives cleanup; `update` is the only direct subcommand.
   Do not add unattended deletion flags.
-- Preserve the scan → preview → confirm flow. Set `ConfirmationWarning` when cleanup has a material
+- Preserve the scan → preview → confirm flow. A clean removes exactly the targets the user approved;
+  never rediscover targets at delete time. Set `ConfirmationWarning` when cleanup has a material
   trade-off, and never delete user data.
+- Every deletion goes through `TargetRemover` and `IDeletionGuard`. Never call `IFileSystemService`
+  delete methods from a cleaner, and never weaken the guard to make a target pass; add a cache hole
+  in `ProtectedPaths` only for a folder the tool downloads again by itself.
+- Target caches only: something the tool re-downloads or rebuilds by itself. Never target an install,
+  a `bin` folder, or a version folder. Leave version pruning to the tool's own command.
+- Prefer the tool's own cleanup command when it has one. When the command fails, report it; don't
+  fall back to deleting folders.
+- Workspace sweeps must use `WorkspaceRoots` and `ArtifactRules`: match a folder only with proof it is
+  a project's build output, never by name alone.
 - Keep the build and tests clean; `TreatWarningsAsErrors` and AOT analyzers are enabled.
 - Prefer focused conventional commits, such as `feat(cleaners): add Python cache cleaners`.

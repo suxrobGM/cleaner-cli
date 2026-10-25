@@ -19,9 +19,10 @@
 Cleaner finds caches from package managers, build tools, IDEs, browsers, system components, and
 apps, shows what can be reclaimed, and clears it only after confirmation.
 
-- **131 built-in cleaners** across dev tools, the operating system, and applications.
+- **132 built-in cleaners** across dev tools, the operating system, and applications.
 - **Safe by default** — every run scans and previews first; nothing is deleted without confirmation,
-  and the few cleaners with a real trade-off ask again on their own.
+  and the few cleaners with a real trade-off ask again on their own. A built-in guard refuses
+  anything on PATH, installed tools, and git repositories, and every removed path is logged.
 - **Cross-platform** — a single native binary for Windows, macOS, and Linux (no runtime required).
 - **Interactive by design** — choose, preview, and confirm from one menu; no unattended flags.
 

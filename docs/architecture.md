@@ -44,26 +44,59 @@ public interface ICleaner
     string Category { get; }
     bool RequiresElevation { get; }
     bool SupportsSizeEstimate { get; }
+    bool SupportsPartialSelection { get; }
     string? ConfirmationWarning { get; }
+    bool OptIn { get; }                         // left out of "All cleaners"
     bool IsApplicable(CleanupContext context);  // right OS?
-    bool IsAvailable(CleanupContext context);   // tool/paths present?
+    bool IsAvailable(CleanupContext context);   // tool or unprotected paths present?
     Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken ct = default);
     Task<CleanResult> CleanAsync(
         CleanupContext context,
+        IReadOnlyList<CleanupTarget> approved,  // exactly what the user reviewed
         IProgress<CleanProgress>? progress = null,
         CancellationToken ct = default);
 }
 ```
 
+A scan returns `CleanupTarget(Path, Bytes, Mode, Description)` records plus `Notes` (protected paths
+left alone, refused sweep roots). The app shows them, the user approves or unticks them, and each
+cleaner's `CleanAsync` receives only its approved targets. It never looks for targets again, so the
+run can't reach past the preview.
+
 Most cleaners derive from a base class:
 
 - **`DirectoryCleanerBase`** — declare candidate cache directories (`GetTargets`, or
   `GetTargetsAsync` when discovery itself needs a registry read or an external command); the base
-  handles existence checks, recursive sizing, dry-run accounting, deletion (whole-directory,
-  clear-contents, or single file), and per-target error capture.
+  handles existence checks, the guard, recursive sizing, and dry-run accounting, and hands removal to
+  `TargetRemover` (whole-directory, clear-contents, or single file).
 - **`ProcessCleanerBase`** — for tools where a native command is authoritative (e.g.
-  `docker system prune`). Runs the command when the tool is on `PATH`, otherwise falls back to
-  declared directories. Specialized cleaners can override sizing with command output.
+  `npm cache clean`, `docker system prune`). Runs the command whenever the tool is on `PATH`; a failed
+  command is reported and nothing is deleted in its place. Only when the tool is absent are the
+  approved directories removed directly. Specialized cleaners can override sizing with command output.
+
+## Deletion safety
+
+Three pieces stand between a cleaner and the disk:
+
+- **`IDeletionGuard`** (`Services/Safety`) decides whether a path may go. It is built per run by
+  `DeletionGuard.Create` from `ProtectedPaths` (essential folders, installed-tool roots with their
+  cache holes), the PATH (`IEnvironmentService.PathDirectories`: process, user, and machine), the
+  user's `~/.cleaner/exclude.txt`, and folders the user unticked this run. It refuses links, judges a
+  path reached through a link by its real location, and finds running programs through
+  `IProcessRunner.RunningExecutablePaths`. Path rules are plain string logic (`PathComparison`), so
+  Windows paths are checked correctly on a Linux test runner. Nothing can loosen it.
+- **`TargetRemover`** (`Cleaners/Base`) removes approved targets one at a time. It re-checks the guard,
+  skips anything in use, renames each folder aside in its own parent, then deletes it. The rename is
+  atomic, and on Windows it fails while any file inside is open, so a folder is removed whole or not
+  at all. Under clear-contents, each child is checked and staged on its own. Every removal, skip, and
+  failure is written to the run log and returned as `CleanResult.Outcomes`.
+- **`WorkspaceRoots` and `ArtifactRules`** (`Cleaners/Base`) keep workspace sweeps inside projects.
+  A sweep refuses roots the guard calls unusable (home, drive roots, system and install folders),
+  never descends into links, dot-folders, `node_modules`, or installed tools, and takes a folder only
+  when its project proves it is build output.
+
+`ToolHealthCheck` runs before and after each clean. It reports any common tool whose version command
+stopped working and any PATH folder that lost files.
 
 ## Services
 
@@ -72,8 +105,8 @@ Cleaners receive dependencies through `CleanupContext`, not static OS calls:
 - **`IEnvironmentService`** — the single home of OS differences: path resolution, OS detection, and
   elevation (`IsElevated`). Cleaners ask it for `HomeDirectory`, `CacheDirectory`, etc., and report
   `IsApplicable` / `RequiresElevation` from it.
-- **`IFileSystemService`** — best-effort sizing, enumeration, and deletion. Swapped for an in-memory
-  fake in tests.
+- **`IFileSystemService`** — best-effort sizing, enumeration (links are never followed), link
+  inspection, rename, and deletion. Swapped for an in-memory fake in tests.
 - **`IProcessRunner`** — `PATH` probing and process execution for `ProcessCleanerBase`.
 - **`ICleanerRegistry`** — the explicitly-registered set of cleaners, with lookup by id and category.
 
@@ -113,7 +146,9 @@ regressions fail CI. `dotnet publish -r <rid>` must produce zero trim/AOT warnin
 `CleanerRunner` wraps every per-cleaner scan/clean: an unexpected exception becomes a reported error
 plus a log entry instead of aborting the run (only cancellation propagates). Logging goes through the
 `IAppLogger` abstraction (Core), implemented in the CLI by `SerilogAppLogger` — a code-only, AOT-safe
-Serilog config writing `~/.cleaner/logs/cleaner.log`. `Program.cs` adds last-resort
+Serilog config writing `~/.cleaner/logs/cleaner.log`, plus one `runs/run-<timestamp>.log` per clean
+with the approved plan and every path removed or skipped (`IAppLogger.BeginRun` / `Detail`).
+`Program.cs` adds last-resort
 `AppDomain`/`TaskScheduler` handlers so even a crash is logged.
 
 ## Distribution

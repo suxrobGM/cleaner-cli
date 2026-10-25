@@ -1,6 +1,6 @@
 # Cleaners
 
-Cleaner ships with 131 cleaners. Use **List all cleaners** to see which apply to your machine; the
+Cleaner ships with 132 cleaners. Use **List all cleaners** to see which apply to your machine; the
 **id** below is the menu identifier.
 
 Every category belongs to one of three groups — **Operating system**, **Development tools**, and
@@ -9,9 +9,16 @@ the selection menu takes everything under it.
 
 > Cleaners only ever remove caches, temp files, and rebuildable artifacts — never source, configs,
 > credentials, installed games, or save data.
+>
+> Every path also passes a built-in deletion guard that no cleaner can override. It refuses anything
+> on PATH (or a parent of a PATH folder), installed tools (`~/.cargo` and `~/.rustup` apart from
+> their download caches, `~/scoop/apps`, WinGet packages, nvm installs, `~/.local/bin`, `~/bin`,
+> editor extensions, `Program Files`), git repositories, and anything listed in
+> `~/.cleaner/exclude.txt`. See [usage](usage.md#what-cleaner-never-deletes).
 
 Workspace sweepers (`build-artifacts`, `unity`) use repeatable `--path`/`-p <dir>` roots (default:
-the current directory), e.g. `cleaner -p ~/source -p ~/work`.
+the current directory), e.g. `cleaner -p ~/source -p ~/work`. They refuse to start from your home
+folder, a drive root, or a system or install folder; point them at a workspace instead.
 
 A cleaner that finds more than one folder can be opened up after the scan to untick individual
 folders. Command-driven cleaners are all-or-nothing, so they are not offered.
@@ -185,7 +192,24 @@ and take their own yes/no before the run-wide confirmation.
 
 | Id | Removes |
 | --- | --- |
-| `build-artifacts` | `bin`, `obj`, `node_modules`, `target`, `dist`, `.next`, `.nuxt`, `.svelte-kit`, `.astro`, `.turbo`, `.parcel-cache`, `.vite`, `.gradle`, Python virtualenvs (`.venv`, `venv`, `.tox`, `.nox`) and tool caches (`__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.terragrunt-cache`) under each `--path` root. `build` is taken too, but only beside a Gradle, Maven, CMake, or Meson project file — the name is far too common to sweep on sight. Matches are not descended into. |
+| `build-artifacts` | Build output inside projects under each `--path` root. Opt-in: not part of **All cleaners**. A folder is taken only when its parent is a project of the right kind *and* the folder proves it was generated there (table below). Never follows links, never enters dot-folders, `node_modules`, or installed tools, and refuses to start from the home folder, a drive root, or a system folder. |
+
+`build-artifacts` rules:
+
+| Folder | Parent must contain | Proof it was generated |
+| --- | --- | --- |
+| `bin` | `*.csproj` / `*.fsproj` / `*.vbproj` | `obj/project.assets.json`, and a `Debug` or `Release` folder (directly or one level down) |
+| `obj` | `*.csproj` / `*.fsproj` / `*.vbproj` | `project.assets.json` inside |
+| `target` | `Cargo.toml` / `pom.xml` | `CACHEDIR.TAG` / `classes` or `maven-status` inside |
+| `node_modules` | `package.json` | a lockfile beside it, or `.package-lock.json`, `.modules.yaml`, `.yarn-state.yml` inside |
+| `dist` | `package.json` / `pyproject.toml` / `setup.py` | listed in a `.gitignore` between the project and the repository root |
+| `build` | a Gradle, Maven, CMake, or Meson file | `CMakeCache.txt`, `meson-info`, or `tmp` inside, or listed in `.gitignore` |
+| `.gradle` | a Gradle settings or build file | — |
+| `.next`, `.nuxt`, `.svelte-kit`, `.astro`, `.turbo`, `.parcel-cache`, `.vite`, `.angular` | `package.json` | — |
+| `.venv`, `venv` | a Python project file | `pyvenv.cfg` inside |
+| `.pytest_cache`, `.mypy_cache`, `.ruff_cache` | — | `CACHEDIR.TAG` inside |
+| `__pycache__` | — | — |
+| `.tox`, `.nox`, `.terragrunt-cache` | `tox.ini` / `noxfile.py` / `terragrunt.hcl` | — |
 
 ## System caches & temp
 
@@ -193,6 +217,7 @@ and take their own yes/no before the run-wide confirmation.
 | --- | --- | --- |
 | `temp` | The per-user temp directory. | |
 | `trash` | Recycle Bin / Trash for the current user. | |
+| `cleaner-leftovers` | Folders an earlier run renamed aside (`name.cleaner-deleting-xxxx`) but couldn't finish deleting, as recorded in `~/.cleaner/pending-deletes.txt`. | |
 | `browser-cache` | Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Arc, and Firefox HTTP/code caches, plus the on-device AI model stores Chrome and Edge download beside their profiles. | Keeps history/cookies/profiles. |
 | `windows-update` | `SoftwareDistribution\Download`. | Windows · needs admin |
 | `windows-temp` | The machine-wide `Windows\Temp`. | Windows · needs admin |
