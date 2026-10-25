@@ -38,6 +38,9 @@ public interface IEnvironmentService
     /// <summary>%SystemRoot%, or null on non-Windows.</summary>
     string? WindowsDirectory { get; }
 
+    /// <summary><c>~/.cleaner</c>: Cleaner's own logs, exclude file, and unfinished-delete list.</summary>
+    string DataDirectory { get; }
+
     /// <summary><c>~/.cleaner/logs</c>.</summary>
     string LogDirectory { get; }
 

@@ -59,7 +59,7 @@ public sealed partial class DeletionGuard : IDeletionGuard
                     .ToArray()))
             .ToArray();
 
-        var excludeFile = Path.Combine(env.HomeDirectory, ".cleaner", ExcludeFileName);
+        var excludeFile = Path.Combine(env.DataDirectory, ExcludeFileName);
         var exclusions = ReadExcludeFile(env, fs, excludeFile)
             .Select(path => new Exclusion(PathComparison.Key(path), path, $"listed in {excludeFile}"))
             .ToArray();

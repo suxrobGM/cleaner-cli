@@ -28,6 +28,8 @@ public sealed class FakeEnvironment : IEnvironmentService
 
     public string? WindowsDirectory { get; set; }
 
+    public string DataDirectory => HomePath(".cleaner");
+
     public string LogDirectory { get; set; } = "/home/test/.cleaner/logs";
 
     public IReadOnlyList<string> PathDirectories { get; set; } = [];

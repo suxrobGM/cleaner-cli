@@ -20,7 +20,7 @@ internal sealed class TargetRemover(CleanupContext context, string cleanerId)
 
     /// <summary>Lists renamed-aside folders whose delete didn't finish, so the next run can offer them again.</summary>
     public static string PendingDeletesFile(CleanupContext context) =>
-        Path.Combine(context.Environment.HomeDirectory, ".cleaner", "pending-deletes.txt");
+        Path.Combine(context.Environment.DataDirectory, "pending-deletes.txt");
 
     public CleanResult Result => new(_bytesFreed, _removed, _errors) { Outcomes = _outcomes };
 

@@ -207,8 +207,8 @@ internal static class ProtectedPaths
             yield return Root(Path.Combine(home, server), "an editor's remote server");
         }
 
-        // Credentials and Cleaner's own files.
-        foreach (var personal in new[] { ".cleaner", ".ssh", ".gnupg", ".aws", ".azure", ".docker" })
+        yield return Root(env.DataDirectory, "Cleaner's own files");
+        foreach (var personal in new[] { ".ssh", ".gnupg", ".aws", ".azure", ".docker" })
         {
             yield return Root(Path.Combine(home, personal), "personal configuration");
         }
