@@ -34,4 +34,29 @@ public sealed class VersionManagerCleanerTests
         Assert.False(fs.FileExists("/home/test/.sdkman/archives/java.zip"));
         Assert.False(fs.FileExists("/home/test/.local/pipx/.cache/x"));
     }
+
+    [Fact]
+    public async Task MiseCleaner_prefers_mise_cache_clear()
+    {
+        var runner = new FakeProcessRunner().WithAvailable("mise");
+        var fs = new FakeFileSystem().AddFile("/home/test/.cache/mise/node/node-20.tar.gz", 1_000);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        await new MiseCleaner().CleanAsync(TestContext.Create(fs, env, runner));
+
+        Assert.Equal(("mise", "cache clear"), (runner.Invocations[0].Executable, string.Join(' ', runner.Invocations[0].Arguments)));
+        Assert.True(fs.FileExists("/home/test/.cache/mise/node/node-20.tar.gz"));
+    }
+
+    [Fact]
+    public async Task MiseCleaner_clears_the_cache_directly_without_mise()
+    {
+        var fs = new FakeFileSystem().AddFile("/home/test/.cache/mise/node/node-20.tar.gz", 1_000);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new MiseCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(1_000, result.BytesFreed);
+        Assert.True(fs.DirectoryExists("/home/test/.cache/mise"));
+    }
 }

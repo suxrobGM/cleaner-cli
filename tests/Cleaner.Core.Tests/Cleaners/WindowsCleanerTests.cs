@@ -1,6 +1,9 @@
+using Cleaner.Cli.Infrastructure;
+using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Os;
 using Cleaner.Core.Services;
 using Cleaner.Core.Tests.Fakes;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Cleaner.Core.Tests;
@@ -150,5 +153,44 @@ public sealed class WindowsCleanerTests
         Assert.False(cleaner.SupportsSizeEstimate);
         var invocation = Assert.Single(runner.Invocations);
         Assert.Equal("/Online /Cleanup-Image /StartComponentCleanup", string.Join(' ', invocation.Arguments));
+    }
+
+    [Fact]
+    public async Task ScoopCleaner_clears_the_cache_then_lets_scoop_remove_old_versions()
+    {
+        var scoop = RegisteredCleaner("scoop");
+        var runner = new FakeProcessRunner().WithAvailable("scoop");
+        var fs = new FakeFileSystem().AddFile(@"C:\Users\test\scoop\cache\git#2.45.0#x.7z", 1_000);
+
+        await scoop.CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
+
+        var commands = runner.Invocations.Select(i => string.Join(' ', i.Arguments)).ToList();
+        Assert.Equal(["cache rm *", "cleanup *"], commands);
+        Assert.Contains("scoop reset", scoop.ConfirmationWarning);
+    }
+
+    [Theory]
+    [InlineData("SCOOP_CACHE", @"D:\scoop-cache", @"D:\scoop-cache")]
+    [InlineData("SCOOP", @"D:\scoop", @"D:\scoop\cache")]
+    public async Task ScoopCleaner_honors_relocated_scoop_directories(string variable, string value, string cache)
+    {
+        var fs = new FakeFileSystem()
+            .AddFile($@"{cache}\git#2.45.0#x.7z", 1_000)
+            .AddFile(@"D:\scoop\apps\git\2.44.0\git.exe", 9_999);
+        var env = FakeEnvironment.Windows().SetVariable(variable, value);
+
+        // Without scoop on PATH only the cache is deleted directly; old versions are never touched.
+        var result = await RegisteredCleaner("scoop").CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(1_000, result.BytesFreed);
+        Assert.True(fs.FileExists(@"D:\scoop\apps\git\2.44.0\git.exe"));
+    }
+
+    private static ICleaner RegisteredCleaner(string id)
+    {
+        var services = new ServiceCollection();
+        services.AddCleaner();
+        using var provider = services.BuildServiceProvider();
+        return provider.GetRequiredService<ICleanerRegistry>().All.Single(c => c.Id == id);
     }
 }

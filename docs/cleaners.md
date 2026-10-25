@@ -48,7 +48,7 @@ and take their own yes/no before the run-wide confirmation.
 | `npx` | npx execution cache (`_npx`). |
 | `yarn` | Yarn cache (`yarn cache clean`). |
 | `pnpm` | pnpm store (`pnpm store prune`). |
-| `bun` | Bun install cache (covers bunx). |
+| `bun` | Bun install cache (covers bunx), via `bun pm cache rm` when Bun is on PATH. |
 | `deno` | Deno module/dependency cache (`DENO_DIR`). |
 
 ## Python
@@ -60,9 +60,9 @@ and take their own yes/no before the run-wide confirmation.
 | `poetry` | Poetry repository cache and artifacts (`cache`, `artifacts`). Keeps the project virtualenvs under the same root. |
 | `conda` | Conda package cache (`conda clean --all`). Without conda on PATH, deletes only the downloaded `*.conda`/`*.tar.bz2` archives in each `pkgs` dir, never the extracted packages environments may link to. |
 | `pdm` | PDM cache (`pdm cache clear`). |
-| `uv` | uv download/build cache. |
+| `uv` | uv download/build cache, via `uv cache clean` when uv is on PATH. |
 | `pipx` | pipx cache and logs. Never touches installed venvs. |
-| `pre-commit` | pre-commit hook environment cache (rebuilt on the next run). |
+| `pre-commit` | pre-commit hook environment cache, via `pre-commit clean` when it is on PATH (rebuilt on the next run). |
 
 ## Rust
 
@@ -173,7 +173,7 @@ and take their own yes/no before the run-wide confirmation.
 | `dotslash` | DotSlash fetched-executable cache. |
 | `corepack` | Corepack's downloaded package-manager binaries. |
 | `nvm` | nvm download cache (POSIX; installed Node versions are kept). |
-| `mise` | mise download/HTTP cache. Installed tools are kept. |
+| `mise` | mise download/HTTP cache, via `mise cache clear` when mise is on PATH. Installed tools are kept. |
 | `asdf` | asdf downloads and temp. Installed tools are kept. |
 | `sdkman` | SDKMAN! archives and temp. Installed candidates are kept. |
 | `node-gyp` | node-gyp downloaded Node headers/import libraries. |
@@ -225,7 +225,7 @@ and take their own yes/no before the run-wide confirmation.
 | `dnf` | DNF cache (`dnf clean all`). | Linux · needs admin |
 | `pacman` | Pacman cache (`pacman -Sc`). | Linux · needs admin |
 | `brew` | Homebrew cache (`brew cleanup -s`). | macOS/Linux |
-| `scoop` | Scoop download cache (`scoop cache rm *`). | Windows |
+| `scoop` | Scoop download cache (`scoop cache rm *`, honors `SCOOP_CACHE`/`SCOOP`), then old app versions (`scoop cleanup *`; Scoop knows which version is current). Old versions kept for `scoop reset app@version` rollback are gone afterwards. | Windows · **asks again** |
 | `choco` | Chocolatey cache (`choco cache remove`). | Windows · needs admin |
 | `winget` | winget installer downloads and diagnostic logs. Source indexes are left alone. | Windows |
 | `flatpak` | Unused Flatpak runtimes (`flatpak uninstall --unused`). | Linux |

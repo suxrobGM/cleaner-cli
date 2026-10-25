@@ -3,14 +3,18 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>Bun install cache (covers bunx).</summary>
-public sealed class BunCleaner : DirectoryCleanerBase
+/// <summary>Bun install cache (covers bunx). Prefers <c>bun pm cache rm</c>.</summary>
+public sealed class BunCleaner : ProcessCleanerBase
 {
     public override string Id => "bun";
 
     public override string Name => "Bun cache";
 
     public override string Category => Categories.JavaScript;
+
+    protected override string Executable => "bun";
+
+    protected override IReadOnlyList<string> CleanArguments => ["pm", "cache", "rm"];
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

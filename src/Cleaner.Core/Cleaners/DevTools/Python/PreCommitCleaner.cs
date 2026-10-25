@@ -3,14 +3,20 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>pre-commit hook environment cache (rebuilt on the next run).</summary>
-public sealed class PreCommitCleaner : DirectoryCleanerBase
+/// <summary>
+/// pre-commit hook environment cache (rebuilt on the next run). Prefers <c>pre-commit clean</c>.
+/// </summary>
+public sealed class PreCommitCleaner : ProcessCleanerBase
 {
     public override string Id => "pre-commit";
 
     public override string Name => "pre-commit cache";
 
     public override string Category => Categories.Python;
+
+    protected override string Executable => "pre-commit";
+
+    protected override IReadOnlyList<string> CleanArguments => ["clean"];
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {

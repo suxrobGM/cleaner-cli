@@ -1,6 +1,7 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 using Cleaner.Core.Cleaners.Os;
+using Cleaner.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cleaner.Cli.Infrastructure;
@@ -33,10 +34,16 @@ internal static partial class ServiceCollectionExtensions
                     : Path.Combine(ctx.Environment.CacheDirectory, "Homebrew"), DeleteMode.ClearContents),
             ]));
 
+        // Scoop knows which app version is current, so old versions are left to `scoop cleanup`;
+        // the cache directory is the only thing ever deleted directly.
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
-            "scoop", "Scoop cache", "scoop", ["cache", "rm", "*"], requiresElevation: false,
+            "scoop", "Scoop cache and old versions", "scoop", ["cache", "rm", "*"], requiresElevation: false,
             env => env.IsWindows,
-            ctx => [new CleanupPath(ctx.Environment.HomePath("scoop", "cache"), DeleteMode.ClearContents)]));
+            ctx => [new CleanupPath(ScoopCacheDirectory(ctx.Environment), DeleteMode.ClearContents)],
+            followUpArguments: [["cleanup", "*"]],
+            confirmationWarning:
+                "this also removes the old app versions Scoop keeps for rollback, so " +
+                "'scoop reset app@version' can no longer switch back to them"));
 
         services.AddSingleton<ICleaner>(_ => new SystemPackageManagerCleaner(
             "choco", "Chocolatey cache", "choco", ["cache", "remove"], requiresElevation: true,
@@ -54,5 +61,17 @@ internal static partial class ServiceCollectionExtensions
             env => env.IsLinux || env.IsMacOs));
 
         services.AddSingleton<ICleaner, WingetCleaner>();
+    }
+
+    /// <summary>Scoop's download cache: <c>SCOOP_CACHE</c>, else <c>$SCOOP\cache</c>, else <c>~\scoop\cache</c>.</summary>
+    private static string ScoopCacheDirectory(IEnvironmentService env)
+    {
+        if (env.GetEnvironmentVariable("SCOOP_CACHE") is { } cache && !string.IsNullOrWhiteSpace(cache))
+        {
+            return cache;
+        }
+
+        var root = env.GetEnvironmentVariable("SCOOP");
+        return Path.Combine(string.IsNullOrWhiteSpace(root) ? env.HomePath("scoop") : root, "cache");
     }
 }

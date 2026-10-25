@@ -29,6 +29,19 @@ public sealed class JavaScriptCleanerTests
     }
 
     [Fact]
+    public async Task BunCleaner_prefers_bun_pm_cache_rm()
+    {
+        var runner = new FakeProcessRunner().WithAvailable("bun");
+        var fs = new FakeFileSystem().AddFile("/home/test/.bun/install/cache/react@18/index.js", 1_000);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        await new BunCleaner().CleanAsync(TestContext.Create(fs, env, runner));
+
+        Assert.Equal(("bun", "pm cache rm"), (runner.Invocations[0].Executable, string.Join(' ', runner.Invocations[0].Arguments)));
+        Assert.True(fs.FileExists("/home/test/.bun/install/cache/react@18/index.js"));
+    }
+
+    [Fact]
     public async Task ExpoCleaner_clears_the_project_cache_but_keeps_the_global_login()
     {
         var fs = new FakeFileSystem()
