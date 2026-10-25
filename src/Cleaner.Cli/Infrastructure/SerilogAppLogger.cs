@@ -97,12 +97,9 @@ public sealed class SerilogAppLogger : IAppLogger, IDisposable
                 old.Delete();
             }
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Pruning is housekeeping; a locked old log can wait for the next run.
-        }
-        catch (UnauthorizedAccessException)
-        {
         }
     }
 

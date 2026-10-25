@@ -1,6 +1,7 @@
 using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 using Cleaner.Core.Services;
+using Cleaner.Core.Utils;
 
 namespace Cleaner.Core.Cleaners.Applications;
 
@@ -20,9 +21,6 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
     ];
 
     private static readonly TimeSpan RegistryTimeout = TimeSpan.FromSeconds(30);
-
-    /// <summary>Leftovers found for the current run context, so the clean does not query again.</summary>
-    private (CleanupContext Context, IReadOnlyList<CleanupPath> Targets)? _leftovers;
 
     /// <summary>How to tell an app is installed, and what it leaves behind once it is not.</summary>
     /// <param name="InstallMarkers">Folders that exist only while the app is installed.</param>
@@ -56,20 +54,6 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
         CleanupContext context,
         CancellationToken cancellationToken)
     {
-        if (_leftovers is { } cached && ReferenceEquals(cached.Context, context))
-        {
-            return cached.Targets;
-        }
-
-        var targets = await LeftoversAsync(context, cancellationToken).ConfigureAwait(false);
-        _leftovers = (context, targets);
-        return targets;
-    }
-
-    private static async Task<IReadOnlyList<CleanupPath>> LeftoversAsync(
-        CleanupContext context,
-        CancellationToken cancellationToken)
-    {
         var candidates = LooksUninstalled(context)
             .Where(app => app.DataDirectories.Any(context.FileSystem.DirectoryExists))
             .ToList();
@@ -99,13 +83,16 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
     /// <summary>Apps with no install folder, MSIX package, or PATH entry left on this machine.</summary>
     private static IEnumerable<AppLeftovers> LooksUninstalled(CleanupContext context)
     {
-        var path = PathEntries(context.Environment);
-        foreach (var app in KnownApps(context.Environment))
+        var env = context.Environment;
+        var packages = new Lazy<string[]>(() => MsixPackageNames(context));
+        foreach (var app in KnownApps(env))
         {
             // Any surviving marker means the app is still installed; leave its data alone.
             if (app.InstallMarkers.Any(context.FileSystem.DirectoryExists)
-                || HasMsixPackage(context, app)
-                || path.Any(entry => app.InstallMarkers.Concat(app.DataDirectories).Any(dir => IsWithin(entry, dir))))
+                || app.MsixPrefixes.Any(prefix =>
+                    packages.Value.Any(name => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                || env.PathDirectories.Any(entry => app.InstallMarkers.Concat(app.DataDirectories)
+                    .Any(dir => PathComparison.IsSameOrUnder(entry, dir, env.IsLinux))))
             {
                 continue;
             }
@@ -114,40 +101,13 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
         }
     }
 
-    private static bool HasMsixPackage(CleanupContext context, AppLeftovers app)
+    /// <summary>Folder names under <c>%LOCALAPPDATA%\Packages</c>, listed once per check.</summary>
+    private static string[] MsixPackageNames(CleanupContext context)
     {
-        if (app.MsixPrefixes.Length == 0)
-        {
-            return false;
-        }
-
         var packages = Path.Combine(context.Environment.LocalAppDataDirectory, "Packages");
         return context.FileSystem.DirectoryExists(packages)
-            && context.FileSystem.EnumerateDirectories(packages)
-                .Select(Path.GetFileName)
-                .Any(name => app.MsixPrefixes.Any(prefix =>
-                    name?.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) == true));
-    }
-
-    private static string[] PathEntries(IEnvironmentService env) =>
-        (env.GetEnvironmentVariable("PATH") ?? string.Empty)
-            .Split(env.IsWindows ? ';' : ':', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Select(entry => entry.Trim('"'))
-            .Where(entry => entry.Length > 0)
-            .ToArray();
-
-    /// <summary>
-    /// Whether <paramref name="path"/> is <paramref name="directory"/> or inside it, ignoring case as
-    /// the Windows and macOS volumes this runs on do.
-    /// </summary>
-    private static bool IsWithin(string path, string directory)
-    {
-        var child = Unify(path);
-        var parent = Unify(directory);
-        return child.Equals(parent, StringComparison.OrdinalIgnoreCase)
-            || child.StartsWith(parent + '/', StringComparison.OrdinalIgnoreCase);
-
-        static string Unify(string p) => p.Replace('\\', '/').TrimEnd('/');
+            ? [.. context.FileSystem.EnumerateDirectories(packages).Select(PathComparison.Name)]
+            : [];
     }
 
     /// <summary>
@@ -158,13 +118,14 @@ public sealed class UninstalledAppLeftoverCleaner : DirectoryCleanerBase
         CleanupContext context,
         CancellationToken cancellationToken)
     {
-        var names = new List<string>();
-        foreach (var key in UninstallKeys)
-        {
-            var result = await context.ProcessRunner
-                .RunAsync("reg", ["query", key, "/s", "/v", "DisplayName"], RegistryTimeout, cancellationToken)
-                .ConfigureAwait(false);
+        // The keys are independent, so query them together.
+        var results = await Task.WhenAll(UninstallKeys.Select(key => context.ProcessRunner
+                .RunAsync("reg", ["query", key, "/s", "/v", "DisplayName"], RegistryTimeout, cancellationToken)))
+            .ConfigureAwait(false);
 
+        var names = new List<string>();
+        foreach (var result in results)
+        {
             if (!result.Success)
             {
                 continue;

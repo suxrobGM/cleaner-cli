@@ -10,7 +10,9 @@ namespace Cleaner.Core.Cleaners.Base;
 /// </summary>
 internal static class BuildOutput
 {
-    private static readonly string[] DotnetProjects = ["*.csproj", "*.fsproj", "*.vbproj"];
+    private static readonly string[] DotnetProjects = [".csproj", ".fsproj", ".vbproj"];
+
+    private static readonly string[] GradleFiles = ["build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"];
 
     private static readonly string[] JsLockfiles =
         ["package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb"];
@@ -23,8 +25,7 @@ internal static class BuildOutput
 
     private static readonly string[] BuildSystems =
     [
-        "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts",
-        "gradlew", "pom.xml", "CMakeLists.txt", "meson.build",
+        .. GradleFiles, "gradlew", "pom.xml", "CMakeLists.txt", "meson.build",
     ];
 
     /// <summary>Framework output folders whose names are specific enough to need only a package.json.</summary>
@@ -80,7 +81,7 @@ internal static class BuildOutput
                     && (Inside("CMakeCache.txt") || Inside("meson-info") || Inside("tmp") || GitIgnore.Ignores(fs, parent, name));
 
             case ".gradle":
-                return Has("settings.gradle") || Has("settings.gradle.kts") || Has("build.gradle") || Has("build.gradle.kts");
+                return GradleFiles.Any(Has);
 
             case ".venv":
             case "venv":
@@ -113,5 +114,7 @@ internal static class BuildOutput
         fs.DirectoryExists(Path.Combine(directory, "Debug")) || fs.DirectoryExists(Path.Combine(directory, "Release"));
 
     private static bool IsDotnetProject(IFileSystemService fs, string directory) =>
-        DotnetProjects.Any(pattern => fs.EnumerateFiles(directory, pattern).Any());
+        // One listing for all three project types.
+        fs.EnumerateFiles(directory, "*proj")
+            .Any(file => DotnetProjects.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase));
 }

@@ -15,9 +15,6 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
 {
     private const string UserDataKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData";
 
-    /// <summary>Orphans found for the current run context, so the clean does not query again.</summary>
-    private (CleanupContext Context, IReadOnlyList<CleanupPath> Targets)? _orphans;
-
     public override string Id => "windows-installer-orphans";
 
     public override string Name => "Orphaned Windows Installer packages";
@@ -32,20 +29,6 @@ public sealed class WindowsInstallerOrphanCleaner : WindowsCleanerBase
     public override bool IsAvailable(CleanupContext context) => CachedPackages(context).Any();
 
     protected override async ValueTask<IEnumerable<CleanupPath>> GetTargetsAsync(
-        CleanupContext context,
-        CancellationToken cancellationToken)
-    {
-        if (_orphans is { } cached && ReferenceEquals(cached.Context, context))
-        {
-            return cached.Targets;
-        }
-
-        var targets = await OrphansAsync(context, cancellationToken).ConfigureAwait(false);
-        _orphans = (context, targets);
-        return targets;
-    }
-
-    private static async Task<IReadOnlyList<CleanupPath>> OrphansAsync(
         CleanupContext context,
         CancellationToken cancellationToken)
     {

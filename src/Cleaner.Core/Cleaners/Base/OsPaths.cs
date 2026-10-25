@@ -37,6 +37,26 @@ internal static class OsPaths
             : env.HomePath(".config", linux);
     }
 
+    /// <summary>
+    /// Where conda installs live: <c>CONDA_ROOT</c>, <c>MAMBA_ROOT_PREFIX</c>, the usual distribution
+    /// folders in the home directory, and the older <c>~/.conda</c>. Unset variables are skipped.
+    /// </summary>
+    public static IEnumerable<string> CondaRoots(IEnvironmentService env)
+    {
+        foreach (var name in new[] { "CONDA_ROOT", "MAMBA_ROOT_PREFIX" })
+        {
+            if (Env(env, name) is { } root)
+            {
+                yield return root;
+            }
+        }
+
+        foreach (var name in new[] { "miniconda3", "anaconda3", "miniforge3", "mambaforge", ".conda" })
+        {
+            yield return env.HomePath(name);
+        }
+    }
+
     /// <summary>The per-user data root itself, for callers that append their own segments.</summary>
     public static string AppDataRoot(IEnvironmentService env)
     {

@@ -167,7 +167,7 @@ internal static class ProtectedPaths
         yield return Root(OsPaths.Env(env, "DOTNET_ROOT"), "the .NET install");
         yield return Root(Path.Combine(FirstGoPath(env) ?? Path.Combine(home, "go"), "bin"), "Go's installed commands");
         yield return Root(OsPaths.Env(env, "GOROOT"), "the Go toolchain");
-        foreach (var conda in CondaRoots(env))
+        foreach (var conda in OsPaths.CondaRoots(env))
         {
             yield return Root(conda, "a conda install", "pkgs");
         }
@@ -255,14 +255,4 @@ internal static class ProtectedPaths
     /// <summary>GOPATH may list several workspaces; installed commands go to the first.</summary>
     private static string? FirstGoPath(IEnvironmentService env) =>
         OsPaths.Env(env, "GOPATH")?.Split(env.IsWindows ? ';' : ':', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-
-    private static IEnumerable<string?> CondaRoots(IEnvironmentService env)
-    {
-        yield return OsPaths.Env(env, "CONDA_ROOT");
-        yield return OsPaths.Env(env, "MAMBA_ROOT_PREFIX");
-        foreach (var name in new[] { "miniconda3", "anaconda3", "miniforge3", "mambaforge", ".conda" })
-        {
-            yield return Path.Combine(env.HomeDirectory, name);
-        }
-    }
 }

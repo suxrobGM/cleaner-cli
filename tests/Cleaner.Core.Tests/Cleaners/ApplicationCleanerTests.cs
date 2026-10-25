@@ -97,8 +97,8 @@ public sealed class ApplicationCleanerTests
     public async Task AppLeftoverCleaner_keeps_data_of_an_app_still_on_path()
     {
         var fs = new FakeFileSystem().AddFile(@"C:\Users\test\AppData\Local\Docker\wsl\disk\docker_data.vhdx", 9_000);
-        var env = FakeEnvironment.Windows()
-            .SetVariable("PATH", @"C:\Windows\System32;C:\Users\test\AppData\Local\Docker\bin\");
+        var env = FakeEnvironment.Windows();
+        env.PathDirectories = [@"C:\Windows\System32", @"C:\Users\test\AppData\Local\Docker\bin\"];
 
         var scan = await new UninstalledAppLeftoverCleaner().ScanAsync(TestContext.Create(fs, env, Registry("Git")));
 

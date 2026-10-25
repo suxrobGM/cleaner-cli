@@ -20,8 +20,6 @@ public sealed class CondaCleaner : ProcessCleanerBase
 
     protected override IReadOnlyList<string> CleanArguments => ["clean", "--all", "--yes"];
 
-    private static readonly string[] InstallRoots = ["miniconda3", "anaconda3", "miniforge3", "mambaforge"];
-
     /// <summary>Downloaded archives only; extracted folders are never matched.</summary>
     private static readonly string[] ArchiveExtensions = [".conda", ".tar.bz2"];
 
@@ -57,21 +55,15 @@ public sealed class CondaCleaner : ProcessCleanerBase
             }
         }
 
-        // The cache normally lives under the install root (<root>/pkgs), not ~/.conda.
-        foreach (var name in new[] { "CONDA_PREFIX", "CONDA_ROOT", "MAMBA_ROOT_PREFIX" })
+        // The cache normally lives under the install root (<root>/pkgs).
+        if (OsPaths.Env(env, "CONDA_PREFIX") is { } prefix)
         {
-            if (OsPaths.Env(env, name) is { } root)
-            {
-                yield return Path.Combine(root, "pkgs");
-            }
+            yield return Path.Combine(prefix, "pkgs");
         }
 
-        foreach (var root in InstallRoots)
+        foreach (var root in OsPaths.CondaRoots(env))
         {
-            yield return env.HomePath(root, "pkgs");
+            yield return Path.Combine(root, "pkgs");
         }
-
-        // Older per-user location.
-        yield return env.HomePath(".conda", "pkgs");
     }
 }
