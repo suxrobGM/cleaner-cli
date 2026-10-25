@@ -16,54 +16,36 @@
 
 ---
 
-Cleaner finds caches from package managers, build tools, IDEs, browsers, system components, and
-apps, shows what can be reclaimed, and clears it only after confirmation.
+Cleaner finds caches left by package managers, build tools, IDEs, browsers, the OS, and desktop
+apps. It shows how much each one holds and deletes only what you approve.
 
-- **132 built-in cleaners** across dev tools, the operating system, and applications.
-- **Safe by default** — every run scans and previews first; nothing is deleted without confirmation,
-  and the few cleaners with a real trade-off ask again on their own. A built-in guard refuses
-  anything on PATH, installed tools, and git repositories, and every removed path is logged.
-- **Cross-platform** — a single native binary for Windows, macOS, and Linux (no runtime required).
-- **Interactive by design** — choose, preview, and confirm from one menu; no unattended flags.
-
-## What it cleans
-
-- **Developer tools:** NuGet, npm/yarn/pnpm/bun, pip/poetry/uv, Cargo, Go, Gradle/Maven, Conan,
-  Composer, Julia, Zig, version managers, IDEs, build outputs, and more.
-- **Containers and infrastructure:** Docker, Podman, Helm, minikube, Pulumi, and related caches.
-- **Applications:** browsers, messaging apps, game launchers, and data left by uninstalled apps.
-- **Operating systems:** temp files, trash, package-manager caches, Windows Update, WinSxS, GPU
-  installer leftovers, and `Windows.old`.
-
-See the full list in **[docs/cleaners.md](docs/cleaners.md)**.
+- **132 cleaners** for dev tools, the operating system, and applications. See
+  [docs/cleaners.md](docs/cleaners.md).
+- **Preview first.** Every run scans, shows a size table, and asks before deleting.
+- **Guarded.** Folders on PATH, installed tools, git repositories, and links are never deleted.
+  Every removed path is logged.
+- **One native binary** for Windows, macOS, and Linux. No .NET runtime needed.
 
 ## Install
 
-The install script downloads the platform binary to `~/.cleaner/bin` and adds it to `PATH`.
+The script puts the binary in `~/.cleaner/bin` and adds it to `PATH`.
 
-**macOS / Linux**
+macOS / Linux:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/suxrobGM/cleaner-cli/main/scripts/install.sh | bash
 ```
 
-**Windows** (PowerShell)
+Windows (PowerShell):
 
 ```powershell
 irm https://raw.githubusercontent.com/suxrobGM/cleaner-cli/main/scripts/install.ps1 | iex
 ```
 
-Or **download a binary** manually from the [latest release](https://github.com/suxrobGM/cleaner-cli/releases),
-unpack it, and put `cleaner` on your `PATH`.
-
-## Update
-
-Pick **Check for updates** in the menu to download, replace, and relaunch the platform binary.
-`cleaner --version` prints the installed version without touching the network.
+Or download a binary from the [latest release](https://github.com/suxrobGM/cleaner-cli/releases)
+and put `cleaner` on your `PATH`.
 
 ## Quick start
-
-Run it:
 
 ```bash
 cleaner
@@ -77,29 +59,15 @@ What would you like to do?
   Exit
 ```
 
-Pick **Preview and clean caches**, select entries with the spacebar (toggle **All cleaners** for
-everything), and press Enter. The `--path` flag points project-local cleaners at your code; `--verbose` shows a
-per-directory breakdown.
-
-A run looks like this:
-
-```text
-╭──────────────┬─────────────╮
-│ Cleaner      │ Reclaimable │
-├──────────────┼─────────────┤
-│ NuGet caches │       22 GB │
-│ Gradle caches│      3.1 GB │
-│ Total        │      25 GB  │
-╰──────────────┴─────────────╯
-Delete 25 GB across 2 cleaner(s)? [y/N]
-```
+Pick **Preview and clean caches**, tick cleaners with the spacebar, and press Enter. Review the
+size table, then confirm.
 
 ## Documentation
 
-- **[Usage](docs/usage.md)** — the menu, the two flags, and what each action does.
-- **[Cleaners](docs/cleaners.md)** — the full catalog and what each one removes.
-- **[Architecture](docs/architecture.md)** — how it's built.
-- **[Contributing](docs/contributing.md)** — add a new cleaner in a few lines.
+- [Usage](docs/usage.md): menu, options, the clean flow, safety, and logs.
+- [Cleaners](docs/cleaners.md): every cleaner and what it removes.
+- [Architecture](docs/architecture.md): how the code fits together.
+- [Contributing](docs/contributing.md): build, test, and add a cleaner.
 
 ## License
 

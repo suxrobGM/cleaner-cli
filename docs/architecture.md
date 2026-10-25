@@ -1,157 +1,91 @@
 # Architecture
 
-Cleaner is a layered .NET 10 application designed to be easy to extend and compatible with Native
-AOT.
-
 ## Projects
 
-- **`Cleaner.Core`** — a class library with the abstractions, all cleaners, and the services they
-  depend on. UI-free and fully unit-testable.
-- **`Cleaner.Cli`** — the Native AOT executable. Wires up dependency injection, owns the
-  Spectre.Console rendering, and parses the handful of flags with System.CommandLine.
-- **`Cleaner.Core.Tests`** — xUnit tests that run cleaners against an in-memory filesystem fake.
+| Project | Role |
+| --- | --- |
+| `src/Cleaner.Core` | Abstractions, all cleaners, and the services they use. No UI. |
+| `src/Cleaner.Cli` | Native AOT executable: composition root, menu and flows, Spectre.Console rendering, System.CommandLine parsing. |
+| `tests/Cleaner.Core.Tests` | xUnit tests against in-memory fakes (`FakeFileSystem`, `FakeEnvironment`, `FakeProcessRunner`). |
 
-## Where cleaners live
+## Cleaner layout
 
-`Cleaner.Core/Cleaners` is split into three areas, each one namespace: `Applications` for desktop
-apps, `DevTools` for developer tooling, and `Os` for the operating system. Folders below an area
-group by domain and do not add namespace segments, so moving a cleaner between them is a file move
-and nothing else.
-
-```
-Cleaners/
-  Base/                 DirectoryCleanerBase, ProcessCleanerBase, and the shared path helpers
-  Applications/         Steam, Spotify, Electron apps, uninstalled-app leftovers
-  DevTools/             one folder per ecosystem: Python, Rust, JavaScript, Jvm, Cpp, Ruby, …
-                        plus Containers, Kubernetes, Infrastructure, Ides, BuildCaches,
-                        VersionManagers, ToolingDownloads, MachineLearning, Mobile, GameDev
-  Os/                   Windows, MacOs, Linux, and CrossPlatform
+```text
+src/Cleaner.Core/Cleaners/
+  Base/          base classes, TargetRemover, and shared helpers
+  Applications/  desktop apps
+  DevTools/      one folder per ecosystem (Python, Rust, JavaScript, Containers, Ides, ...)
+  Os/            Windows, MacOs, Linux, CrossPlatform
 ```
 
-`Languages` is the home for ecosystems with a single cleaner; once a second one arrives it earns its
-own folder. The folder a cleaner sits in is for people reading the code — the `Category` it declares
-is what groups it in the menu, and the two are deliberately independent.
+Each area is one namespace (`Cleaner.Core.Cleaners.DevTools`, ...); subfolders add none. The menu
+groups cleaners by their `Category` (see `Categories.cs`), not by folder.
 
-## The cleaner model
+## Cleaner model
 
-Every cache target implements **`ICleaner`**:
+Every cleaner implements `ICleaner`: `Id`, `Name`, `Category`, `RequiresElevation`,
+`ConfirmationWarning`, `OptIn`, `IsApplicable`, `IsAvailable`, `ScanAsync`, and `CleanAsync`.
 
-```csharp
-public interface ICleaner
-{
-    string Id { get; }
-    string Name { get; }
-    string Category { get; }
-    bool RequiresElevation { get; }
-    bool SupportsSizeEstimate { get; }
-    bool SupportsPartialSelection { get; }
-    string? ConfirmationWarning { get; }
-    bool OptIn { get; }                         // left out of "All cleaners"
-    bool IsApplicable(CleanupContext context);  // right OS?
-    bool IsAvailable(CleanupContext context);   // tool or unprotected paths present?
-    Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken ct = default);
-    Task<CleanResult> CleanAsync(
-        CleanupContext context,
-        IReadOnlyList<CleanupTarget> approved,  // exactly what the user reviewed
-        IProgress<CleanProgress>? progress = null,
-        CancellationToken ct = default);
-}
-```
-
-A scan returns `CleanupTarget(Path, Bytes, Mode, Description)` records plus `Notes` (protected paths
-left alone, refused sweep roots). The app shows them, the user approves or unticks them, and each
-cleaner's `CleanAsync` receives only its approved targets. It never looks for targets again, so the
-run can't reach past the preview.
+- `ScanAsync` returns `CleanupTarget` records (path, size, `DeleteMode`) and `Notes` for the preview.
+- `CleanAsync` receives only the targets the user approved and removes nothing else.
 
 Most cleaners derive from a base class:
 
-- **`DirectoryCleanerBase`** — declare candidate cache directories (`GetTargets`, or
-  `GetTargetsAsync` when discovery itself needs a registry read or an external command); the base
-  handles existence checks, the guard, recursive sizing, and dry-run accounting, and hands removal to
-  `TargetRemover` (whole-directory, clear-contents, or single file).
-- **`ProcessCleanerBase`** — for tools where a native command is authoritative (e.g.
-  `npm cache clean`, `docker system prune`). Runs the command whenever the tool is on `PATH`; a failed
-  command is reported and nothing is deleted in its place. Only when the tool is absent are the
-  approved directories removed directly. Specialized cleaners can override sizing with command output.
+| Base | Use |
+| --- | --- |
+| `DirectoryCleanerBase` | Declare cache paths in `GetTargets` (or `GetTargetsAsync`). The base checks existence and the guard, sizes targets, and removes them through `TargetRemover`. |
+| `ProcessCleanerBase` | A tool command does the cleanup (`Executable`, `CleanArguments`, or `CommandSequence`). The command runs when the tool is on PATH; a failure is reported and nothing is deleted. Declared paths are used for sizing, and are deleted directly only when the tool is absent. Not offered in the folder picker. |
+
+`DeleteMode` is `DeleteDirectory`, `ClearContents`, `DeleteFile`, or `ToolManaged` (a preview label
+the tool reclaims; never deleted by Cleaner).
 
 ## Deletion safety
 
-Three pieces stand between a cleaner and the disk:
+| Piece | Location | Job |
+| --- | --- | --- |
+| `IDeletionGuard` / `DeletionGuard` | `Services/Safety` | Decides if a path may be deleted. Built per run from `ProtectedPaths`, PATH (`IEnvironmentService.PathDirectories`), `~/.cleaner/exclude.txt`, and folders unticked in the picker. Rejects links and judges linked paths by their real location. Finds running programs via `IProcessRunner.RunningExecutablePaths`. Nothing can loosen it. |
+| `ProtectedPaths` | `Services/Safety` | Essential system and profile folders, folders a project scan may not start in, and `Installs`: installed tools with the cache folders that may still be cleared. |
+| `TargetRemover` | `Cleaners/Base` | Removes approved targets one by one: re-checks the guard, skips in-use folders, renames each folder aside, then deletes it. Records unfinished deletes in `~/.cleaner/pending-deletes.txt`. Returns every outcome in `CleanResult.Outcomes`. |
+| `ProjectRoots`, `DirectorySearch`, `BuildOutput`, `GitIgnore` | `Cleaners/Base` | Project scans: refuse unsafe roots, walk without entering links, dot-folders, `node_modules`, or installs, and accept a folder only with proof it is build output. |
+| `ToolHealthCheck` | `Services/Safety` | Before and after a clean, checks that common tools still run and PATH folders kept their files. |
 
-- **`IDeletionGuard`** (`Services/Safety`) decides whether a path may go. It is built per run by
-  `DeletionGuard.Create` from `ProtectedPaths` (essential folders, installed-tool roots with their
-  cache holes), the PATH (`IEnvironmentService.PathDirectories`: process, user, and machine), the
-  user's `~/.cleaner/exclude.txt`, and folders the user unticked this run. It refuses links, judges a
-  path reached through a link by its real location, and finds running programs through
-  `IProcessRunner.RunningExecutablePaths`. Path rules are plain string logic (`PathComparison`), so
-  Windows paths are checked correctly on a Linux test runner. Nothing can loosen it.
-- **`TargetRemover`** (`Cleaners/Base`) removes approved targets one at a time. It re-checks the guard,
-  skips anything in use, renames each folder aside in its own parent, then deletes it. The rename is
-  atomic, and on Windows it fails while any file inside is open, so a folder is removed whole or not
-  at all. Under clear-contents, each child is checked and staged on its own. Every removal, skip, and
-  failure is written to the run log and returned as `CleanResult.Outcomes`.
-- **`ProjectRoots` and `BuildOutput`** (`Cleaners/Base`) keep workspace sweeps inside projects.
-  A sweep refuses roots the guard calls unusable (home, drive roots, system and install folders),
-  never descends into links, dot-folders, `node_modules`, or installed tools, and takes a folder only
-  when its project proves it is build output.
-
-`ToolHealthCheck` runs before and after each clean. It reports any common tool whose version command
-stopped working and any PATH folder that lost files.
+Path rules are string logic in `PathComparison`, so Windows paths are tested correctly on Linux.
+User-facing behavior is in [usage.md](usage.md#what-cleaner-never-deletes).
 
 ## Services
 
-Cleaners receive dependencies through `CleanupContext`, not static OS calls:
+Cleaners get dependencies through `CleanupContext`, never static OS calls.
 
-- **`IEnvironmentService`** — the single home of OS differences: path resolution, OS detection, and
-  elevation (`IsElevated`). Cleaners ask it for `HomeDirectory`, `CacheDirectory`, etc., and report
-  `IsApplicable` / `RequiresElevation` from it.
-- **`IFileSystemService`** — best-effort sizing, enumeration (links are never followed), link
-  inspection, rename, and deletion. Swapped for an in-memory fake in tests.
-- **`IProcessRunner`** — `PATH` probing and process execution for `ProcessCleanerBase`.
-- **`ICleanerRegistry`** — the explicitly-registered set of cleaners, with lookup by id and category.
+| Service | Role |
+| --- | --- |
+| `IEnvironmentService` | OS detection, standard paths, PATH folders, environment variables, elevation. |
+| `IFileSystemService` | Sizing, enumeration (links not followed), link inspection, rename, delete. |
+| `IProcessRunner` | PATH lookup, command execution with timeouts, running programs. |
+| `ICleanerRegistry` | The registered cleaners, with lookup by id. |
+| `IAppLogger` | Logging; `SerilogAppLogger` in the CLI writes `cleaner.log` and per-run logs. |
 
-## The user interface
+## CLI
 
-Cleaner is interactive by default and has no unattended deletion mode. `CommandLineBuilder` parses
-`--path`/`--verbose` (plus `--help`/`--version`) before opening the `MainMenuChoice` loop. The
-`update` action is also available as a direct subcommand. Every deletion requires confirmation;
-without an interactive terminal, the app prints guidance and exits 1.
+- `CommandLineBuilder` parses `--path` and `--verbose` and the `update` subcommand, then starts the
+  menu loop in `CleanerApp`.
+- `CleanerApp.CleanFlow.cs` runs select, scan, preview, warnings, folder picker, confirm, clean, and
+  summary. It builds the plan once and passes each cleaner only its approved targets.
+- `CleanerRunner` wraps each scan and clean so one failing cleaner becomes a reported error, not a
+  crash. Only cancellation propagates.
+- `Program.cs` adds last-resort handlers so crashes are logged.
 
-Two prompts guard a run. The run-wide one names the total and the cleaner count. Before it, any
-cleaner exposing a non-null `ICleaner.ConfirmationWarning` prints that trade-off and takes its own
-yes/no, so declining one (say `windows-old`) drops just that cleaner and leaves the rest of the run
-intact.
+## Composition root and Native AOT
 
-## Composition root
+`ServiceCollectionExtensions.AddCleaner()` registers every service and cleaner explicitly, split
+into partials by area (`.DevTools.cs`, `.Os.cs`, `.SystemPackageManagers.cs`, `.Applications.cs`).
+There is no assembly scanning or reflection.
 
-`ServiceCollectionExtensions.AddCleaner()` uses explicit registrations—no assembly scanning or
-reflection-based activation. Cleaners receive runtime dependencies through `CleanupContext`,
-keeping registration simple and AOT-safe.
-
-## Native AOT
-
-The CLI targets Native AOT (`PublishAot=true`, `InvariantGlobalization=true`). Two deliberate
-choices keep it warning-free:
-
-1. **System.CommandLine** for argument parsing — it is trim/AOT-friendly. (Spectre.Console.Cli is
-   not: its `CommandApp` is `[RequiresDynamicCode]`.) Spectre.Console is used only for rendering,
-   which *is* AOT-safe.
-2. **No reflection** in our own code — explicit registration everywhere.
-
-`IsAotCompatible=true` runs trim/AOT analyzers during every build, and `TreatWarningsAsErrors` makes
-regressions fail CI. `dotnet publish -r <rid>` must produce zero trim/AOT warnings.
-
-## Resilience & logging
-
-`CleanerRunner` wraps every per-cleaner scan/clean: an unexpected exception becomes a reported error
-plus a log entry instead of aborting the run (only cancellation propagates). Logging goes through the
-`IAppLogger` abstraction (Core), implemented in the CLI by `SerilogAppLogger` — a code-only, AOT-safe
-Serilog config writing `~/.cleaner/logs/cleaner.log`, plus one `runs/run-<timestamp>.log` per clean
-with the approved plan and every path removed or skipped (`IAppLogger.BeginRun` / `Detail`).
-`Program.cs` adds last-resort
-`AppDomain`/`TaskScheduler` handlers so even a crash is logged.
+The CLI publishes with Native AOT (`PublishAot`, `InvariantGlobalization`). System.CommandLine is used
+for parsing because Spectre.Console.Cli needs dynamic code; Spectre.Console is used only for
+rendering. `IsAotCompatible` and `TreatWarningsAsErrors` make trim and AOT warnings fail the build.
 
 ## Distribution
 
-Distribution is **Native AOT binaries per RID** (GitHub Releases, built by `release.yml`). Each
-release ships a self-contained native executable that needs no installed .NET runtime.
+Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, which publishes self-contained native
+binaries for `win-x64`, `win-arm64`, `osx-x64`, `osx-arm64`, `linux-x64`, and `linux-arm64` to GitHub
+Releases.

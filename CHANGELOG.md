@@ -9,42 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Cleaner no longer deletes installed tools.** Started from the home folder, `build-artifacts`
-  deleted every folder named `bin`, `node_modules`, `dist`, `target`, or `venv` it found, including
-  `~/.cargo/bin`, `~/.bun/bin`, `~/.local/bin`, Scoop apps, the active nvm Node's global packages,
-  WinGet packages, and the `dist`/`node_modules` of installed VS Code extensions. It also followed
-  junctions such as Scoop's `current` into the installs behind them. It now takes a folder only when
-  its project proves it is build output (a `bin` needs a .NET project and a restore beside it, a
-  `node_modules` a lockfile, a `dist` a `.gitignore` entry, ...). It refuses to sweep the home
-  folder, a drive root, or a system folder, never follows links, and is opt-in, outside
-  **All cleaners**.
-- Every deletion now passes a guard no cleaner can override. It refuses folders on PATH and their
-  parents, installed tools (Cargo, rustup, Scoop, WinGet, nvm, editor extensions, `Program Files`,
-  and more), git repositories, links, and anything in the new `~/.cleaner/exclude.txt`.
-- A clean deletes exactly what the preview showed. Previously each cleaner looked for its targets
-  again at delete time.
-- Folders are renamed aside before they are deleted, so a folder with an open file is skipped whole
-  instead of being half-deleted, and a folder holding a running program is skipped.
-- A tool's own cleanup command that fails is reported; Cleaner no longer deletes the tool's folders
-  in its place.
-- `docker` and `podman` no longer prune named volumes.
-- `conan` no longer removes every package (`conan remove *`), `rubygems` no longer uninstalls older
-  gem versions (`gem cleanup`), `dotnet` keeps installed `dotnet new` templates, `ml-cache` keeps the
-  Hugging Face login token, `poetry` keeps virtualenvs, `browser-automation` keeps Playwright MCP
-  browser profiles, `hex` keeps installed Mix archives, and `expo` keeps the Expo login.
-- `app-leftovers` only offers an app's data when no install record exists: the uninstall registry,
-  an MSIX package, or a PATH entry.
+- **Cleaner no longer deletes installed tools.** Run from the home folder, `build-artifacts` deleted
+  every `bin`, `node_modules`, `dist`, `target`, or `venv` it found, including `~/.cargo/bin`,
+  `~/.local/bin`, Scoop apps, nvm's global packages, WinGet packages, and editor extensions. It now
+  takes a folder only when its project proves it is build output, refuses the home folder, drive
+  roots, and system folders, never follows links, is opt-in (outside **All cleaners**), and asks for
+  its own confirmation.
+- Every deletion passes a guard no cleaner can override. It refuses PATH folders and their parents,
+  installed tools, git repositories, links, and paths listed in the new `~/.cleaner/exclude.txt`.
+- A clean deletes exactly what the preview showed, instead of looking for targets again.
+- Folders are renamed aside before deletion, so a folder with an open file is skipped whole. A
+  folder holding a running program is skipped.
+- When a tool's own cleanup command fails, the failure is reported and its folders are not deleted.
+- `docker` and `podman` keep named volumes.
+- `conan` keeps package binaries, `rubygems` keeps older gem versions, `dotnet` keeps `dotnet new`
+  templates, `ml-cache` keeps the Hugging Face login, `poetry` keeps virtualenvs,
+  `browser-automation` keeps Playwright MCP profiles, `hex` keeps Mix archives, and `expo` keeps the
+  Expo login.
+- `app-leftovers` offers an app's data only when no install record remains (uninstall registry,
+  MSIX package, or PATH entry).
 
 ### Added
 
-- Every clean writes `~/.cleaner/logs/runs/run-<timestamp>.log`: the approved plan, then each path
-  removed with its size and cleaner, each path skipped and why, and each error by cleaner.
-- Before and after a clean, Cleaner checks that common tools still start and that no PATH folder lost
-  files, and reports anything that broke.
-- `bun`, `uv`, `pre-commit`, and `mise` use the tool's own cache command; `scoop` also runs
-  `scoop cleanup *`, which removes old app versions Scoop knows are not current.
-- `unfinished-deletes` finishes deletes an earlier run started but couldn't complete.
-- The preview names protected paths left alone and sweep roots that were refused.
+- Each clean writes `~/.cleaner/logs/runs/run-<timestamp>.log` with the approved plan and every
+  path removed, skipped, or failed.
+- Before and after a clean, Cleaner checks that common tools still start and PATH folders kept their
+  files.
+- `bun`, `uv`, `pre-commit`, and `mise` use the tool's own cache command. `scoop` also runs
+  `scoop cleanup *` to remove old app versions.
+- `unfinished-deletes` finishes deletes an earlier run could not complete.
+- The preview lists protected paths that were left alone and refused scan folders.
 
 ## [1.2.4] - 2026-09-10
 

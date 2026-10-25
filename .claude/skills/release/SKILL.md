@@ -5,35 +5,32 @@ description: Cut a Cleaner release by updating Directory.Build.props and CHANGEL
 
 # Release Cleaner
 
-Cleaner’s version is defined only in `Directory.Build.props`. Pushing a `vX.Y.Z` tag triggers
+The version lives only in `Directory.Build.props`. Pushing a `vX.Y.Z` tag runs
 `.github/workflows/release.yml`, which builds the Native AOT binaries and publishes a GitHub Release
-from the matching `CHANGELOG.md` section.
+whose body is the matching `CHANGELOG.md` section.
 
 ## Input
 
-Accept an explicit version or a `patch`, `minor`, or `major` bump. If neither is provided, propose a
-bump from the unreleased changes and confirm it before tagging.
+An explicit version, or `patch`, `minor`, or `major`. With neither, propose a bump from the
+unreleased changes and confirm it before tagging.
 
-## Procedure
+## Steps
 
-1. Preflight:
-   - Require a clean working tree (`git status --porcelain`).
-   - Read the current `<Version>` from `Directory.Build.props`.
-   - Confirm the branch is `main` and up to date with its remote.
-2. Choose the version using SemVer:
-   - `major` for breaking changes, `minor` for features, and `patch` for fixes.
-   - Use `CHANGELOG.md` and `git log <lastTag>..HEAD --oneline` as evidence.
-   - State the chosen version and rationale.
-3. Replace `<Version>` in `Directory.Build.props` with `X.Y.Z` (without a `v` prefix).
+1. Preflight: the working tree is clean (`git status --porcelain`), the branch is `main` and up to
+   date with its remote. Read the current `<Version>` from `Directory.Build.props`.
+2. Pick the version by SemVer (`major` breaking, `minor` features, `patch` fixes), using
+   `CHANGELOG.md` and `git log <lastTag>..HEAD --oneline`. State the version and why.
+3. Set `<Version>` in `Directory.Build.props` to `X.Y.Z` (no `v`).
 4. Roll `CHANGELOG.md`:
-   - Rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, using today’s date from `date +%F`.
-   - Add a new empty `## [Unreleased]` above it.
-   - If Unreleased was empty, summarize commits since the last tag under Keep a Changelog headings.
-   - Add the `[X.Y.Z]` comparison link and point `[Unreleased]` to `vX.Y.Z...HEAD`.
+   - Rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (date from `date +%F`).
+   - Add an empty `## [Unreleased]` above it.
+   - If Unreleased was empty, summarize the commits since the last tag under Keep a Changelog
+     headings.
+   - Add the `[X.Y.Z]` compare link and point `[Unreleased]` at `vX.Y.Z...HEAD`.
 5. Run `dotnet build` and `dotnet test`. Stop if either fails.
-6. Commit only `Directory.Build.props` and `CHANGELOG.md` as `chore(release): vX.Y.Z`.
-7. Create the annotated tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
-8. Before publishing, ask for confirmation unless the user already authorized a push. Then run:
+6. Commit only those two files as `chore(release): vX.Y.Z`.
+7. Tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
+8. Ask before pushing unless the user already approved it, then:
 
    ```bash
    git push origin main
@@ -42,9 +39,9 @@ bump from the unreleased changes and confirm it before tagging.
 
 9. Report the version, tag, and `https://github.com/suxrobGM/cleaner-cli/actions`.
 
-## Safety
+## Rules
 
-- Write the release section for end users; it becomes the release body. An absent or empty section
-  causes the workflow to use generated notes.
-- Never change the version outside `Directory.Build.props`.
-- Never force-move an existing release tag.
+- Write the release section for end users; it becomes the release body. A missing or empty section
+  makes the workflow use generated notes.
+- Never change the version anywhere but `Directory.Build.props`.
+- Never move an existing release tag.

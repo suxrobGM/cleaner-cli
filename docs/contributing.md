@@ -3,23 +3,23 @@
 ## Build, test, run
 
 ```bash
-dotnet build Cleaner.slnx -c Release          # build (warnings are errors)
-dotnet test Cleaner.slnx -c Release           # run unit tests
-dotnet run --project src/Cleaner.Cli          # launch the interactive menu
+dotnet build Cleaner.slnx -c Release   # warnings are errors
+dotnet test Cleaner.slnx -c Release
+dotnet run --project src/Cleaner.Cli
 ```
 
-Use grouped Conventional Commit messages (for example,
-`feat(cleaners): add Python cache cleaners`).
+Use focused [Conventional Commits](https://www.conventionalcommits.org/), for example
+`feat(cleaners): add Python cache cleaners`.
 
-## Add a new cleaner
+## Add a cleaner
 
-Example: a fictional tool `foo` whose cache is `~/.cache/foo`.
+Example: a tool `foo` that caches to `~/.cache/foo`.
 
 ### 1. Write the class
 
-Create it under `src/Cleaner.Core/Cleaners/` deriving from `DirectoryCleanerBase`, in the folder
-for its ecosystem (see [architecture.md](architecture.md) for the layout). Resolve paths through the
-injected `IEnvironmentService` — never hard-code OS paths.
+Put it under `src/Cleaner.Core/Cleaners/`, in its ecosystem's folder (see
+[architecture.md](architecture.md#cleaner-layout)). Get paths from `IEnvironmentService`; never
+hardcode OS paths.
 
 ```csharp
 using Cleaner.Core.Abstractions;
@@ -38,32 +38,36 @@ public sealed class FooCleaner : DirectoryCleanerBase
 }
 ```
 
-If the tool's command is authoritative, derive from `ProcessCleanerBase` and add `Executable` and
-`CleanArguments`. Declared directories, when present, provide sizing and the fallback when the tool
-is unavailable.
-
-For OS-specific or privileged cleaners, override `IsApplicable` (for example,
-`context.Environment.IsWindows`) and `RequiresElevation`.
+- If the tool has its own cleanup command, derive from `ProcessCleanerBase` and set `Executable` and
+  `CleanArguments`. Declared paths then serve for sizing and for when the tool is not installed.
+- For OS-specific or privileged cleaners, override `IsApplicable` (for example
+  `context.Environment.IsWindows`) and `RequiresElevation`.
+- If cleanup costs more than a re-download, set `ConfirmationWarning`.
 
 ### 2. Register it
 
-Add one line to the matching `ServiceCollectionExtensions.*.cs` partial under
+Add a line to the matching `ServiceCollectionExtensions.*.cs` partial in
 `src/Cleaner.Cli/Infrastructure/`:
 
 ```csharp
 services.AddSingleton<ICleaner, FooCleaner>();
 ```
 
+Then update the cleaner count in `tests/Cleaner.Core.Tests/CompositionRootTests.cs`.
+
 ### 3. Test and document it
 
-- Add a test under `tests/Cleaner.Core.Tests/` using `FakeFileSystem` / `TestContext`.
-- Add a row to [docs/cleaners.md](cleaners.md).
+- Add tests under `tests/Cleaner.Core.Tests/` with `TestContext.Create` and `FakeFileSystem`.
+- `Safety/AllCleanersAgainstFakeHomeTests.cs` runs every registered cleaner against a realistic home
+  folder. If your cleaner breaks it, fix the cleaner, not the test or the guard.
+- Add a row to [cleaners.md](cleaners.md) and update the count there and in the README.
 
-## Guidelines
+## Rules
 
-- **Safety first.** Only target caches, temp, and rebuildable artifacts. When in doubt, prefer
-  `DeleteMode.ClearContents` and exclude anything that looks like user data.
-- **Native-AOT clean.** No reflection or assembly scanning; register explicitly. The build runs the
-  AOT/trim analyzers and treats warnings as errors.
-- **Cross-platform.** Resolve every path via `IEnvironmentService`. Verify Windows/macOS/Linux
-  branches.
+- Target caches only: data the tool downloads or rebuilds by itself. Never installs, `bin` folders,
+  version folders, or user data.
+- Every deletion goes through `TargetRemover` and the deletion guard. Don't delete from a cleaner
+  directly, and don't loosen the guard to make a target pass.
+- Project scans use `ProjectRoots` and `BuildOutput`. Never match a folder by name alone.
+- Keep it Native-AOT safe: no reflection or assembly scanning.
+- Test Windows, macOS, and Linux branches.

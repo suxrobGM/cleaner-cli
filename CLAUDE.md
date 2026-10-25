@@ -4,25 +4,23 @@ Guidance for Claude Code and contributors working in this repository.
 
 ## Project
 
-Cleaner is an interactive, cross-platform CLI for reclaiming disk space from development tools,
-operating systems, and application caches. It uses .NET 10 with Native AOT, Spectre.Console for the
-UI, System.CommandLine for argument parsing, and Microsoft.Extensions.DependencyInjection.
-
-System.CommandLine is used instead of Spectre.Console.Cli because the latter relies on reflection
-and dynamic code. Spectre.Console is used only for AOT-safe rendering.
+Cleaner is an interactive, cross-platform CLI that reclaims disk space from dev tool, OS, and app
+caches. Stack: .NET 10 with Native AOT, Spectre.Console (rendering only), System.CommandLine
+(parsing; Spectre.Console.Cli needs reflection), and Microsoft.Extensions.DependencyInjection.
 
 ## Layout
 
-- `src/Cleaner.Core/` — abstractions, cleaner implementations, and testable services.
-- `src/Cleaner.Cli/` — Native AOT executable, interactive flows, rendering, and composition root.
-- `tests/Cleaner.Core.Tests/` — xUnit tests using in-memory fakes where possible.
+- `src/Cleaner.Core/`: abstractions, cleaners, services, and the deletion guard.
+- `src/Cleaner.Cli/`: Native AOT executable, menu and flows, rendering, composition root.
+- `tests/Cleaner.Core.Tests/`: xUnit tests over in-memory fakes.
+- `docs/`: [usage](docs/usage.md), [cleaners](docs/cleaners.md),
+  [architecture](docs/architecture.md), [contributing](docs/contributing.md).
 
 ## Commands
 
 ```bash
 dotnet build
 dotnet test
-dotnet run --project src/Cleaner.Cli
 dotnet run --project src/Cleaner.Cli -- --verbose
 dotnet publish src/Cleaner.Cli -r win-x64 -c Release
 ```
@@ -31,39 +29,37 @@ Builds treat warnings as errors. Native AOT publishes must produce no trim or AO
 
 ## Architecture
 
-- Every cleaner implements `ICleaner`.
-- Filesystem cleaners usually derive from `DirectoryCleanerBase`, which handles sizing, dry runs,
-  deletion, progress, and error capture.
-- Command-driven cleaners usually derive from `ProcessCleanerBase`.
-- Platform identity, standard paths, and elevation checks belong in `IEnvironmentService`.
-- Filesystem and process access go through `IFileSystemService` and `IProcessRunner` for testability.
-- Cleaner registrations are explicit to remain Native-AOT compatible.
+- Every cleaner implements `ICleaner`. File cleaners derive from `DirectoryCleanerBase`;
+  command-driven ones from `ProcessCleanerBase`.
+- Scan returns targets; clean receives only the approved targets and removes nothing else.
+- `TargetRemover` performs every removal after `IDeletionGuard` (`Services/Safety/`) approves it.
+- OS identity, standard paths, PATH, and elevation come from `IEnvironmentService`. Filesystem and
+  process access go through `IFileSystemService` and `IProcessRunner`.
+- Registrations are explicit, in `src/Cleaner.Cli/Infrastructure/ServiceCollectionExtensions.*.cs`.
 
 ## Adding a cleaner
 
-1. Add the cleaner under `src/Cleaner.Core/Cleaners/`, normally deriving from
-   `DirectoryCleanerBase` or `ProcessCleanerBase`.
-2. Resolve paths through `IEnvironmentService`; do not hardcode platform-dependent locations.
-3. Register the cleaner in the matching `ServiceCollectionExtensions.*.cs` partial under
-   `src/Cleaner.Cli/Infrastructure/`.
-4. Add tests and document the cleaner in `docs/cleaners.md`.
+1. Add the class under `src/Cleaner.Core/Cleaners/`, deriving from `DirectoryCleanerBase` or
+   `ProcessCleanerBase`. Resolve paths through `IEnvironmentService`.
+2. Register it in the matching `ServiceCollectionExtensions.*.cs` partial.
+3. Add tests and update the count in `CompositionRootTests.cs`.
+4. Document it in `docs/cleaners.md` and update the count there and in `README.md`.
 
-## Conventions
+Details: [docs/contributing.md](docs/contributing.md).
 
-- Keep code Native-AOT safe: avoid reflection-based discovery and assembly scanning.
-- Keep deletion interactive. The main menu drives cleanup; `update` is the only direct subcommand.
-  Do not add unattended deletion flags.
-- Preserve the scan → preview → confirm flow. A clean removes exactly the targets the user approved;
-  never rediscover targets at delete time. Set `ConfirmationWarning` when cleanup has a material
-  trade-off, and never delete user data.
-- Every deletion goes through `TargetRemover` and `IDeletionGuard`. Never call `IFileSystemService`
-  delete methods from a cleaner, and never weaken the guard to make a target pass; add a cache hole
-  in `ProtectedPaths` only for a folder the tool downloads again by itself.
-- Target caches only: something the tool re-downloads or rebuilds by itself. Never target an install,
-  a `bin` folder, or a version folder. Leave version pruning to the tool's own command.
-- Prefer the tool's own cleanup command when it has one. When the command fails, report it; don't
-  fall back to deleting folders.
-- Workspace sweeps must use `ProjectRoots` and `BuildOutput`: match a folder only with proof it is
-  a project's build output, never by name alone.
-- Keep the build and tests clean; `TreatWarningsAsErrors` and AOT analyzers are enabled.
-- Prefer focused conventional commits, such as `feat(cleaners): add Python cache cleaners`.
+## Rules
+
+- Native-AOT safe: no reflection, no assembly scanning.
+- Interactive only. The menu drives cleanup; `update` is the only subcommand. No unattended
+  deletion flags. Keep the scan, preview, confirm flow.
+- Every deletion goes through `TargetRemover` and `IDeletionGuard`. Never call
+  `IFileSystemService` delete methods from a cleaner, and never weaken the guard. Allow a cache
+  folder in `ProtectedPaths.Installs` only when the tool re-downloads it by itself.
+- Caches only: never an install, a `bin` folder, a version folder, or user data. Leave version
+  pruning to the tool.
+- Prefer the tool's own cleanup command. If it fails, report it; never fall back to deleting.
+- Project scans use `ProjectRoots` and `BuildOutput`: a folder needs proof it is build output,
+  never a name match alone.
+- Set `ConfirmationWarning` when cleanup has a real trade-off.
+- Keep the build and tests warning-free.
+- Use focused conventional commits, such as `feat(cleaners): add Python cache cleaners`.

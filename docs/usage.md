@@ -1,117 +1,100 @@
 # Usage
 
-Run `cleaner` with no arguments to use the interactive menu:
+Cleaner is interactive only. Run `cleaner` in a terminal; without one it exits with code 1.
+
+## Menu
+
+| Item | What it does |
+| --- | --- |
+| **Preview and clean caches** | Select cleaners, preview sizes, confirm, and clean. See [Clean flow](#clean-flow). |
+| **List all cleaners** | Show every cleaner with its id, category, and status. |
+| **Check for updates** | Download, install, and relaunch the latest release. |
+| **Exit** | Quit. |
+
+The menu returns after each action. List statuses:
+
+| Status | Meaning |
+| --- | --- |
+| available | The tool or its folders exist on this machine. |
+| not found | Nothing to clean. |
+| needs admin | Run Cleaner elevated (administrator or root) to include it. |
+| n/a (other OS) | Not for this operating system. |
+
+## Options
+
+| Option | Description |
+| --- | --- |
+| `--path <dir>`, `-p` | Folder to search for projects. Repeatable. Defaults to the current folder. |
+| `--verbose`, `-v` | Show the folders behind each cleaner's size. |
+| `--version` | Print the version. No network access. |
+| `--help`, `-h` | Print usage. |
+| `update` | Check for a newer release and offer to install it. |
+| `update --check` | Report the current and latest versions only. |
 
 ```bash
-cleaner
-```
-
-Nothing is deleted unattended: each action is selected, previewed, and confirmed. The `update`
-subcommand is also available for updating before opening the menu.
-
-## The menu
-
-```text
-What would you like to do?
-> Preview and clean caches
-  List all cleaners
-  Check for updates
-  Exit
-```
-
-**Preview and clean caches** opens a grouped multi-select of cleaners applicable to your OS. Toggle
-entries with the spacebar (or **All cleaners** / a category heading for bulk selection), press
-Enter, review the reclaimable-space table, and confirm. Nothing is removed before confirmation.
-
-**List all cleaners** shows every cleaner with its id, category, and status:
-
-- **available** — the tool/paths exist on this machine.
-- **not found** — nothing to clean (tool not installed or cache empty).
-- **needs admin** — requires elevation; re-run as administrator/root to include it.
-- **n/a (other OS)** — not applicable on the current operating system.
-
-**Check for updates** asks GitHub for a newer release and, on confirmation, downloads the platform
-binary, replaces the executable, and relaunches it. Cleaner uses the network only here, never during
-a normal clean. Windows briefly keeps the previous binary as `cleaner.exe.old`, removing it next run.
-
-> If `cleaner` lives in a write-protected location (e.g. `Program Files`), run the update from an
-> elevated shell so it can replace the binary. Auto-update reads the latest **published** GitHub
-> release; draft releases are ignored.
-
-The menu reopens after each action, so you can preview, clean, and list without restarting.
-
-## Flags
-
-Flags cover the options the menu cannot ask for, plus the built-ins:
-
-| Option | Alias | Description |
-| --- | --- | --- |
-| `--path <dir>` | `-p` | Root for project-local cleaners. Repeatable, to sweep several workspaces. Defaults to the current directory. |
-| `--verbose` | `-v` | Show the individual directories behind each cleaner's size. |
-| `--version` | | Print the installed version and exit. No network access. |
-| `--help` | `-h` | Print usage and exit. |
-
-```bash
-cleaner --verbose
 cleaner -p ~/source -p ~/work
-cleaner --version
+cleaner update --check
 ```
 
-## `cleaner update`
+Updates use the latest published GitHub release (no drafts or prereleases). That is the only
+network access. If `cleaner` sits in a protected folder such as `Program Files`, update from an
+elevated shell. On Windows the old binary is kept as `cleaner.exe.old` and removed on the next run.
 
-The menu's **Check for updates** action is also available directly:
+## Clean flow
 
-```bash
-cleaner update             # check, then prompt to download & install
-cleaner update --check     # only report current vs. latest; install nothing
-```
+1. **Select.** Tick cleaners, a category, or **All cleaners**. Cleaners for other operating systems
+   are hidden.
+2. **Scan.** Cleaners that need admin are skipped and listed. Nothing is deleted.
+3. **Preview.** A table shows each cleaner's size, plus notes on protected paths and refused
+   folders. Some command-driven cleaners show *n/a* and report their size after running.
+4. **Warnings.** A cleaner with a real trade-off (marked **asks again** in
+   [cleaners.md](cleaners.md)) explains it and asks on its own. Declining drops only that cleaner.
+5. **Pick folders (optional).** When a cleaner found several folders, you can list them and untick
+   the ones to keep. Unticked folders are protected for the whole run. Cleaners that run a tool's
+   own command are all-or-nothing and are not offered here.
+6. **Confirm.** One prompt for the total.
+7. **Clean.** Cleaner removes exactly the approved targets. It never looks for new ones.
+8. **Summary.** Freed space, skipped paths, errors, and tool checks.
 
-## Cleaners with a trade-off
+If one cleaner fails, the rest still run.
 
-Most cleaners remove data that can be downloaded or rebuilt. A few have larger trade-offs: deleting
-`C:\Windows.old`, for example, removes the ability to roll back a Windows upgrade. These cleaners
-show a warning and separate yes/no prompt, so you can decline one without cancelling the run.
+## Project folders
 
-## Elevation
+Some cleaners work inside your projects instead of a global cache:
 
-Some OS cleaners (Windows Update cache, system temp, Delivery Optimization, the systemd journal, and
-some system package managers) need administrator/root privileges. Without elevation, Cleaner lists
-them as **needs admin** and skips them; re-run from an elevated shell to include them.
+- `build-artifacts` and `unity` search every `--path` folder.
+- `node-modules-cache`, `turbo-nx`, `visualstudio`, and `expo` use the first `--path` folder (or the
+  current folder).
 
-## Project-local cleaners
+They refuse your home folder, a drive root, and system or install folders. A new terminal usually
+opens in your home folder, so pass `--path` or `cd` into a workspace first. The preview says when a
+folder was refused.
 
-The `build-artifacts` cleaner and some others sweep a directory tree rather than a global cache.
-Point them at your code with `--path`, then select them:
-
-```bash
-cleaner --path ./my-repo
-```
-
-`build-artifacts` is opt-in: it sits under **Project folders** in the selection menu, outside **All
-cleaners**, so ticking everything never includes it. It refuses to sweep your home folder, a drive
-root, or a system or install folder (which is what the current directory is when a terminal opens),
-and says so in the preview. It only takes a folder that is provably a project's build output; see
-[the rules](cleaners.md#project-local).
+`build-artifacts` is opt-in. It sits under **Project folders**, outside **All cleaners**, and takes a
+folder only with proof that its project generated it. See [the rules](cleaners.md#project-local).
 
 ## What Cleaner never deletes
 
-Every path a cleaner reports passes a deletion guard, once at scan time and again just before it is
-removed. Nothing can switch it off. It refuses:
+Every path is checked when scanned and again just before removal. The guard refuses:
 
-- any folder on your PATH (user, machine, or the current shell's), anything inside one, and any
-  parent of one;
-- drive roots, your home folder, AppData, the Windows folder, `Program Files`, `ProgramData`, and on
-  macOS/Linux `/usr`, `/opt`, `/Applications`, `~/Library`, and similar;
-- installed tools, whatever PATH says: `~/.cargo` and `~/.rustup` (except their download caches),
-  Scoop's `apps`/`persist`/`shims`, WinGet packages, nvm/Volta/pyenv/asdf/mise/SDKMAN installs,
-  Bun/Deno/Go command folders, `~/.local/bin`, `~/bin`, editor extensions, `%LOCALAPPDATA%\Programs`,
-  `~/.ssh`, `~/.aws`, and the like;
+- folders on PATH (process, user, and machine), their parents, and anything inside them;
+- essential folders and anything that contains them: drive roots, your home folder,
+  Documents/Desktop/Downloads and similar, AppData, the Windows folder, `ProgramData`, and on
+  macOS/Linux `/usr`, `/opt`, `/etc`, `/Applications`, `~/Library`, `~/.config`, `~/.local`, and
+  similar (caches inside them, such as `Windows\Temp`, can still be cleared);
+- installed tools: `Program Files`, `%LOCALAPPDATA%\Programs`, Scoop apps, WinGet packages, Cargo,
+  rustup, nvm, Volta, pyenv, asdf, mise, SDKMAN, Homebrew, editor extensions, `~/.local/bin`, and
+  more (only their cache folders may be cleared);
+- personal config such as `~/.ssh`, `~/.aws`, `~/.docker`, and `~/.cleaner`;
 - `.git` folders and git repositories;
-- symlinks and junctions, and anything reached through one that lands somewhere protected;
-- anything listed in `~/.cleaner/exclude.txt`.
+- links and junctions, and paths that resolve through a link to a protected place;
+- anything in `~/.cleaner/exclude.txt`;
+- folders you unticked in the picker.
 
-To protect more, list folders in `~/.cleaner/exclude.txt`, one per line. `~`, `%VAR%`, and `$VAR`
-are expanded and lines starting with `#` are comments:
+### Exclude list
+
+List extra folders in `~/.cleaner/exclude.txt`, one per line. `~`, `%VAR%`, and `$VAR` are expanded;
+`#` starts a comment. The list only adds protection.
 
 ```text
 # models I downloaded by hand
@@ -119,47 +102,37 @@ are expanded and lines starting with `#` are comments:
 %USERPROFILE%\datasets
 ```
 
-The exclude list only adds protection; it can't unlock anything the guard refuses.
+### How deletion works
 
-## How deletion works
+- A folder is renamed aside (`name.cleaner-deleting-xxxx`), then deleted. On Windows the rename fails
+  while any file inside is open, so an in-use folder is skipped whole, never half-deleted.
+- A folder holding a running program is skipped on every platform.
+- If a delete fails after the rename, the leftover is recorded in `~/.cleaner/pending-deletes.txt`.
+  The `unfinished-deletes` cleaner finishes it on a later run.
+- When a tool has its own cleanup command (`npm cache clean`, `uv cache clean`,
+  `dotnet nuget locals`, ...), Cleaner runs it instead of deleting folders. If the command fails,
+  the error is reported and nothing is deleted in its place.
+- Before and after a clean, Cleaner checks that common tools (git, node, dotnet, cargo, python, ...)
+  still run and that no PATH folder lost files. Problems are shown in red and logged.
 
-Cleaner deletes exactly what the preview showed, nothing found afterwards. Each folder is first
-renamed aside within its own parent (`name.cleaner-deleting-xxxx`) and only then deleted. On Windows
-the rename fails while any program has a file inside open, so a folder that is in use is skipped
-whole instead of being left half-deleted. On every platform, a folder holding a running program is
-skipped too. If a delete fails after the rename, the original path is already gone and the leftover
-is offered by the `unfinished-deletes` cleaner on the next run.
+## Elevation
 
-Where a tool has its own cleanup command (`npm cache clean`, `bun pm cache rm`, `uv cache clean`,
-`scoop cache rm`, `dotnet nuget locals`, ...), Cleaner runs it instead of deleting the tool's folders.
-If the command fails, the error is reported and nothing is deleted in its place.
-
-Before and after each clean, Cleaner checks that common developer tools (git, node, npm, dotnet,
-cargo, python, uv, scoop, ...) still report their version and that no file disappeared from a PATH
-folder. Anything that broke is shown in red and logged.
-
-## Picking individual folders
-
-A sweep over a source tree can match hundreds of folders, and taking all of them means reinstalling
-dependencies for every project still in use. After the size table, a cleaner that found more than one
-folder can be opened up: say yes to the folder prompt and they are listed by name (`node_modules`,
-`.venv`, `.next`, ...) with their sizes. Everything starts ticked, so untick only what to keep.
-Decline and the run removes everything in the table, as before.
+Some OS cleaners (Windows Update, Windows temp, Delivery Optimization, the systemd journal, some
+package managers) need admin or root. Without it they are listed as **needs admin** and skipped.
 
 ## Logs
 
-Cleaner logs runs, errors, and crashes to **`~/.cleaner/logs/cleaner.log`**: which cleaners ran,
-which were skipped for needing admin, the scan roots, how much was freed, and which cleaners failed
-and why.
+| File | Contents |
+| --- | --- |
+| `~/.cleaner/logs/cleaner.log` | Run summaries: cleaners run, admin skips, scan roots, space freed, errors, crashes. |
+| `~/.cleaner/logs/runs/run-<timestamp>.log` | One per clean: the approved plan, then every path removed or skipped (with the reason) and every error. The last 30 are kept. |
 
-Every clean also writes **`~/.cleaner/logs/runs/run-<timestamp>.log`**: the approved plan, then every
-path removed (with its size and the cleaner that removed it), every path skipped and why (protected,
-in use), and every error. The last 30 run logs are kept. The summary prints the run log's path.
-
-If one cleaner fails, the rest still run; the summary shows the failure.
+The summary prints the run log's path.
 
 ## Exit codes
 
-- `0` — success (including previews and "nothing to clean").
-- `1` — no interactive terminal was attached, or one or more cleaners reported errors.
-- `130` — cancelled with Ctrl+C.
+| Code | Meaning |
+| --- | --- |
+| `0` | Success, including "nothing to clean" and a declined prompt. |
+| `1` | No interactive terminal, a cleaner reported errors, or a tool broke during the clean. |
+| `130` | Cancelled with Ctrl+C. |
