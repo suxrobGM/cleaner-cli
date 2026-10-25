@@ -10,18 +10,123 @@ namespace Cleaner.Core.Tests;
 
 public sealed class ApplicationCleanerTests
 {
+    private const string HklmUninstall = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+
+    /// <summary>A registry whose HKLM uninstall key lists <paramref name="displayNames"/>; the other keys fail to read.</summary>
+    private static FakeProcessRunner Registry(params string[] displayNames)
+    {
+        var output = string.Concat(displayNames.Select((name, i) =>
+            $"\r\nHKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\App{i}\r\n    DisplayName    REG_SZ    {name}\r\n"))
+            + $"\r\nEnd of search: {displayNames.Length} match(es) found.\r\n";
+
+        return new FakeProcessRunner
+        {
+            Respond = (_, arguments) => arguments[1] == HklmUninstall
+                ? new ProcessResult(0, output, string.Empty)
+                : new ProcessResult(1, string.Empty, "ERROR: The system was unable to find the specified registry key or value."),
+        };
+    }
+
+    private static FakeFileSystem ClaudeLeftovers() => new FakeFileSystem()
+        .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000)
+        .AddFile(@"C:\Users\test\AppData\Roaming\Claude-3p\claude_desktop_config.json", 100);
+
     [Fact]
     public async Task AppLeftoverCleaner_removes_data_of_an_uninstalled_app()
     {
-        // No install marker remains, but the profile and VM image do.
-        var fs = new FakeFileSystem()
-            .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000)
-            .AddFile(@"C:\Users\test\AppData\Roaming\Claude-3p\claude_desktop_config.json", 100);
+        // No install marker remains, but the profile and VM image do; the registry lists other apps only.
+        var fs = ClaudeLeftovers();
+        var runner = Registry("Git", "Microsoft Visual Studio Code (User)");
 
-        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
 
         Assert.Equal(9_100, result.BytesFreed);
         Assert.False(fs.DirectoryExists(@"C:\Users\test\AppData\Roaming\Claude"));
+        Assert.Equal(3, runner.Invocations.Count(i => i.Executable == "reg"));
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_keeps_data_while_the_registry_lists_the_app()
+    {
+        var fs = ClaudeLeftovers();
+
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), Registry("Git", "Claude")));
+
+        Assert.Equal(0, result.BytesFreed);
+        Assert.True(fs.FileExists(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx"));
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_offers_nothing_when_the_registry_lists_no_apps()
+    {
+        // An empty answer is "unknown", not "nothing is installed".
+        var fs = ClaudeLeftovers();
+        var context = TestContext.Create(fs, FakeEnvironment.Windows(), Registry());
+
+        var scan = await new UninstalledAppLeftoverCleaner().ScanAsync(context);
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(context);
+
+        Assert.Empty(scan.Targets);
+        Assert.Equal(0, result.BytesFreed);
+        Assert.True(fs.DirectoryExists(@"C:\Users\test\AppData\Roaming\Claude"));
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_offers_nothing_when_the_registry_cannot_be_read()
+    {
+        var fs = ClaudeLeftovers();
+        var runner = new FakeProcessRunner { Result = new ProcessResult(1, string.Empty, "Access is denied.") };
+
+        var scan = await new UninstalledAppLeftoverCleaner().ScanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
+
+        Assert.Empty(scan.Targets);
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_keeps_data_of_an_msix_install()
+    {
+        var fs = ClaudeLeftovers()
+            .AddDirectory(@"C:\Users\test\AppData\Local\Packages\Claude_pzs8sxrjxfjjc");
+
+        var scan = await new UninstalledAppLeftoverCleaner().ScanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), Registry("Git")));
+
+        Assert.Empty(scan.Targets);
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_keeps_data_of_an_app_still_on_path()
+    {
+        var fs = new FakeFileSystem().AddFile(@"C:\Users\test\AppData\Local\Docker\wsl\disk\docker_data.vhdx", 9_000);
+        var env = FakeEnvironment.Windows()
+            .SetVariable("PATH", @"C:\Windows\System32;C:\Users\test\AppData\Local\Docker\bin\");
+
+        var scan = await new UninstalledAppLeftoverCleaner().ScanAsync(TestContext.Create(fs, env, Registry("Git")));
+
+        Assert.Empty(scan.Targets);
+    }
+
+    [Fact]
+    public void AppLeftoverCleaner_is_available_without_querying_the_registry()
+    {
+        var runner = Registry("Git");
+        var cleaner = new UninstalledAppLeftoverCleaner();
+
+        Assert.True(cleaner.IsAvailable(TestContext.Create(ClaudeLeftovers(), FakeEnvironment.Windows(), runner)));
+        Assert.False(cleaner.IsAvailable(TestContext.Create(new FakeFileSystem(), FakeEnvironment.Windows(), runner)));
+        Assert.Empty(runner.Invocations);
+    }
+
+    [Fact]
+    public async Task AppLeftoverCleaner_keeps_data_of_a_per_user_mac_app()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/Users/test/Library/Application Support/Slack/storage/a", 4_000)
+            .AddDirectory("/Users/test/Applications/Slack.app/Contents");
+        var env = new FakeEnvironment { HomeDirectory = "/Users/test", Os = OsPlatform.MacOs };
+
+        var scan = await new UninstalledAppLeftoverCleaner().ScanAsync(TestContext.Create(fs, env));
+
+        Assert.Empty(scan.Targets);
     }
 
     [Fact]
@@ -31,7 +136,7 @@ public sealed class ApplicationCleanerTests
             .AddFile(@"C:\Users\test\AppData\Local\AnthropicClaude\app-1.0\claude.exe", 500)
             .AddFile(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx", 9_000);
 
-        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), Registry("Git")));
 
         Assert.Equal(0, result.BytesFreed);
         Assert.True(fs.FileExists(@"C:\Users\test\AppData\Roaming\Claude\vm_bundles\claudevm.bundle\rootfs.vhdx"));
@@ -47,7 +152,7 @@ public sealed class ApplicationCleanerTests
             .AddFile(@"C:\Users\test\AppData\Local\claude-cli-nodejs\cache.bin", 2_000)
             .AddFile(@"C:\Users\test\AppData\Local\ClaudeCodeExtension\bin.exe", 1_000);
 
-        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows()));
+        var result = await new UninstalledAppLeftoverCleaner().CleanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), Registry("Git")));
 
         Assert.Equal(400, result.BytesFreed);
         Assert.True(fs.FileExists(@"C:\Users\test\.claude\projects\session.jsonl"));
