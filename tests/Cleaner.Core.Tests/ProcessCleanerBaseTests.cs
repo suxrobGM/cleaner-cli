@@ -53,6 +53,20 @@ public sealed class ProcessCleanerBaseTests
         Assert.False(fs.DirectoryExists("/cache"));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Scan_reports_whether_the_tool_can_run_without_folders(bool installed)
+    {
+        var runner = installed ? new FakeProcessRunner().WithAvailable("tool") : new FakeProcessRunner();
+        var cleaner = new TestProcessCleaner("tool", new CleanupPath("/cache"));
+
+        var scan = await cleaner.ScanAsync(TestContext.Create(new FakeFileSystem(), processRunner: runner));
+
+        Assert.Empty(scan.Targets);
+        Assert.Equal(installed, scan.HasWork);
+    }
+
     [Fact]
     public void Command_driven_cleaners_do_not_offer_partial_selection()
     {

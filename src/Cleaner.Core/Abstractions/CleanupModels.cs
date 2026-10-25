@@ -26,9 +26,14 @@ public sealed record ScanResult(IReadOnlyList<CleanupTarget> Targets, bool ToolU
 {
     public long TotalBytes => Targets.Sum(t => t.Bytes);
 
-    public int ItemCount => Targets.Count;
+    /// <summary>
+    /// The cleaner's own tool is installed, so its cleanup can run even when no folder is listed (for
+    /// example, every folder it uses is protected).
+    /// </summary>
+    public bool ToolInstalled { get; init; }
 
-    public bool IsEmpty => Targets.Count == 0;
+    /// <summary>Whether there is anything to run: a target to remove, or a tool to run.</summary>
+    public bool HasWork => Targets.Count > 0 || ToolInstalled;
 
     /// <summary>Messages for the user, such as paths left alone as protected.</summary>
     public IReadOnlyList<string> Notes { get; init; } = [];

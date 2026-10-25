@@ -24,16 +24,11 @@ public sealed partial class CleanerApp(
     }
 
     /// <summary>Marks available command-based cleaners whose size is unknown until they run.</summary>
-    private static IReadOnlyList<ScanRow> MarkCommandBased(IReadOnlyList<ScanRow> rows, CleanupContext context) =>
-        [.. rows.Select(r => MarkCommandBased(r, context))];
-
-    private static ScanRow MarkCommandBased(ScanRow row, CleanupContext context) =>
-        row with
+    private static IReadOnlyList<ScanRow> MarkCommandBased(IReadOnlyList<ScanRow> rows) =>
+        [.. rows.Select(r => r with
         {
-            CommandBased = !row.Cleaner.SupportsSizeEstimate
-                && row.Result.TotalBytes == 0
-                && row.Cleaner.IsAvailable(context),
-        };
+            CommandBased = !r.Cleaner.SupportsSizeEstimate && r.Result.TotalBytes == 0 && r.Result.HasWork,
+        })];
 
     private Task<ScanResult> SafeScanAsync(ICleaner cleaner, CleanupContext context, CancellationToken cancellationToken) =>
         CleanerRunner.SafeScanAsync(cleaner, context, logger, cancellationToken);

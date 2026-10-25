@@ -87,8 +87,7 @@ public sealed partial class CleanerApp
         }
 
         var rows = MarkCommandBased(
-            await renderer.ScanAsync(runnable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken),
-            context);
+            await renderer.ScanAsync(runnable, c => SafeScanAsync(c, context, cancellationToken), cancellationToken));
         renderer.SizeTable(rows, "Reclaimable", options.Verbose);
         renderer.ScanNotes(rows);
         foreach (var row in rows)
@@ -105,7 +104,7 @@ public sealed partial class CleanerApp
         // cleanup when every folder it uses is protected. Cleaners with neither are dropped.
         var available = rows
             .Where(r => !r.Result.ToolUnavailable)
-            .Where(r => r.Result.Targets.Count > 0 || r.Cleaner.IsAvailable(context))
+            .Where(r => r.Result.HasWork)
             .Select(r => r.Cleaner)
             .ToList();
         if (rows.Sum(r => r.Result.TotalBytes) == 0 && available.Count == 0)

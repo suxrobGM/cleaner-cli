@@ -28,6 +28,12 @@ public abstract class ProcessCleanerBase : DirectoryCleanerBase
     public override bool IsAvailable(CleanupContext context) =>
         context.ProcessRunner.Exists(Executable) || base.IsAvailable(context);
 
+    public override async Task<ScanResult> ScanAsync(CleanupContext context, CancellationToken cancellationToken = default)
+    {
+        var result = await base.ScanAsync(context, cancellationToken).ConfigureAwait(false);
+        return result with { ToolInstalled = context.ProcessRunner.Exists(Executable) };
+    }
+
     /// <summary>The tool clears its whole cache and can't be told which folders to keep.</summary>
     public override bool SupportsPartialSelection => false;
 

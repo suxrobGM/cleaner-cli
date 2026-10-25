@@ -28,7 +28,7 @@ public sealed class CleanerRunnerTests
 
         var result = await CleanerRunner.SafeScanAsync(cleaner, _context, new NullAppLogger());
 
-        Assert.True(result.IsEmpty);
+        Assert.Empty(result.Targets);
     }
 
     [Fact]

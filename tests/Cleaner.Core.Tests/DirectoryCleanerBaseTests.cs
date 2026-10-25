@@ -28,7 +28,7 @@ public sealed class DirectoryCleanerBaseTests
 
         var result = await cleaner.ScanAsync(TestContext.Create(fs));
 
-        Assert.Equal(1, result.ItemCount);
+        Assert.Single(result.Targets);
         Assert.Equal(150, result.TotalBytes);
     }
 
