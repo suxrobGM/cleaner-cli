@@ -23,7 +23,7 @@ public sealed class EnvOverrideTests
         { () => new BunCleaner(), "BUN_INSTALL_CACHE_DIR", "/mnt/bun-cache", "/mnt/bun-cache" },
         { () => new BunCleaner(), "BUN_INSTALL", "/mnt/bun", "/mnt/bun/install/cache" },
         { () => new PipCleaner(), "PIP_CACHE_DIR", "/mnt/pip", "/mnt/pip" },
-        { () => new PoetryCleaner(), "POETRY_CACHE_DIR", "/mnt/poetry", "/mnt/poetry" },
+        { () => new PoetryCleaner(), "POETRY_CACHE_DIR", "/mnt/poetry", "/mnt/poetry/artifacts" },
         { () => new UvCleaner(), "UV_CACHE_DIR", "/mnt/uv", "/mnt/uv" },
         { () => new PubCleaner(), "PUB_CACHE", "/mnt/pub", "/mnt/pub/hosted" },
     };

@@ -3,7 +3,10 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>Clears .NET SDK caches (template engine). NuGet is handled by its own cleaner.</summary>
+/// <summary>
+/// Clears the .NET SDK telemetry cache. <c>~/.templateengine</c> is kept: it holds the template
+/// packages installed with <c>dotnet new install</c>. NuGet is handled by its own cleaner.
+/// </summary>
 public sealed class DotnetCleaner : DirectoryCleanerBase
 {
     public override string Id => "dotnet";
@@ -12,10 +15,6 @@ public sealed class DotnetCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.Dotnet;
 
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
-    {
-        var env = context.Environment;
-        yield return new CleanupPath(env.HomePath(".templateengine"), Description: "template engine cache");
-        yield return new CleanupPath(env.HomePath(".dotnet", "TelemetryStorageService"), Description: "telemetry cache");
-    }
+    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
+        [new CleanupPath(context.Environment.HomePath(".dotnet", "TelemetryStorageService"), Description: "telemetry cache")];
 }

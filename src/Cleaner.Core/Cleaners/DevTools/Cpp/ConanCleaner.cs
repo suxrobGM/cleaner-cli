@@ -1,12 +1,16 @@
-using Cleaner.Core.Abstractions;
 using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Conan (C/C++) package cache. Source, build, download, temporary, and binary caches are
-/// re-downloaded or rebuilt on the next install.
+/// Conan (C/C++) cache via <c>conan cache clean "*"</c>: source, build, download, and temporary
+/// folders, rebuilt on the next install.
 /// </summary>
+/// <remarks>
+/// Package binaries are kept: <c>conan remove</c> would also drop packages built locally or exported
+/// with <c>conan create</c>/<c>conan export</c>, which no remote can restore. Nothing is deleted
+/// directly, so the cleaner is offered only when <c>conan</c> is on PATH.
+/// </remarks>
 public sealed class ConanCleaner : ProcessCleanerBase
 {
     public override string Id => "conan";
@@ -15,21 +19,10 @@ public sealed class ConanCleaner : ProcessCleanerBase
 
     public override string Category => Categories.Languages;
 
+    // Without declared directories the size is only knowable after the command runs.
+    public override bool SupportsSizeEstimate => false;
+
     protected override string Executable => "conan";
 
     protected override IReadOnlyList<string> CleanArguments => ["cache", "clean", "*"];
-
-    protected override IEnumerable<IReadOnlyList<string>> CommandSequence(CleanupContext context)
-    {
-        yield return CleanArguments;
-        yield return ["remove", "*", "--confirm"];
-    }
-
-    protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
-    {
-        var env = context.Environment;
-        var conanHome = OsPaths.Env(env, "CONAN_HOME") ?? env.HomePath(".conan2");
-        yield return new CleanupPath(Path.Combine(conanHome, "p"), Description: "Conan 2 package cache");
-        yield return new CleanupPath(env.HomePath(".conan", "data"), Description: "Conan 1 package cache");
-    }
 }

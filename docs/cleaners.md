@@ -18,7 +18,7 @@ folders. Command-driven cleaners are all-or-nothing, so they are not offered.
 
 Cleaners honor the usual cache-relocation environment variables (`NUGET_PACKAGES`, `CARGO_HOME`,
 `GOMODCACHE`, `GRADLE_USER_HOME`, `npm_config_cache`, `YARN_CACHE_FOLDER`, `PIP_CACHE_DIR`,
-`UV_CACHE_DIR`, `CONAN_HOME`, `PUB_CACHE`, and friends) — a relocated cache is scanned and cleaned
+`UV_CACHE_DIR`, `PUB_CACHE`, and friends) — a relocated cache is scanned and cleaned
 where the tool actually keeps it.
 
 Some cleaners own nothing the host can measure, because an external tool holds the space. Where the
@@ -38,7 +38,7 @@ and take their own yes/no before the run-wide confirmation.
 | Id | Removes |
 | --- | --- |
 | `nuget` | NuGet caches (`dotnet nuget locals all --clear`; global-packages, http/plugins/temp). |
-| `dotnet` | .NET SDK template-engine and telemetry caches. |
+| `dotnet` | .NET SDK telemetry cache. Keeps `~/.templateengine`, which holds the templates installed with `dotnet new install`. |
 
 ## JavaScript / TypeScript
 
@@ -57,8 +57,8 @@ and take their own yes/no before the run-wide confirmation.
 | --- | --- |
 | `pip` | pip cache (`pip cache purge`). |
 | `pipenv` | pipenv cache. |
-| `poetry` | Poetry artifact/download cache. |
-| `conda` | Conda package cache (`conda clean --all`). |
+| `poetry` | Poetry repository cache and artifacts (`cache`, `artifacts`). Keeps the project virtualenvs under the same root. |
+| `conda` | Conda package cache (`conda clean --all`). Without conda on PATH, deletes only the downloaded `*.conda`/`*.tar.bz2` archives in each `pkgs` dir, never the extracted packages environments may link to. |
 | `pdm` | PDM cache (`pdm cache clear`). |
 | `uv` | uv download/build cache. |
 | `pipx` | pipx cache and logs. Never touches installed venvs. |
@@ -82,7 +82,7 @@ and take their own yes/no before the run-wide confirmation.
 
 | Id | Removes |
 | --- | --- |
-| `ml-cache` | HuggingFace hub/datasets, Torch hub, Keras datasets, and kagglehub caches (honors `HF_HOME`/`TRANSFORMERS_CACHE`/`TORCH_HOME`/`KERAS_HOME`). Leaves installed model registries like `~/.ollama/models` alone. |
+| `ml-cache` | HuggingFace `hub`/`xet`/`datasets`, Torch hub, Keras datasets, and kagglehub caches (honors `HF_HOME`/`HF_HUB_CACHE`/`HF_XET_CACHE`/`HF_DATASETS_CACHE`/`TRANSFORMERS_CACHE`/`TORCH_HOME`/`KERAS_HOME`). Never clears the `HF_HOME` root, which holds the HuggingFace login. Leaves installed model registries like `~/.ollama/models` alone. |
 | `wandb` | Weights & Biases artifact/download cache. Run data under `~/wandb` is never touched. |
 
 ## JVM / Android
@@ -90,7 +90,7 @@ and take their own yes/no before the run-wide confirmation.
 | Id | Removes |
 | --- | --- |
 | `gradle` | Gradle build caches, wrapper distributions (`wrapper/dists`), and daemon logs. |
-| `maven` | Maven local repository and wrapper distributions. |
+| `maven` | Maven local repository and wrapper distributions. The repository also holds artifacts built locally with `mvn install`, which can't be re-downloaded, so it **asks again**. |
 | `sbt` | sbt / Ivy resolution caches. |
 | `konan` | Kotlin/Native compiler caches, toolchain dependencies, and auto-downloaded compiler distributions (`~/.konan`). |
 | `android` | Android SDK and build caches (keeps installed SDKs and AVDs). |
@@ -100,7 +100,7 @@ and take their own yes/no before the run-wide confirmation.
 | Id | Removes |
 | --- | --- |
 | `react-native` | Metro/Haste temp caches. |
-| `expo` | Global `~/.expo` and project `.expo` caches. |
+| `expo` | Project `.expo` cache. Keeps the global `~/.expo`, which holds the Expo login. |
 | `cocoapods` | CocoaPods spec-repo and pod download cache (macOS). |
 
 ## Other languages
@@ -110,19 +110,19 @@ and take their own yes/no before the run-wide confirmation.
 | `bundler` | Ruby Bundler cache. |
 | `composer` | PHP Composer cache. |
 | `pub` | Dart/Flutter pub cache (hosted, git, temp). |
-| `hex` | Elixir Hex packages and Mix archives. |
+| `hex` | Elixir Hex package cache. Keeps installed Mix archives (`~/.mix/archives`), such as Hex itself. |
 | `vcpkg` | vcpkg download and binary-archive caches (C/C++). |
 | `haskell` | cabal packages and stack pantry. |
-| `conan` | Conan (C/C++) cache: source/build/download/temp folders (`conan cache clean "*"`) **and** the cached package binaries (`conan remove "*"`); both re-download or rebuild on the next install. Honors `CONAN_HOME`. |
+| `conan` | Conan (C/C++) cache: source/build/download/temp folders (`conan cache clean "*"`), rebuilt on the next install. Package binaries are kept, since locally built or exported packages can't be re-downloaded. Needs `conan` on PATH. |
 | `zig` | Zig global compilation cache. |
 | `swiftpm` | Swift Package Manager repository/artifact caches (macOS/Linux). |
 | `opam` | opam (OCaml) download cache. Keeps switches and installed packages. |
 | `cpanm` | cpanm (Perl) build work directories. |
 | `julia` | Julia precompiled code and logs. Never touches `packages`, `artifacts`, or `scratchspaces`. |
-| `rubygems` | Superseded gem versions (`gem cleanup`) and the spec index cache. |
+| `rubygems` | RubyGems spec index cache. Installed gems are kept: `gem cleanup` isn't run, because a `Gemfile.lock` may pin the older versions it removes. |
 | `renv` | renv (R) global package cache (honors `RENV_PATHS_CACHE`). |
 | `luarocks` | LuaRocks download/build cache. |
-| `nim` | Nim compiler cache (nimcache). Keeps installed nimble packages. |
+| `nim` | Nim compiler cache (nimcache: `$XDG_CACHE_HOME/nim` on Linux/macOS, `%USERPROFILE%\nimcache` on Windows). Keeps installed nimble packages. |
 | `texlive` | TeX Live luatex/font caches under `~/.texlive*/texmf-var` (regenerated on use). |
 
 ## Build / monorepo caches
@@ -138,10 +138,10 @@ and take their own yes/no before the run-wide confirmation.
 
 | Id | Removes |
 | --- | --- |
-| `docker` | Stopped containers, unused networks, every unreferenced image, all build cache, and unused **named volumes** (`docker system prune -a --volumes` + `docker builder prune -a`) — that can delete data such as database volumes. On Docker Desktop/WSL2 this frees space inside the virtual disk; compact the `.vhdx` separately to shrink the host file. |
+| `docker` | Stopped containers, unused networks, every unreferenced image, and all build cache (`docker system prune -a` + `docker builder prune -a`). Volumes are kept: named volumes hold data such as databases. On Docker Desktop/WSL2 this frees space inside the virtual disk; compact the `.vhdx` separately to shrink the host file. |
 | `docker-vhdx` | Compacts Docker Desktop's WSL2 virtual disks in place. `docker` frees space *inside* the disk; the host `.vhdx` only ever grows, so it stays huge long after the images are gone. Shuts WSL down, then compacts with `diskpart`. Deletes nothing, and **asks again** first. The preview estimates the gap between the disk on the host and the bytes Docker says it holds, so prune first for an accurate figure. | Windows · needs admin |
 | `terraform` | Terraform provider plugin cache. |
-| `podman` | `podman system prune -a --volumes` (same caveats as docker). |
+| `podman` | `podman system prune -a` (like docker, volumes are kept). |
 | `helm` | Helm chart repository cache (honors `HELM_REPOSITORY_CACHE`). |
 | `minikube` | minikube image/ISO download cache. Keeps profiles and VMs. |
 | `vagrant` | Vagrant temp downloads (`~/.vagrant.d/tmp`). **Boxes are never touched.** |
@@ -167,7 +167,7 @@ and take their own yes/no before the run-wide confirmation.
 
 | Id | Removes |
 | --- | --- |
-| `browser-automation` | Playwright (including Playwright MCP profiles), Puppeteer, and Cypress browser downloads (incl. the `~/.cache` locations they use even on Windows/macOS). |
+| `browser-automation` | Playwright, Puppeteer, and Cypress browser downloads (incl. the `~/.cache` locations they use even on Windows/macOS). Tests need them reinstalled afterwards (`npx playwright install`, `npx cypress install`), so it **asks again**. Keeps Playwright MCP browser profiles. |
 | `electron` | Electron and electron-builder download caches. |
 | `azure-functions` | Azure Functions Core Tools downloaded runtime feeds. |
 | `dotslash` | DotSlash fetched-executable cache. |

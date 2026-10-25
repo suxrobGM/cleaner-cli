@@ -50,4 +50,20 @@ public sealed class ToolingDownloadCleanerTests
 
         Assert.Equal(2_500, result.TotalBytes);
     }
+
+    [Fact]
+    public async Task BrowserAutomationCleaner_keeps_playwright_mcp_profiles_and_warns()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/home/test/.cache/ms-playwright/chromium-1100/chrome", 4_000)
+            .AddFile("/home/test/.cache/ms-playwright-mcp/mcp-chrome-profile/Cookies", 9_999);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+        var cleaner = new BrowserAutomationCleaner();
+
+        var result = await cleaner.CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(4_000, result.BytesFreed);
+        Assert.True(fs.FileExists("/home/test/.cache/ms-playwright-mcp/mcp-chrome-profile/Cookies"));
+        Assert.Contains("npx playwright install", cleaner.ConfirmationWarning);
+    }
 }

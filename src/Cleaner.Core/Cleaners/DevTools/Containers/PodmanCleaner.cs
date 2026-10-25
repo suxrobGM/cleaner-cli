@@ -3,7 +3,10 @@ using Cleaner.Core.Cleaners.Base;
 
 namespace Cleaner.Core.Cleaners.DevTools;
 
-/// <summary>Prunes Podman storage; like Docker, the prune commands are the only safe interface.</summary>
+/// <summary>
+/// Prunes Podman storage; like Docker, the prune commands are the only safe interface. Named volumes
+/// hold user data and are kept.
+/// </summary>
 public sealed class PodmanCleaner : ProcessCleanerBase
 {
     public override string Id => "podman";
@@ -16,5 +19,5 @@ public sealed class PodmanCleaner : ProcessCleanerBase
 
     protected override string Executable => "podman";
 
-    protected override IReadOnlyList<string> CleanArguments => ["system", "prune", "-a", "--volumes", "--force"];
+    protected override IReadOnlyList<string> CleanArguments => ["system", "prune", "-a", "--force"];
 }

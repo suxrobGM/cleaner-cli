@@ -4,7 +4,8 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Prunes unused Docker containers, networks, images, volumes, and build cache. On Docker
+/// Prunes unused Docker containers, networks, images, and build cache. Volumes are kept: named
+/// volumes hold user data such as databases. On Docker
 /// Desktop/WSL2 this frees space inside the <c>.vhdx</c>; compacting the host file is separate.
 /// </summary>
 /// <remarks>
@@ -23,7 +24,7 @@ public sealed class DockerCleaner : ProcessCleanerBase
 
     protected override string Executable => "docker";
 
-    protected override IReadOnlyList<string> CleanArguments => ["system", "prune", "-a", "--volumes", "--force"];
+    protected override IReadOnlyList<string> CleanArguments => ["system", "prune", "-a", "--force"];
 
     protected override IEnumerable<IReadOnlyList<string>> CommandSequence(CleanupContext context)
     {
@@ -41,7 +42,7 @@ public sealed class DockerCleaner : ProcessCleanerBase
 
         RememberMeasurement(context, known.Used);
         return known.Reclaimable > 0
-            ? new ScanResult([new CleanupTarget("docker", known.Reclaimable, "unused images, containers, volumes, and build cache")])
+            ? new ScanResult([new CleanupTarget("docker", known.Reclaimable, "unused images, containers, and build cache")])
             : ScanResult.Empty;
     }
 

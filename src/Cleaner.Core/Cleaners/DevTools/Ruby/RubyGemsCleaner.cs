@@ -4,20 +4,17 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>
-/// Runs <c>gem cleanup</c> for superseded versions and clears the spec index cache. Bundler has its
-/// own cleaner.
+/// RubyGems spec index cache, re-fetched on the next install. Installed gems are kept:
+/// <c>gem cleanup</c> would uninstall older versions a <c>Gemfile.lock</c> may still pin. Bundler has
+/// its own cleaner.
 /// </summary>
-public sealed class RubyGemsCleaner : ProcessCleanerBase
+public sealed class RubyGemsCleaner : DirectoryCleanerBase
 {
     public override string Id => "rubygems";
 
-    public override string Name => "RubyGems old versions";
+    public override string Name => "RubyGems spec cache";
 
     public override string Category => Categories.Languages;
-
-    protected override string Executable => "gem";
-
-    protected override IReadOnlyList<string> CleanArguments => ["cleanup"];
 
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context) =>
         [new CleanupPath(context.Environment.HomePath(".gem", "specs"), DeleteMode.ClearContents, "spec index")];

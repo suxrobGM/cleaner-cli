@@ -12,6 +12,10 @@ public sealed class MavenCleaner : DirectoryCleanerBase
 
     public override string Category => Categories.Jvm;
 
+    public override string ConfirmationWarning =>
+        "the local repository also holds artifacts built on this machine with 'mvn install', which " +
+        "can't be re-downloaded — rebuild them before the projects that depend on them will build";
+
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;

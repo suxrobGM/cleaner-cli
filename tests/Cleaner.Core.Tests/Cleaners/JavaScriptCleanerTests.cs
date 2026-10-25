@@ -27,4 +27,18 @@ public sealed class JavaScriptCleanerTests
 
         Assert.Equal(3_000, result.TotalBytes);
     }
+
+    [Fact]
+    public async Task ExpoCleaner_clears_the_project_cache_but_keeps_the_global_login()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/work/.expo/web/cache/a.bin", 1_000)
+            .AddFile("/home/test/.expo/state.json", 9_999);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new ExpoCleaner().CleanAsync(TestContext.Create(fs, env, workingDirectory: "/work"));
+
+        Assert.Equal(1_000, result.BytesFreed);
+        Assert.True(fs.FileExists("/home/test/.expo/state.json"));
+    }
 }

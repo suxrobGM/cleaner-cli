@@ -10,9 +10,10 @@ namespace Cleaner.Core.Tests;
 public sealed class CommandSizedCleanerTests
 {
     private const string DockerDf = """
-        1.2GB|800MB (66%)
-        150MB|150MB (100%)
-        2GB|1.5GB (75%)
+        Images|1.2GB|800MB (66%)
+        Containers|150MB|150MB (100%)
+        Local Volumes|5GB|4GB (80%)
+        Build Cache|2GB|1.5GB (75%)
         """;
 
     private const string DismReport = """
@@ -27,7 +28,7 @@ public sealed class CommandSizedCleanerTests
         """;
 
     [Fact]
-    public async Task DockerCleaner_estimates_from_the_reclaimable_column()
+    public async Task DockerCleaner_estimates_from_the_reclaimable_column_without_volumes()
     {
         var runner = new FakeProcessRunner().WithAvailable("docker");
         runner.Result = new ProcessResult(0, DockerDf, string.Empty);
@@ -35,7 +36,7 @@ public sealed class CommandSizedCleanerTests
         var scan = await new DockerCleaner().ScanAsync(TestContext.Create(processRunner: runner));
 
         Assert.Equal(800_000_000L + 150_000_000L + 1_500_000_000L, scan.TotalBytes);
-        Assert.Equal(["system", "df", "--format", "{{.Size}}|{{.Reclaimable}}"], runner.Invocations[0].Arguments);
+        Assert.Equal(["system", "df", "--format", "{{.Type}}|{{.Size}}|{{.Reclaimable}}"], runner.Invocations[0].Arguments);
     }
 
     [Fact]
@@ -65,7 +66,7 @@ public sealed class CommandSizedCleanerTests
                 return new ProcessResult(0, string.Empty, string.Empty);
             }
 
-            return new ProcessResult(0, pruned ? "400MB|0B (0%)" : "1.2GB|800MB (66%)", string.Empty);
+            return new ProcessResult(0, pruned ? "Images|400MB|0B (0%)" : "Images|1.2GB|800MB (66%)", string.Empty);
         };
 
         var context = TestContext.Create(processRunner: runner);
@@ -84,7 +85,7 @@ public sealed class CommandSizedCleanerTests
     {
         var fs = new FakeFileSystem().AddFile(@"C:\Users\test\AppData\Local\Docker\wsl\disk\docker_data.vhdx", 10_000_000_000);
         var runner = new FakeProcessRunner().WithAvailable("docker");
-        runner.Result = new ProcessResult(0, "4GB|1GB (25%)", string.Empty);
+        runner.Result = new ProcessResult(0, "Images|4GB|1GB (25%)", string.Empty);
 
         var scan = await new DockerVhdxCleaner().ScanAsync(TestContext.Create(fs, FakeEnvironment.Windows(), runner));
 

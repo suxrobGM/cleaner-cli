@@ -20,4 +20,18 @@ public sealed class DotnetCleanerTests
 
         Assert.Equal(5_000, result.TotalBytes);
     }
+
+    [Fact]
+    public async Task DotnetCleaner_clears_telemetry_but_keeps_installed_templates()
+    {
+        var fs = new FakeFileSystem()
+            .AddFile("/home/test/.dotnet/TelemetryStorageService/event.json", 3_000)
+            .AddFile("/home/test/.templateengine/packages/My.Templates.1.0.0.nupkg", 9_999);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new DotnetCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(3_000, result.BytesFreed);
+        Assert.True(fs.FileExists("/home/test/.templateengine/packages/My.Templates.1.0.0.nupkg"));
+    }
 }

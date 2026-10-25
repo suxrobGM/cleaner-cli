@@ -34,4 +34,44 @@ public sealed class PythonCleanerTests
 
         Assert.Equal(2_500, result.TotalBytes);
     }
+
+    [Fact]
+    public async Task CondaCleaner_without_conda_deletes_only_package_archives()
+    {
+        // Extracted packages may be hard-linked into environments; only conda knows which.
+        const string pkgs = "/home/test/miniforge3/pkgs";
+        var fs = new FakeFileSystem()
+            .AddFile($"{pkgs}/numpy-1.0.conda", 1_000)
+            .AddFile($"{pkgs}/zlib-1.2.tar.bz2", 2_000)
+            .AddFile($"{pkgs}/numpy-1.0/lib/core.so", 9_999)
+            .AddFile($"{pkgs}/urls.txt", 10)
+            .AddFile($"{pkgs}/cache/repodata.json", 500);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new CondaCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(3_000, result.BytesFreed);
+        Assert.False(fs.FileExists($"{pkgs}/numpy-1.0.conda"));
+        Assert.False(fs.FileExists($"{pkgs}/zlib-1.2.tar.bz2"));
+        Assert.True(fs.FileExists($"{pkgs}/numpy-1.0/lib/core.so"));
+        Assert.True(fs.FileExists($"{pkgs}/urls.txt"));
+        Assert.True(fs.FileExists($"{pkgs}/cache/repodata.json"));
+    }
+
+    [Fact]
+    public async Task PoetryCleaner_keeps_virtualenvs()
+    {
+        const string root = "/home/test/.cache/pypoetry";
+        var fs = new FakeFileSystem()
+            .AddFile($"{root}/cache/repositories/PyPI/a", 1_000)
+            .AddFile($"{root}/artifacts/ab/cd/pkg.whl", 2_000)
+            .AddFile($"{root}/virtualenvs/proj-py3.12/bin/python", 9_999);
+        var env = new FakeEnvironment { HomeDirectory = "/home/test", Os = OsPlatform.Linux };
+
+        var result = await new PoetryCleaner().CleanAsync(TestContext.Create(fs, env));
+
+        Assert.Equal(3_000, result.BytesFreed);
+        Assert.True(fs.FileExists($"{root}/virtualenvs/proj-py3.12/bin/python"));
+    }
+
 }

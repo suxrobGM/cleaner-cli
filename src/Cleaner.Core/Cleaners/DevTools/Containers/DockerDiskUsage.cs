@@ -7,7 +7,10 @@ namespace Cleaner.Core.Cleaners.DevTools;
 /// Usage and reclaimable bytes reported by <c>docker system df</c>, used to size both Docker cleaners.
 /// </summary>
 /// <param name="Used">Bytes of images, containers, volumes and build cache Docker is holding.</param>
-/// <param name="Reclaimable">The part of <paramref name="Used"/> nothing references any more.</param>
+/// <param name="Reclaimable">
+/// The part of <paramref name="Used"/> nothing references any more, excluding volumes: the prune
+/// keeps them, so their reclaimable bytes are not on offer.
+/// </param>
 internal readonly record struct DockerDiskUsage(long Used, long Reclaimable)
 {
     private static readonly TimeSpan QueryTimeout = TimeSpan.FromSeconds(15);
@@ -22,11 +25,11 @@ internal readonly record struct DockerDiskUsage(long Used, long Reclaimable)
             return null;
         }
 
-        // One line per resource type, e.g. "5.1GB|3.2GB (62%)". Docker prints decimal units.
+        // One line per resource type, e.g. "Images|5.1GB|3.2GB (62%)". Docker prints decimal units.
         var result = await context.ProcessRunner
             .RunAsync(
                 "docker",
-                ["system", "df", "--format", "{{.Size}}|{{.Reclaimable}}"],
+                ["system", "df", "--format", "{{.Type}}|{{.Size}}|{{.Reclaimable}}"],
                 QueryTimeout,
                 cancellationToken)
             .ConfigureAwait(false);
@@ -41,17 +44,17 @@ internal readonly record struct DockerDiskUsage(long Used, long Reclaimable)
         foreach (var line in result.StandardOutput.Split('\n'))
         {
             var columns = line.Split('|');
-            if (columns.Length != 2)
+            if (columns.Length != 3)
             {
                 continue;
             }
 
-            if (SizeParser.TryParse(columns[0], out var size, unitBase: 1000))
+            if (SizeParser.TryParse(columns[1], out var size, unitBase: 1000))
             {
                 used += size;
             }
 
-            if (SizeParser.TryParse(columns[1], out var free, unitBase: 1000))
+            if (!IsVolumes(columns[0]) && SizeParser.TryParse(columns[2], out var free, unitBase: 1000))
             {
                 reclaimable += free;
             }
@@ -59,4 +62,8 @@ internal readonly record struct DockerDiskUsage(long Used, long Reclaimable)
 
         return new DockerDiskUsage(used, reclaimable);
     }
+
+    /// <summary>The "Local Volumes" row: named volumes are user data the prune leaves alone.</summary>
+    private static bool IsVolumes(string type) =>
+        type.Contains("Volume", StringComparison.OrdinalIgnoreCase);
 }

@@ -23,4 +23,10 @@ public sealed class JvmCleanerTests
 
         Assert.Equal(8_000, result.TotalBytes);
     }
+
+    [Fact]
+    public void MavenCleaner_warns_that_locally_installed_artifacts_are_lost()
+    {
+        Assert.Contains("mvn install", new MavenCleaner().ConfirmationWarning);
+    }
 }

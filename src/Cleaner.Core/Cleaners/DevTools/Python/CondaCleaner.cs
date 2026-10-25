@@ -4,6 +4,11 @@ using Cleaner.Core.Cleaners.Base;
 namespace Cleaner.Core.Cleaners.DevTools;
 
 /// <summary>Conda package cache. Uses <c>conda clean --all --yes</c>.</summary>
+/// <remarks>
+/// Without conda on PATH only the downloaded archives directly inside each <c>pkgs</c> dir are
+/// deleted. The extracted package folders beside them may be hard-linked into environments, and
+/// only conda can tell which are unused.
+/// </remarks>
 public sealed class CondaCleaner : ProcessCleanerBase
 {
     public override string Id => "conda";
@@ -19,7 +24,29 @@ public sealed class CondaCleaner : ProcessCleanerBase
     /// <summary>Conventional install roots whose <c>pkgs</c> dir holds the package cache.</summary>
     private static readonly string[] InstallRoots = ["miniconda3", "anaconda3", "miniforge3", "mambaforge"];
 
+    /// <summary>Downloaded package archive formats; extracted folders are never matched.</summary>
+    private static readonly string[] ArchiveExtensions = [".conda", ".tar.bz2"];
+
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
+    {
+        foreach (var dir in PackageDirectories(context))
+        {
+            if (!context.FileSystem.DirectoryExists(dir))
+            {
+                continue;
+            }
+
+            foreach (var file in context.FileSystem.EnumerateFiles(dir))
+            {
+                if (ArchiveExtensions.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+                {
+                    yield return new CleanupPath(file, DeleteMode.DeleteFile, "package archive");
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<string> PackageDirectories(CleanupContext context)
     {
         var env = context.Environment;
 
@@ -28,7 +55,7 @@ public sealed class CondaCleaner : ProcessCleanerBase
         {
             foreach (var dir in pkgsDirs.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             {
-                yield return new CleanupPath(dir, Description: "package cache");
+                yield return dir;
             }
         }
 
@@ -37,16 +64,16 @@ public sealed class CondaCleaner : ProcessCleanerBase
         {
             if (OsPaths.Env(env, name) is { } root)
             {
-                yield return new CleanupPath(Path.Combine(root, "pkgs"), Description: "package cache");
+                yield return Path.Combine(root, "pkgs");
             }
         }
 
         foreach (var root in InstallRoots)
         {
-            yield return new CleanupPath(env.HomePath(root, "pkgs"), Description: "package cache");
+            yield return env.HomePath(root, "pkgs");
         }
 
         // Legacy per-user location, kept for completeness.
-        yield return new CleanupPath(env.HomePath(".conda", "pkgs"), Description: "package cache");
+        yield return env.HomePath(".conda", "pkgs");
     }
 }
