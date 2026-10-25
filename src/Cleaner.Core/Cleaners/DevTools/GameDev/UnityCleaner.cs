@@ -48,20 +48,27 @@ public sealed class UnityCleaner : DirectoryCleanerBase
     private static IEnumerable<CleanupPath> ProjectCaches(CleanupContext context)
     {
         var fs = context.FileSystem;
+        var roots = WorkspaceRoots.Usable(context);
 
-        // Find Unity projects under the scan roots, skipping descent into the regenerable artifact
-        // folders themselves so a stray bin/obj/Library elsewhere doesn't get walked needlessly.
-        var projects = DirectorySweep.FindDirectories(
-            fs,
-            context.ScanRoots,
-            dir => IsUnityProject(fs, dir),
-            skipDescentInto: dir => ProjectArtifacts.Contains(DirectorySweep.LeafName(dir), StringComparer.OrdinalIgnoreCase));
+        // Find Unity projects under the scan roots (a root may itself be one), never entering the
+        // regenerable artifact folders, links, dot-folders, or installed tools along the way.
+        var projects = roots
+            .Where(root => IsUnityProject(fs, root))
+            .Concat(DirectorySweep.FindDirectories(
+                fs,
+                roots,
+                dir => IsUnityProject(fs, dir),
+                dir => context.Guard.CanDescend(dir)
+                    && !ProjectArtifacts.Contains(DirectorySweep.LeafName(dir), StringComparer.OrdinalIgnoreCase)));
 
         return projects.SelectMany(project =>
             ProjectArtifacts.Select(artifact => new CleanupPath(Path.Combine(project, artifact), Description: artifact)));
     }
 
+    protected override IEnumerable<string> ScanNotes(CleanupContext context) => WorkspaceRoots.Refusals(context);
+
+    /// <summary>ProjectVersion.txt is what Unity writes; Assets plus ProjectSettings alone could be anything.</summary>
     private static bool IsUnityProject(IFileSystemService fs, string dir) =>
         fs.DirectoryExists(Path.Combine(dir, "Assets")) &&
-        fs.DirectoryExists(Path.Combine(dir, "ProjectSettings"));
+        fs.FileExists(Path.Combine(dir, "ProjectSettings", "ProjectVersion.txt"));
 }

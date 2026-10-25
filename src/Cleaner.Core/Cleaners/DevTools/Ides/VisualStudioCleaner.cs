@@ -17,7 +17,10 @@ public sealed class VisualStudioCleaner : DirectoryCleanerBase
     protected override IEnumerable<CleanupPath> GetTargets(CleanupContext context)
     {
         var env = context.Environment;
-        yield return new CleanupPath(Path.Combine(context.WorkingDirectory, ".vs"), Description: "project .vs");
+        if (WorkspaceRoots.IsUsable(context, context.WorkingDirectory))
+        {
+            yield return new CleanupPath(Path.Combine(context.WorkingDirectory, ".vs"), Description: "project .vs");
+        }
 
         var vsRoot = Path.Combine(env.LocalAppDataDirectory, "Microsoft", "VisualStudio");
         foreach (var versionDir in context.FileSystem.EnumerateDirectories(vsRoot))
